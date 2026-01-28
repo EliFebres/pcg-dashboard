@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { Filter, Building2, MoreHorizontal, FileText, ArrowUpRight, ArrowDownRight, Download, User, Check, X, PlayCircle, CheckCircle2, Loader2, MessageSquare } from 'lucide-react';
+import { Filter, Building2, FileText, ArrowUpRight, ArrowDownRight, Download, User, Check, X, PlayCircle, CheckCircle2, Loader2, MessageSquare } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell } from 'recharts';
 import { getEngagementsDashboardData, getEngagements } from '@/app/lib/api/engagements';
 import type { EngagementMetric, DepartmentData, Engagement, DayData } from '@/app/lib/types/engagements';
@@ -77,7 +77,7 @@ const ContributionGraph: React.FC<ContributionGraphProps> = ({ data }) => {
                 minWidth: 0,
                 minHeight: 0
               }}
-              title={`${day.count} projects on ${new Date(day.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`}
+              title={`${new Date(day.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}\n${day.projectCount} project${day.projectCount !== 1 ? 's' : ''}, ${day.touchPointCount} touch point${day.touchPointCount !== 1 ? 's' : ''}`}
             />
           ))}
         </div>
@@ -268,8 +268,8 @@ export default function EngagementsDashboard() {
                   <div className="relative z-10 h-full flex flex-col">
                     <div className="flex items-center justify-between mb-3 flex-shrink-0">
                       <div>
-                        <h3 className="text-sm font-medium text-white">Project Frequency</h3>
-                        <p className="text-xs text-zinc-500">Daily project activity (1YR)</p>
+                        <h3 className="text-sm font-medium text-white">Completed Interactions</h3>
+                        <p className="text-xs text-zinc-500">Daily completed projects & touch points (1YR)</p>
                       </div>
                       <button className="p-1.5 bg-zinc-800/50 backdrop-blur-sm text-zinc-400 hover:text-cyan-400 transition-colors" title="Download chart data">
                         <Download className="w-3.5 h-3.5" />
@@ -316,7 +316,7 @@ export default function EngagementsDashboard() {
                             <div className="w-2.5 h-2.5" style={{ backgroundColor: dept.color }} />
                             <span className="text-zinc-400">{dept.name}</span>
                           </div>
-                          <span className="text-zinc-200 font-medium font-mono">{dept.value}</span>
+                          <span className="text-zinc-200 font-medium font-mono">{dept.count}</span>
                         </div>
                       ))}
                     </div>
@@ -333,7 +333,8 @@ export default function EngagementsDashboard() {
                   <table className="w-full">
                     <thead className="sticky top-0 bg-zinc-800/95 backdrop-blur-sm z-10">
                       <tr>
-                        <th className="text-left text-xs font-medium text-zinc-400 uppercase tracking-wider px-4 py-3">Client</th>
+                        <th className="text-left text-xs font-medium text-zinc-400 uppercase tracking-wider px-4 py-3">External Client</th>
+                        <th className="text-left text-xs font-medium text-zinc-400 uppercase tracking-wider px-4 py-3">Internal Client</th>
                         <th className="text-left text-xs font-medium text-zinc-400 uppercase tracking-wider px-4 py-3">Intake Type</th>
                         <th className="text-left text-xs font-medium text-zinc-400 uppercase tracking-wider px-4 py-3">Project Type</th>
                         <th className="text-left text-xs font-medium text-zinc-400 uppercase tracking-wider px-4 py-3">Team Members</th>
@@ -341,14 +342,22 @@ export default function EngagementsDashboard() {
                         <th className="text-left text-xs font-medium text-zinc-400 uppercase tracking-wider px-4 py-3">Date Finished</th>
                         <th className="text-left text-xs font-medium text-zinc-400 uppercase tracking-wider px-4 py-3">Portfolio Logged</th>
                         <th className="text-left text-xs font-medium text-zinc-400 uppercase tracking-wider px-4 py-3">Status</th>
-                        <th className="px-4 py-3"></th>
+                        <th className="text-center text-xs font-medium text-zinc-400 uppercase tracking-wider px-4 py-3">Notes</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-zinc-800/50">
                       {engagements.map((engagement) => (
                         <tr key={engagement.id} className="hover:bg-white/[0.02] transition-colors">
                           <td className="px-4 py-3">
-                            <span className="text-sm font-medium text-zinc-200">{engagement.client}</span>
+                            <span className={`text-sm font-medium ${engagement.externalClient ? 'text-zinc-200' : 'text-zinc-600'}`}>
+                              {engagement.externalClient ?? '—'}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3">
+                            <div>
+                              <span className="text-sm font-medium text-zinc-200">{engagement.internalClient.name}</span>
+                              <p className="text-xs text-zinc-500">{engagement.internalClient.gcgDepartment}</p>
+                            </div>
                           </td>
                           <td className="px-4 py-3">
                             <span className={`inline-flex px-2 py-0.5 text-xs font-medium backdrop-blur-sm ${getIntakeTypeStyle(engagement.intakeType)}`}>
@@ -407,10 +416,14 @@ export default function EngagementsDashboard() {
                               {engagement.status}
                             </span>
                           </td>
-                          <td className="px-4 py-3">
-                            <button className="p-1.5 hover:bg-white/[0.05] text-zinc-500 hover:text-zinc-300 transition-colors">
-                              <MoreHorizontal className="w-4 h-4" />
-                            </button>
+                          <td className="px-4 py-3 text-center">
+                            {engagement.hasNotes ? (
+                              <button className="p-1.5 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 transition-colors" title="View notes">
+                                <FileText className="w-4 h-4" />
+                              </button>
+                            ) : (
+                              <span className="text-zinc-600 text-xs">—</span>
+                            )}
                           </td>
                         </tr>
                       ))}

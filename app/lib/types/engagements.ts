@@ -4,6 +4,8 @@ export interface DayData {
   date: Date;
   level: number;
   count: number;
+  projectCount: number;
+  touchPointCount: number;
 }
 
 export interface EngagementMetric {
@@ -17,13 +19,20 @@ export interface EngagementMetric {
 
 export interface DepartmentData {
   name: string;
-  value: number;
+  value: number; // Percentage for bar width (sums to 100)
+  count: number; // Raw count for display
   color: string;
+}
+
+export interface InternalClient {
+  name: string;
+  gcgDepartment: 'IAG' | 'Broker-Dealer' | 'Institution';
 }
 
 export interface Engagement {
   id: number;
-  client: string;
+  externalClient: string | null; // Optional - Touch Points may not have an external client
+  internalClient: InternalClient; // Contact/relationship owner/salesperson
   intakeType: 'IRQ' | 'GRRF' | 'Touch Points';
   type: string; // Project Type
   teamMembers: string[];
@@ -32,6 +41,7 @@ export interface Engagement {
   dateFinished: string;
   status: string;
   portfolioLogged: boolean;
+  hasNotes: boolean;
 }
 
 export interface ContributionData {

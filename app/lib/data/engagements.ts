@@ -11,71 +11,283 @@ export const engagementMetrics: EngagementMetric[] = [
 ];
 
 export const departmentBreakdown: DepartmentData[] = [
-  { name: 'RIA', value: 412, color: '#22d3ee' },
-  { name: 'Broker-Dealer', value: 289, color: '#a78bfa' },
-  { name: 'Institution', value: 146, color: '#fb923c' },
+  { name: 'IAG', value: 49, count: 412, color: '#22d3ee' },
+  { name: 'Broker-Dealer', value: 34, count: 289, color: '#a78bfa' },
+  { name: 'Institution', value: 17, count: 146, color: '#fb923c' },
 ];
 
-export const engagements: Engagement[] = [
-  { id: 1, client: 'Vanguard Advisors', intakeType: 'IRQ', type: 'Data Request', teamMembers: ['Eli S.', 'Sarah K.'], department: 'RIA', dateStarted: 'Jan 20, 2025', dateFinished: 'Jan 24, 2025', status: 'Completed', portfolioLogged: true },
-  { id: 2, client: 'Fidelity Wealth Management', intakeType: 'GRRF', type: 'Meeting', teamMembers: ['Sarah K.'], department: 'Broker-Dealer', dateStarted: 'Jan 21, 2025', dateFinished: '—', status: 'In Progress', portfolioLogged: false },
-  { id: 3, client: 'Schwab Private Client', intakeType: 'IRQ', type: 'Data Request', teamMembers: ['Mike R.', 'Eli S.', 'Lisa M.'], department: 'RIA', dateStarted: 'Jan 19, 2025', dateFinished: 'Jan 23, 2025', status: 'Completed', portfolioLogged: true },
-  { id: 4, client: 'Northern Trust Wealth', intakeType: 'Touch Points', type: 'Follow-Up', teamMembers: ['Eli S.'], department: 'Institution', dateStarted: 'Jan 18, 2025', dateFinished: 'Jan 22, 2025', status: 'Completed', portfolioLogged: true },
-  { id: 5, client: 'Raymond James Financial', intakeType: 'GRRF', type: 'Meeting', teamMembers: ['Lisa M.', 'James T.'], department: 'Broker-Dealer', dateStarted: 'Jan 22, 2025', dateFinished: '—', status: 'Pending', portfolioLogged: false },
-  { id: 6, client: 'Edward Jones', intakeType: 'Touch Points', type: 'Follow-Up', teamMembers: ['James T.', 'David L.'], department: 'RIA', dateStarted: 'Jan 17, 2025', dateFinished: 'Jan 21, 2025', status: 'Completed', portfolioLogged: true },
-  { id: 7, client: 'Morgan Stanley Private', intakeType: 'IRQ', type: 'Data Request', teamMembers: ['Eli S.', 'Mike R.'], department: 'Institution', dateStarted: 'Jan 16, 2025', dateFinished: 'Jan 20, 2025', status: 'Completed', portfolioLogged: true },
-  { id: 8, client: 'Merrill Lynch Advisors', intakeType: 'GRRF', type: 'Meeting', teamMembers: ['Sarah K.', 'Lisa M.'], department: 'Broker-Dealer', dateStarted: 'Jan 15, 2025', dateFinished: 'Jan 19, 2025', status: 'Completed', portfolioLogged: true },
-  { id: 9, client: 'Goldman Sachs PWM', intakeType: 'IRQ', type: 'Data Request', teamMembers: ['David L.'], department: 'Institution', dateStarted: 'Jan 23, 2025', dateFinished: '—', status: 'In Progress', portfolioLogged: false },
-  { id: 10, client: 'UBS Financial Services', intakeType: 'Touch Points', type: 'Follow-Up', teamMembers: ['James T.', 'Eli S.'], department: 'Broker-Dealer', dateStarted: 'Jan 14, 2025', dateFinished: 'Jan 18, 2025', status: 'Completed', portfolioLogged: true },
-  { id: 11, client: 'Wells Fargo Advisors', intakeType: 'IRQ', type: 'Data Request', teamMembers: ['Mike R.', 'Sarah K.'], department: 'RIA', dateStarted: 'Jan 13, 2025', dateFinished: 'Jan 17, 2025', status: 'Completed', portfolioLogged: true },
-  { id: 12, client: 'Ameriprise Financial', intakeType: 'GRRF', type: 'Meeting', teamMembers: ['Lisa M.'], department: 'RIA', dateStarted: 'Jan 24, 2025', dateFinished: '—', status: 'Pending', portfolioLogged: false },
-  { id: 13, client: 'LPL Financial', intakeType: 'Touch Points', type: 'Follow-Up', teamMembers: ['Eli S.', 'David L.'], department: 'Broker-Dealer', dateStarted: 'Jan 12, 2025', dateFinished: 'Jan 16, 2025', status: 'Completed', portfolioLogged: true },
-  { id: 14, client: 'Northwestern Mutual', intakeType: 'IRQ', type: 'Data Request', teamMembers: ['James T.'], department: 'RIA', dateStarted: 'Jan 11, 2025', dateFinished: 'Jan 15, 2025', status: 'Completed', portfolioLogged: true },
-  { id: 15, client: 'Stifel Financial', intakeType: 'GRRF', type: 'Meeting', teamMembers: ['Sarah K.', 'Mike R.'], department: 'Broker-Dealer', dateStarted: 'Jan 10, 2025', dateFinished: 'Jan 14, 2025', status: 'Completed', portfolioLogged: true },
-  { id: 16, client: 'RBC Wealth Management', intakeType: 'IRQ', type: 'Data Request', teamMembers: ['Eli S.'], department: 'Institution', dateStarted: 'Jan 25, 2025', dateFinished: '—', status: 'In Progress', portfolioLogged: false },
-  { id: 17, client: 'Janney Montgomery Scott', intakeType: 'Touch Points', type: 'Follow-Up', teamMembers: ['Lisa M.', 'James T.'], department: 'RIA', dateStarted: 'Jan 09, 2025', dateFinished: 'Jan 13, 2025', status: 'Completed', portfolioLogged: true },
-  { id: 18, client: 'Baird Private Wealth', intakeType: 'GRRF', type: 'Meeting', teamMembers: ['David L.'], department: 'RIA', dateStarted: 'Jan 08, 2025', dateFinished: 'Jan 12, 2025', status: 'Completed', portfolioLogged: true },
-  { id: 19, client: 'Oppenheimer Holdings', intakeType: 'IRQ', type: 'Data Request', teamMembers: ['Mike R.', 'Eli S.'], department: 'Broker-Dealer', dateStarted: 'Jan 07, 2025', dateFinished: 'Jan 11, 2025', status: 'Completed', portfolioLogged: true },
-  { id: 20, client: 'Piper Sandler', intakeType: 'Touch Points', type: 'Follow-Up', teamMembers: ['Sarah K.'], department: 'Institution', dateStarted: 'Jan 06, 2025', dateFinished: 'Jan 10, 2025', status: 'Completed', portfolioLogged: true },
-  { id: 21, client: 'Cetera Financial Group', intakeType: 'GRRF', type: 'Meeting', teamMembers: ['James T.', 'Lisa M.'], department: 'RIA', dateStarted: 'Jan 26, 2025', dateFinished: '—', status: 'Pending', portfolioLogged: false },
-  { id: 22, client: 'Cambridge Investment', intakeType: 'IRQ', type: 'Data Request', teamMembers: ['Eli S.', 'David L.'], department: 'Broker-Dealer', dateStarted: 'Jan 05, 2025', dateFinished: 'Jan 09, 2025', status: 'Completed', portfolioLogged: true },
-  { id: 23, client: 'Kestra Financial', intakeType: 'Touch Points', type: 'Follow-Up', teamMembers: ['Mike R.'], department: 'RIA', dateStarted: 'Jan 04, 2025', dateFinished: 'Jan 08, 2025', status: 'Completed', portfolioLogged: true },
-  { id: 24, client: 'Osaic Wealth', intakeType: 'GRRF', type: 'Meeting', teamMembers: ['Sarah K.', 'James T.'], department: 'Broker-Dealer', dateStarted: 'Jan 03, 2025', dateFinished: 'Jan 07, 2025', status: 'Completed', portfolioLogged: true },
-  { id: 25, client: 'Truist Advisory Services', intakeType: 'IRQ', type: 'Data Request', teamMembers: ['Lisa M.', 'Eli S.'], department: 'Institution', dateStarted: 'Jan 27, 2025', dateFinished: '—', status: 'In Progress', portfolioLogged: false },
+// Internal client (relationship owner/salesperson) roster mapped to GCG departments
+const internalClients = {
+  // IAG Team
+  'Jennifer Martinez': { name: 'Jennifer Martinez', gcgDepartment: 'IAG' as const },
+  'Robert Chen': { name: 'Robert Chen', gcgDepartment: 'IAG' as const },
+  'Amanda Foster': { name: 'Amanda Foster', gcgDepartment: 'IAG' as const },
+  // Broker-Dealer Team
+  'Michael Thompson': { name: 'Michael Thompson', gcgDepartment: 'Broker-Dealer' as const },
+  'Jessica Williams': { name: 'Jessica Williams', gcgDepartment: 'Broker-Dealer' as const },
+  'Daniel Park': { name: 'Daniel Park', gcgDepartment: 'Broker-Dealer' as const },
+  // Institution Team
+  'Christopher Lee': { name: 'Christopher Lee', gcgDepartment: 'Institution' as const },
+  'Rachel Goldman': { name: 'Rachel Goldman', gcgDepartment: 'Institution' as const },
+  'Andrew Mitchell': { name: 'Andrew Mitchell', gcgDepartment: 'Institution' as const },
+};
+
+// External client companies for dummy data
+const externalClients = [
+  'Vanguard Advisors', 'Fidelity Wealth Management', 'Schwab Private Client', 'Northern Trust Wealth',
+  'Raymond James Financial', 'Morgan Stanley Private', 'Merrill Lynch Advisors', 'Goldman Sachs PWM',
+  'Wells Fargo Advisors', 'Ameriprise Financial', 'LPL Financial', 'Northwestern Mutual',
+  'Stifel Financial', 'RBC Wealth Management', 'Baird Private Wealth', 'Oppenheimer Holdings',
+  'Piper Sandler', 'Cetera Financial Group', 'Cambridge Investment', 'Osaic Wealth',
+  'Truist Advisory Services', 'Edward Jones', 'Janney Montgomery Scott', 'Kestra Financial',
+  'First Republic', 'BMO Private Bank', 'PNC Wealth', 'US Bank Wealth', 'Huntington Private',
+  'KeyBank Wealth', 'Fifth Third Advisors', 'Regions Wealth', 'Citizens Private', 'TD Wealth',
+  'CIBC Private', 'Raymond James Tax Credit', 'Sanctuary Wealth', 'Hightower Advisors',
+  'Focus Financial', 'Creative Planning', 'Mariner Wealth', 'Captrust Financial',
 ];
 
-// Generate contribution graph data (GitHub-style heatmap)
+const teamMembers = ['Eli S.', 'Sarah K.', 'Mike R.', 'Lisa M.', 'James T.', 'David L.'];
+const internalClientKeys = Object.keys(internalClients) as (keyof typeof internalClients)[];
+const departments: ('IAG' | 'Broker-Dealer' | 'Institution')[] = ['IAG', 'Broker-Dealer', 'Institution'];
+const projectTypes = ['Data Request', 'Meeting', 'Analysis', 'Presentation', 'Review'];
+
+// Seeded random for consistent data generation
+function seededRandom(seed: number): number {
+  const x = Math.sin(seed * 9999) * 10000;
+  return x - Math.floor(x);
+}
+
+// Generate full year of engagement data
+function generateYearOfEngagements(): Engagement[] {
+  const engagements: Engagement[] = [];
+  let id = 1;
+
+  // Start from Feb 1, 2024 to Jan 31, 2025 (1 year)
+  const startDate = new Date('2024-02-01');
+  const endDate = new Date('2025-01-31');
+
+  // Holiday/slow weeks (week numbers where activity is reduced)
+  const slowWeeks = [
+    51, 52, // Christmas/New Year (late Dec)
+    26, // July 4th week
+    47, // Thanksgiving week
+  ];
+
+  let currentDate = new Date(startDate);
+  let weekNum = 0;
+
+  while (currentDate <= endDate) {
+    const dayOfWeek = currentDate.getDay();
+
+    // Skip weekends
+    if (dayOfWeek === 0 || dayOfWeek === 6) {
+      currentDate.setDate(currentDate.getDate() + 1);
+      continue;
+    }
+
+    // Track week number for slow weeks
+    if (dayOfWeek === 1) weekNum++;
+
+    // Determine activity level for this week
+    const isSlowWeek = slowWeeks.includes(weekNum % 52);
+    const weekSeed = weekNum * 100;
+
+    // Touch points: 2-3 per day normally, 0-1 during slow weeks
+    const baseTouchPoints = isSlowWeek ? 0.5 : 2.5;
+    const touchPointVariance = seededRandom(weekSeed + currentDate.getDate()) - 0.5;
+    const touchPointsToday = Math.max(0, Math.round(baseTouchPoints + touchPointVariance));
+
+    // Projects: ~4 per week = ~0.8 per day, less during slow weeks
+    const baseProjects = isSlowWeek ? 0.2 : 0.8;
+    const projectVariance = (seededRandom(weekSeed + currentDate.getDate() + 50) - 0.5) * 0.6;
+    const projectsToday = Math.max(0, Math.round(baseProjects + projectVariance));
+
+    const dateStr = currentDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+    // Generate touch points for today
+    for (let i = 0; i < touchPointsToday; i++) {
+      const seed = id * 17;
+      const internalClientKey = internalClientKeys[Math.floor(seededRandom(seed) * internalClientKeys.length)];
+      const internalClient = internalClients[internalClientKey];
+      const hasExternalClient = seededRandom(seed + 1) > 0.3; // 70% have external client
+      const teamCount = 1 + Math.floor(seededRandom(seed + 2) * 2);
+      const selectedTeam: string[] = [];
+      for (let t = 0; t < teamCount; t++) {
+        const member = teamMembers[Math.floor(seededRandom(seed + 3 + t) * teamMembers.length)];
+        if (!selectedTeam.includes(member)) selectedTeam.push(member);
+      }
+
+      // Touch points complete same day or next day
+      const finishOffset = Math.floor(seededRandom(seed + 10) * 2);
+      const finishDate = new Date(currentDate);
+      finishDate.setDate(finishDate.getDate() + finishOffset);
+      const finishStr = finishDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+      engagements.push({
+        id: id++,
+        externalClient: hasExternalClient ? externalClients[Math.floor(seededRandom(seed + 4) * externalClients.length)] : null,
+        internalClient,
+        intakeType: 'Touch Points',
+        type: 'Follow-Up',
+        teamMembers: selectedTeam,
+        department: internalClient.gcgDepartment,
+        dateStarted: dateStr,
+        dateFinished: finishStr,
+        status: 'Completed',
+        portfolioLogged: seededRandom(seed + 5) > 0.2,
+        hasNotes: seededRandom(seed + 6) > 0.6,
+      });
+    }
+
+    // Generate projects for today
+    for (let i = 0; i < projectsToday; i++) {
+      const seed = id * 23;
+      const internalClientKey = internalClientKeys[Math.floor(seededRandom(seed) * internalClientKeys.length)];
+      const internalClient = internalClients[internalClientKey];
+      const dept = departments[Math.floor(seededRandom(seed + 1) * departments.length)];
+      const intakeType: 'IRQ' | 'GRRF' = seededRandom(seed + 2) > 0.5 ? 'IRQ' : 'GRRF';
+      const projectType = projectTypes[Math.floor(seededRandom(seed + 3) * projectTypes.length)];
+      const teamCount = 1 + Math.floor(seededRandom(seed + 4) * 3);
+      const selectedTeam: string[] = [];
+      for (let t = 0; t < teamCount; t++) {
+        const member = teamMembers[Math.floor(seededRandom(seed + 5 + t) * teamMembers.length)];
+        if (!selectedTeam.includes(member)) selectedTeam.push(member);
+      }
+
+      // Projects take 2-5 days
+      const duration = 2 + Math.floor(seededRandom(seed + 10) * 4);
+      const finishDate = new Date(currentDate);
+      finishDate.setDate(finishDate.getDate() + duration);
+      const finishStr = finishDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+      engagements.push({
+        id: id++,
+        externalClient: externalClients[Math.floor(seededRandom(seed + 6) * externalClients.length)],
+        internalClient,
+        intakeType,
+        type: projectType,
+        teamMembers: selectedTeam,
+        department: dept,
+        dateStarted: dateStr,
+        dateFinished: finishStr,
+        status: 'Completed',
+        portfolioLogged: seededRandom(seed + 7) > 0.15,
+        hasNotes: seededRandom(seed + 8) > 0.5,
+      });
+    }
+
+    currentDate.setDate(currentDate.getDate() + 1);
+  }
+
+  // Add a few in-progress and pending items for recent dates
+  const recentDate = new Date('2025-01-27');
+  for (let i = 0; i < 5; i++) {
+    const seed = (id + i) * 31;
+    const internalClientKey = internalClientKeys[Math.floor(seededRandom(seed) * internalClientKeys.length)];
+    const internalClient = internalClients[internalClientKey];
+    const dept = departments[Math.floor(seededRandom(seed + 1) * departments.length)];
+    const intakeType: 'IRQ' | 'GRRF' = seededRandom(seed + 2) > 0.5 ? 'IRQ' : 'GRRF';
+    const status = i < 3 ? 'In Progress' : 'Pending';
+    const teamCount = 1 + Math.floor(seededRandom(seed + 4) * 3);
+    const selectedTeam: string[] = [];
+    for (let t = 0; t < teamCount; t++) {
+      const member = teamMembers[Math.floor(seededRandom(seed + 5 + t) * teamMembers.length)];
+      if (!selectedTeam.includes(member)) selectedTeam.push(member);
+    }
+
+    const startOffset = Math.floor(seededRandom(seed + 10) * 5);
+    const startDate = new Date(recentDate);
+    startDate.setDate(startDate.getDate() - startOffset);
+
+    engagements.push({
+      id: id++,
+      externalClient: externalClients[Math.floor(seededRandom(seed + 6) * externalClients.length)],
+      internalClient,
+      intakeType,
+      type: projectTypes[Math.floor(seededRandom(seed + 3) * projectTypes.length)],
+      teamMembers: selectedTeam,
+      department: dept,
+      dateStarted: startDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+      dateFinished: '—',
+      status,
+      portfolioLogged: false,
+      hasNotes: seededRandom(seed + 8) > 0.5,
+    });
+  }
+
+  return engagements;
+}
+
+export const engagements: Engagement[] = generateYearOfEngagements();
+
+// Parse date string like "Jan 20, 2025" to Date object
+function parseDateString(dateStr: string): Date | null {
+  if (dateStr === '—') return null;
+  const parsed = new Date(dateStr);
+  return isNaN(parsed.getTime()) ? null : parsed;
+}
+
+// Get date string in YYYY-MM-DD format for comparison
+function getDateKey(date: Date): string {
+  return date.toISOString().split('T')[0];
+}
+
+// Generate contribution graph data from actual engagements
 export function generateContributionData(): DayData[][] {
   const weeks: DayData[][] = [];
-  const startDate = new Date('2024-01-01');
+  const startDate = new Date('2024-02-01'); // Start 1 year before most recent data
 
-  // Seeded random function for deterministic but natural-looking randomness
-  const seededRandom = (seed: number): number => {
-    const x = Math.sin(seed * 9999) * 10000;
-    return x - Math.floor(x);
-  };
+  // Build a map of completed engagements by date
+  const completionsByDate: Record<string, { projects: number; touchPoints: number }> = {};
 
+  for (const engagement of engagements) {
+    const finishedDate = parseDateString(engagement.dateFinished);
+    if (finishedDate) {
+      const key = getDateKey(finishedDate);
+      if (!completionsByDate[key]) {
+        completionsByDate[key] = { projects: 0, touchPoints: 0 };
+      }
+      if (engagement.intakeType === 'Touch Points') {
+        completionsByDate[key].touchPoints++;
+      } else {
+        completionsByDate[key].projects++;
+      }
+    }
+  }
+
+  // Generate 52 weeks of data (weekdays only)
   for (let week = 0; week < 52; week++) {
     const days: DayData[] = [];
     for (let day = 0; day < 5; day++) {
       const currentDate = new Date(startDate);
-      currentDate.setDate(startDate.getDate() + (week * 7) + day + 1);
+      // Calculate the actual weekday (skip weekends)
+      const daysToAdd = week * 7 + day;
+      // Adjust for weekday positioning (Mon=0, Tue=1, etc.)
+      const weekStart = new Date(startDate);
+      weekStart.setDate(startDate.getDate() + week * 7);
+      // Find the Monday of this week
+      const dayOfWeek = weekStart.getDay();
+      const mondayOffset = dayOfWeek === 0 ? 1 : (dayOfWeek === 6 ? 2 : 1 - dayOfWeek);
+      currentDate.setDate(startDate.getDate() + week * 7 + mondayOffset + day);
 
-      const seed1 = week * 127 + day * 311;
-      const seed2 = week * 53 + day * 97 + 42;
-      const rand = (seededRandom(seed1) + seededRandom(seed2)) / 2;
+      const key = getDateKey(currentDate);
+      const completions = completionsByDate[key] || { projects: 0, touchPoints: 0 };
+      const totalCount = completions.projects + completions.touchPoints;
 
+      // Determine activity level based on count
       let level: number;
-      if (rand < 0.35) level = 0;
-      else if (rand < 0.60) level = 1;
-      else if (rand < 0.82) level = 2;
-      else if (rand < 0.95) level = 3;
+      if (totalCount === 0) level = 0;
+      else if (totalCount === 1) level = 1;
+      else if (totalCount === 2) level = 2;
+      else if (totalCount <= 4) level = 3;
       else level = 4;
 
       days.push({
         date: currentDate,
         level,
-        count: level === 0 ? 0 : Math.floor(seededRandom(seed1 + seed2) * level + 1)
+        count: totalCount,
+        projectCount: completions.projects,
+        touchPointCount: completions.touchPoints,
       });
     }
     weeks.push(days);
