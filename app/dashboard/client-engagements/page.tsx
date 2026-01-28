@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { Search, Filter, Calendar, Building2, Clock, ChevronDown, MoreHorizontal, FileText, ArrowUpRight, ArrowDownRight, Download, User, Check, X, PlayCircle, CheckCircle2, Loader2 } from 'lucide-react';
+import { Search, Filter, Calendar, Building2, ChevronDown, MoreHorizontal, FileText, ArrowUpRight, ArrowDownRight, Download, User, Check, X, PlayCircle, CheckCircle2, Loader2, MessageSquare } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell } from 'recharts';
 import { getEngagementsDashboardData, getEngagements } from '@/app/lib/api/engagements';
 import type { EngagementMetric, DepartmentData, Engagement, DayData } from '@/app/lib/types/engagements';
@@ -12,7 +12,7 @@ const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   FileText,
   PlayCircle,
   CheckCircle2,
-  Clock,
+  MessageSquare,
 };
 
 // GitHub-style Contribution Graph Component
@@ -179,6 +179,15 @@ export default function EngagementsDashboard() {
       case 'Meeting': return 'bg-violet-500/15 text-violet-400';
       case 'Follow-Up': return 'bg-amber-500/15 text-amber-400';
       default: return 'bg-zinc-500/10 text-zinc-400';
+    }
+  };
+
+  const getIntakeTypeStyle = (intakeType: string): string => {
+    switch (intakeType) {
+      case 'IRQ': return 'bg-blue-500/15 text-blue-400 border border-blue-500/30';
+      case 'GRRF': return 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30';
+      case 'Touch Points': return 'bg-pink-500/15 text-pink-400 border border-pink-500/30';
+      default: return 'bg-zinc-500/10 text-zinc-400 border border-zinc-500/30';
     }
   };
 
@@ -358,7 +367,8 @@ export default function EngagementsDashboard() {
                     <thead className="sticky top-0 bg-zinc-800/95 backdrop-blur-sm z-10">
                       <tr>
                         <th className="text-left text-xs font-medium text-zinc-400 uppercase tracking-wider px-4 py-3">Client</th>
-                        <th className="text-left text-xs font-medium text-zinc-400 uppercase tracking-wider px-4 py-3">Type</th>
+                        <th className="text-left text-xs font-medium text-zinc-400 uppercase tracking-wider px-4 py-3">Intake Type</th>
+                        <th className="text-left text-xs font-medium text-zinc-400 uppercase tracking-wider px-4 py-3">Project Type</th>
                         <th className="text-left text-xs font-medium text-zinc-400 uppercase tracking-wider px-4 py-3">Team Members</th>
                         <th className="text-left text-xs font-medium text-zinc-400 uppercase tracking-wider px-4 py-3">Date Started</th>
                         <th className="text-left text-xs font-medium text-zinc-400 uppercase tracking-wider px-4 py-3">Date Finished</th>
@@ -372,6 +382,11 @@ export default function EngagementsDashboard() {
                         <tr key={engagement.id} className="hover:bg-white/[0.02] transition-colors">
                           <td className="px-4 py-3">
                             <span className="text-sm font-medium text-zinc-200">{engagement.client}</span>
+                          </td>
+                          <td className="px-4 py-3">
+                            <span className={`inline-flex px-2 py-0.5 text-xs font-medium backdrop-blur-sm ${getIntakeTypeStyle(engagement.intakeType)}`}>
+                              {engagement.intakeType}
+                            </span>
                           </td>
                           <td className="px-4 py-3">
                             <span className={`inline-flex px-2 py-0.5 text-xs font-medium backdrop-blur-sm ${getTypeStyle(engagement.type)}`}>

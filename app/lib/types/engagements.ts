@@ -24,7 +24,8 @@ export interface DepartmentData {
 export interface Engagement {
   id: number;
   client: string;
-  type: string;
+  intakeType: 'IRQ' | 'GRRF' | 'Touch Points';
+  type: string; // Project Type
   teamMembers: string[];
   department: string;
   dateStarted: string;
