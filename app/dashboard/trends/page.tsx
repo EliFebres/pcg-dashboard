@@ -765,6 +765,15 @@ export default function TrendsDashboard() {
                         </th>
                         <th
                           className="text-left text-xs font-medium text-zinc-400 uppercase tracking-wider px-4 py-3 cursor-pointer hover:text-zinc-200"
+                          onClick={() => handlePortfolioSort('dataAsOf')}
+                        >
+                          <div className="flex items-center gap-1">
+                            Data As Of
+                            <SortIcon column="dataAsOf" sortColumn={portfoliosSortColumn} sortDirection={portfoliosSortDirection} />
+                          </div>
+                        </th>
+                        <th
+                          className="text-left text-xs font-medium text-zinc-400 uppercase tracking-wider px-4 py-3 cursor-pointer hover:text-zinc-200"
                           onClick={() => handlePortfolioSort('positionCount')}
                         >
                           <div className="flex items-center gap-1">
@@ -806,6 +815,9 @@ export default function TrendsDashboard() {
                               <span className="text-sm text-zinc-400">{portfolio.loggedAt}</span>
                             </td>
                             <td className="px-4 py-3">
+                              <span className="text-sm text-zinc-400">{portfolio.dataAsOf}</span>
+                            </td>
+                            <td className="px-4 py-3">
                               <span className="text-sm font-mono text-zinc-300">{portfolio.positions.length}</span>
                             </td>
                             <td className="px-4 py-3">
@@ -836,7 +848,7 @@ export default function TrendsDashboard() {
                           {/* Expanded Row */}
                           {expandedPortfolioId === portfolio.id && (
                             <tr className="bg-zinc-900/40">
-                              <td colSpan={8} className="px-4 py-4">
+                              <td colSpan={9} className="px-4 py-4">
                                 <div className="grid grid-cols-3 gap-6">
                                   {/* Positions List */}
                                   <div>
