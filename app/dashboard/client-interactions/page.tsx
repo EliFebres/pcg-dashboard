@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { Filter, Building2, FileText, ArrowUpRight, ArrowDownRight, Download, User, Check, X, PlayCircle, CheckCircle2, Loader2, MessageSquare } from 'lucide-react';
+import { Filter, Building2, FileText, ArrowUpRight, ArrowDownRight, Download, User, Check, X, PlayCircle, CheckCircle2, Loader2, MessageSquare, ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell } from 'recharts';
 import { getEngagementsDashboardData, getEngagements } from '@/app/lib/api/engagements';
 import type { EngagementMetric, DepartmentData, Engagement, DayData } from '@/app/lib/types/engagements';
@@ -14,6 +14,59 @@ const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   PlayCircle,
   CheckCircle2,
   MessageSquare,
+};
+
+// Sort configuration types
+type SortDirection = 'asc' | 'desc' | null;
+type SortColumn =
+  | 'externalClient'
+  | 'internalClient'
+  | 'intakeType'
+  | 'type'
+  | 'teamMembers'
+  | 'dateStarted'
+  | 'dateFinished'
+  | 'portfolioLogged'
+  | 'status'
+  | null;
+
+interface SortConfig {
+  column: SortColumn;
+  direction: SortDirection;
+}
+
+// Sortable column header component
+interface SortableHeaderProps {
+  label: string;
+  column: SortColumn;
+  currentSort: SortConfig;
+  onSort: (column: SortColumn) => void;
+}
+
+const SortableHeader: React.FC<SortableHeaderProps> = ({ label, column, currentSort, onSort }) => {
+  const isActive = currentSort.column === column;
+
+  return (
+    <th
+      onClick={() => onSort(column)}
+      className="text-left text-xs font-medium text-zinc-400 uppercase tracking-wider px-4 py-3 cursor-pointer hover:text-zinc-200 transition-colors select-none group"
+    >
+      <div className="flex items-center gap-1">
+        {label}
+        <span className="inline-flex">
+          {isActive ? (
+            currentSort.direction === 'asc' ? (
+              <ChevronUp className="w-3.5 h-3.5 text-cyan-400" />
+            ) : (
+              <ChevronDown className="w-3.5 h-3.5 text-cyan-400" />
+            )
+          ) : (
+            <ChevronsUpDown className="w-3.5 h-3.5 text-zinc-600 group-hover:text-zinc-400 transition-colors" />
+          )}
+        </span>
+      </div>
+    </th>
+  );
 };
 
 // GitHub-style Contribution Graph Component
@@ -122,6 +175,9 @@ export default function EngagementsDashboard() {
   const [departmentBreakdown, setDepartmentBreakdown] = useState<DepartmentData[]>([]);
   const [engagements, setEngagements] = useState<Engagement[]>([]);
   const [contributionData, setContributionData] = useState<DayData[][]>([]);
+  const [sortConfig, setSortConfig] = useState<SortConfig>({ column: 'dateStarted', direction: 'desc' });
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 25;
 
   // Fetch all dashboard data on mount
   useEffect(() => {
@@ -165,6 +221,97 @@ export default function EngagementsDashboard() {
     }
   }, [searchQuery]);
 
+  // Handle column sort
+  const handleSort = (column: SortColumn) => {
+    setSortConfig((prev) => {
+      if (prev.column === column) {
+        // Cycle through: asc -> desc -> null
+        if (prev.direction === 'asc') return { column, direction: 'desc' };
+        if (prev.direction === 'desc') return { column: null, direction: null };
+      }
+      return { column, direction: 'asc' };
+    });
+  };
+
+  // Sort engagements based on current sort config
+  const sortedEngagements = useMemo(() => {
+    if (!sortConfig.column || !sortConfig.direction) return engagements;
+
+    return [...engagements].sort((a, b) => {
+      const direction = sortConfig.direction === 'asc' ? 1 : -1;
+
+      switch (sortConfig.column) {
+        case 'externalClient': {
+          const aVal = a.externalClient ?? '';
+          const bVal = b.externalClient ?? '';
+          return aVal.localeCompare(bVal) * direction;
+        }
+        case 'internalClient':
+          return a.internalClient.name.localeCompare(b.internalClient.name) * direction;
+        case 'intakeType':
+          return a.intakeType.localeCompare(b.intakeType) * direction;
+        case 'type':
+          return a.type.localeCompare(b.type) * direction;
+        case 'teamMembers':
+          return (a.teamMembers.length - b.teamMembers.length) * direction;
+        case 'dateStarted': {
+          const aDate = new Date(a.dateStarted);
+          const bDate = new Date(b.dateStarted);
+          return (aDate.getTime() - bDate.getTime()) * direction;
+        }
+        case 'dateFinished': {
+          // Handle "—" as a special case (no date = sorts last)
+          if (a.dateFinished === '—' && b.dateFinished === '—') return 0;
+          if (a.dateFinished === '—') return direction;
+          if (b.dateFinished === '—') return -direction;
+          const aDate = new Date(a.dateFinished);
+          const bDate = new Date(b.dateFinished);
+          return (aDate.getTime() - bDate.getTime()) * direction;
+        }
+        case 'portfolioLogged':
+          return ((a.portfolioLogged ? 1 : 0) - (b.portfolioLogged ? 1 : 0)) * direction;
+        case 'status': {
+          // Custom sort order: In Progress, Pending, Completed
+          const statusOrder: Record<string, number> = { 'In Progress': 0, 'Pending': 1, 'Completed': 2 };
+          const aOrder = statusOrder[a.status] ?? 3;
+          const bOrder = statusOrder[b.status] ?? 3;
+          return (aOrder - bOrder) * direction;
+        }
+        default:
+          return 0;
+      }
+    });
+  }, [engagements, sortConfig]);
+
+  // Pagination calculations
+  const totalPages = Math.ceil(sortedEngagements.length / pageSize);
+  const paginatedEngagements = useMemo(() => {
+    const startIndex = (currentPage - 1) * pageSize;
+    return sortedEngagements.slice(startIndex, startIndex + pageSize);
+  }, [sortedEngagements, currentPage, pageSize]);
+
+  // Reset to page 1 when search or sort changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, sortConfig]);
+
+  // Generate page numbers to display
+  const getPageNumbers = (): (number | 'ellipsis')[] => {
+    const pages: (number | 'ellipsis')[] = [];
+    if (totalPages <= 7) {
+      for (let i = 1; i <= totalPages; i++) pages.push(i);
+    } else {
+      if (currentPage <= 3) {
+        pages.push(1, 2, 3, 4, 'ellipsis', totalPages);
+      } else if (currentPage >= totalPages - 2) {
+        pages.push(1, 'ellipsis', totalPages - 3, totalPages - 2, totalPages - 1, totalPages);
+      } else {
+        pages.push(1, 'ellipsis', currentPage - 1, currentPage, currentPage + 1, 'ellipsis', totalPages);
+      }
+    }
+    return pages;
+  };
+
   const getStatusStyle = (status: string): string => {
     switch (status) {
       case 'Completed': return 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20';
@@ -179,6 +326,7 @@ export default function EngagementsDashboard() {
       case 'Data Request': return 'bg-cyan-500/15 text-cyan-400';
       case 'Meeting': return 'bg-violet-500/15 text-violet-400';
       case 'Follow-Up': return 'bg-amber-500/15 text-amber-400';
+      case 'PCR': return 'bg-rose-500/15 text-rose-400';
       default: return 'bg-zinc-500/10 text-zinc-400';
     }
   };
@@ -333,20 +481,20 @@ export default function EngagementsDashboard() {
                   <table className="w-full">
                     <thead className="sticky top-0 bg-zinc-800/95 backdrop-blur-sm z-10">
                       <tr>
-                        <th className="text-left text-xs font-medium text-zinc-400 uppercase tracking-wider px-4 py-3">External Client</th>
-                        <th className="text-left text-xs font-medium text-zinc-400 uppercase tracking-wider px-4 py-3">Internal Client</th>
-                        <th className="text-left text-xs font-medium text-zinc-400 uppercase tracking-wider px-4 py-3">Intake Type</th>
-                        <th className="text-left text-xs font-medium text-zinc-400 uppercase tracking-wider px-4 py-3">Project Type</th>
-                        <th className="text-left text-xs font-medium text-zinc-400 uppercase tracking-wider px-4 py-3">Team Members</th>
-                        <th className="text-left text-xs font-medium text-zinc-400 uppercase tracking-wider px-4 py-3">Date Started</th>
-                        <th className="text-left text-xs font-medium text-zinc-400 uppercase tracking-wider px-4 py-3">Date Finished</th>
-                        <th className="text-left text-xs font-medium text-zinc-400 uppercase tracking-wider px-4 py-3">Portfolio Logged</th>
-                        <th className="text-left text-xs font-medium text-zinc-400 uppercase tracking-wider px-4 py-3">Status</th>
+                        <SortableHeader label="External Client" column="externalClient" currentSort={sortConfig} onSort={handleSort} />
+                        <SortableHeader label="Internal Client" column="internalClient" currentSort={sortConfig} onSort={handleSort} />
+                        <SortableHeader label="Intake Type" column="intakeType" currentSort={sortConfig} onSort={handleSort} />
+                        <SortableHeader label="Project Type" column="type" currentSort={sortConfig} onSort={handleSort} />
+                        <SortableHeader label="Team Members" column="teamMembers" currentSort={sortConfig} onSort={handleSort} />
+                        <SortableHeader label="Date Started" column="dateStarted" currentSort={sortConfig} onSort={handleSort} />
+                        <SortableHeader label="Date Finished" column="dateFinished" currentSort={sortConfig} onSort={handleSort} />
+                        <SortableHeader label="Portfolio Logged" column="portfolioLogged" currentSort={sortConfig} onSort={handleSort} />
+                        <SortableHeader label="Status" column="status" currentSort={sortConfig} onSort={handleSort} />
                         <th className="text-center text-xs font-medium text-zinc-400 uppercase tracking-wider px-4 py-3">Notes</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-zinc-800/50">
-                      {engagements.map((engagement) => (
+                      {paginatedEngagements.map((engagement) => (
                         <tr key={engagement.id} className="hover:bg-white/[0.02] transition-colors">
                           <td className="px-4 py-3">
                             <span className={`text-sm font-medium ${engagement.externalClient ? 'text-zinc-200' : 'text-zinc-600'}`}>
@@ -435,7 +583,7 @@ export default function EngagementsDashboard() {
                 <div className="relative z-10 px-4 py-3 flex items-center justify-between border-t border-zinc-800/50 flex-shrink-0 bg-zinc-900/80 backdrop-blur-sm">
                   <div className="flex items-center gap-3">
                     <p className="text-xs text-zinc-500">
-                      Showing <span className="text-zinc-300 font-medium">1–{engagements.length}</span> of <span className="text-zinc-300 font-medium">847</span> projects
+                      Showing <span className="text-zinc-300 font-medium">{((currentPage - 1) * pageSize) + 1}–{Math.min(currentPage * pageSize, sortedEngagements.length)}</span> of <span className="text-zinc-300 font-medium">{sortedEngagements.length}</span> interactions
                     </p>
                     <button className="flex items-center gap-1.5 px-2 py-1 text-xs text-zinc-400 hover:text-cyan-400 transition-colors" title="Download table data">
                       <Download className="w-3.5 h-3.5" />
@@ -443,19 +591,45 @@ export default function EngagementsDashboard() {
                     </button>
                   </div>
                   <div className="flex items-center gap-1">
-                    <button className="px-3 py-1.5 text-xs border border-zinc-700/50 hover:bg-white/[0.03] text-zinc-400 hover:text-zinc-200 transition-colors backdrop-blur-sm">
+                    <button
+                      onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                      disabled={currentPage === 1}
+                      className={`px-3 py-1.5 text-xs border border-zinc-700/50 transition-colors backdrop-blur-sm ${
+                        currentPage === 1
+                          ? 'text-zinc-600 cursor-not-allowed'
+                          : 'text-zinc-400 hover:bg-white/[0.03] hover:text-zinc-200'
+                      }`}
+                    >
                       Previous
                     </button>
-                    <button className="px-3 py-1.5 text-xs bg-gradient-to-r from-blue-600 to-cyan-500 text-white">
-                      1
-                    </button>
-                    <button className="px-3 py-1.5 text-xs border border-zinc-700/50 hover:bg-white/[0.03] text-zinc-400 hover:text-zinc-200 transition-colors backdrop-blur-sm">
-                      2
-                    </button>
-                    <button className="px-3 py-1.5 text-xs border border-zinc-700/50 hover:bg-white/[0.03] text-zinc-400 hover:text-zinc-200 transition-colors backdrop-blur-sm">
-                      3
-                    </button>
-                    <button className="px-3 py-1.5 text-xs border border-zinc-700/50 hover:bg-white/[0.03] text-zinc-400 hover:text-zinc-200 transition-colors backdrop-blur-sm">
+                    {getPageNumbers().map((page, idx) =>
+                      page === 'ellipsis' ? (
+                        <span key={`ellipsis-${idx}`} className="px-2 py-1.5 text-xs text-zinc-500">
+                          ...
+                        </span>
+                      ) : (
+                        <button
+                          key={page}
+                          onClick={() => setCurrentPage(page)}
+                          className={`px-3 py-1.5 text-xs transition-colors ${
+                            currentPage === page
+                              ? 'bg-gradient-to-r from-blue-600 to-cyan-500 text-white'
+                              : 'border border-zinc-700/50 hover:bg-white/[0.03] text-zinc-400 hover:text-zinc-200 backdrop-blur-sm'
+                          }`}
+                        >
+                          {page}
+                        </button>
+                      )
+                    )}
+                    <button
+                      onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                      disabled={currentPage === totalPages}
+                      className={`px-3 py-1.5 text-xs border border-zinc-700/50 transition-colors backdrop-blur-sm ${
+                        currentPage === totalPages
+                          ? 'text-zinc-600 cursor-not-allowed'
+                          : 'text-zinc-400 hover:bg-white/[0.03] hover:text-zinc-200'
+                      }`}
+                    >
                       Next
                     </button>
                   </div>

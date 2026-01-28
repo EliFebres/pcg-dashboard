@@ -49,7 +49,7 @@ const externalClients = [
 const teamMembers = ['Eli S.', 'Sarah K.', 'Mike R.', 'Lisa M.', 'James T.', 'David L.'];
 const internalClientKeys = Object.keys(internalClients) as (keyof typeof internalClients)[];
 const departments: ('IAG' | 'Broker-Dealer' | 'Institution')[] = ['IAG', 'Broker-Dealer', 'Institution'];
-const projectTypes = ['Data Request', 'Meeting', 'Analysis', 'Presentation', 'Review'];
+const projectTypes = ['Data Request', 'Meeting', 'Analysis', 'Presentation', 'Review', 'PCR'];
 
 // Seeded random for consistent data generation
 function seededRandom(seed: number): number {
@@ -66,6 +66,9 @@ function generateYearOfEngagements(): Engagement[] {
   const startDate = new Date('2024-02-01');
   const endDate = new Date('2025-01-31');
 
+  // Cutoff date - anything finishing after this shows as blank/in-progress
+  const cutoffDate = new Date('2025-01-28');
+
   // Holiday/slow weeks (week numbers where activity is reduced)
   const slowWeeks = [
     51, 52, // Christmas/New Year (late Dec)
@@ -73,7 +76,7 @@ function generateYearOfEngagements(): Engagement[] {
     47, // Thanksgiving week
   ];
 
-  let currentDate = new Date(startDate);
+  const currentDate = new Date(startDate);
   let weekNum = 0;
 
   while (currentDate <= endDate) {
@@ -109,7 +112,6 @@ function generateYearOfEngagements(): Engagement[] {
       const seed = id * 17;
       const internalClientKey = internalClientKeys[Math.floor(seededRandom(seed) * internalClientKeys.length)];
       const internalClient = internalClients[internalClientKey];
-      const hasExternalClient = seededRandom(seed + 1) > 0.3; // 70% have external client
       const teamCount = 1 + Math.floor(seededRandom(seed + 2) * 2);
       const selectedTeam: string[] = [];
       for (let t = 0; t < teamCount; t++) {
@@ -121,20 +123,31 @@ function generateYearOfEngagements(): Engagement[] {
       const finishOffset = Math.floor(seededRandom(seed + 10) * 2);
       const finishDate = new Date(currentDate);
       finishDate.setDate(finishDate.getDate() + finishOffset);
-      const finishStr = finishDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+      // Check if finish date is after cutoff
+      const isAfterCutoff = finishDate > cutoffDate;
+      const finishStr = isAfterCutoff ? '—' : finishDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+      // PCR is more common for touch points (~60%)
+      const touchPointType = seededRandom(seed + 7) > 0.4 ? 'PCR' : 'Follow-Up';
+
+      // PCR usually doesn't have an external client (only 15% do), Follow-Up usually does (70%)
+      const hasExternalClient = touchPointType === 'PCR'
+        ? seededRandom(seed + 1) > 0.85
+        : seededRandom(seed + 1) > 0.3;
 
       engagements.push({
         id: id++,
         externalClient: hasExternalClient ? externalClients[Math.floor(seededRandom(seed + 4) * externalClients.length)] : null,
         internalClient,
         intakeType: 'Touch Points',
-        type: 'Follow-Up',
+        type: touchPointType,
         teamMembers: selectedTeam,
         department: internalClient.gcgDepartment,
         dateStarted: dateStr,
         dateFinished: finishStr,
-        status: 'Completed',
-        portfolioLogged: seededRandom(seed + 5) > 0.2,
+        status: isAfterCutoff ? 'In Progress' : 'Completed',
+        portfolioLogged: isAfterCutoff ? false : seededRandom(seed + 5) > 0.2,
         hasNotes: seededRandom(seed + 6) > 0.6,
       });
     }
@@ -158,7 +171,10 @@ function generateYearOfEngagements(): Engagement[] {
       const duration = 2 + Math.floor(seededRandom(seed + 10) * 4);
       const finishDate = new Date(currentDate);
       finishDate.setDate(finishDate.getDate() + duration);
-      const finishStr = finishDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+      // Check if finish date is after cutoff
+      const isAfterCutoff = finishDate > cutoffDate;
+      const finishStr = isAfterCutoff ? '—' : finishDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 
       engagements.push({
         id: id++,
@@ -170,8 +186,8 @@ function generateYearOfEngagements(): Engagement[] {
         department: dept,
         dateStarted: dateStr,
         dateFinished: finishStr,
-        status: 'Completed',
-        portfolioLogged: seededRandom(seed + 7) > 0.15,
+        status: isAfterCutoff ? 'In Progress' : 'Completed',
+        portfolioLogged: isAfterCutoff ? false : seededRandom(seed + 7) > 0.15,
         hasNotes: seededRandom(seed + 8) > 0.5,
       });
     }
