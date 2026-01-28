@@ -1,11 +1,12 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { Search, Filter, Calendar, Building2, ChevronDown, MoreHorizontal, FileText, ArrowUpRight, ArrowDownRight, Download, User, Check, X, PlayCircle, CheckCircle2, Loader2, MessageSquare } from 'lucide-react';
+import { Filter, Building2, MoreHorizontal, FileText, ArrowUpRight, ArrowDownRight, Download, User, Check, X, PlayCircle, CheckCircle2, Loader2, MessageSquare } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell } from 'recharts';
 import { getEngagementsDashboardData, getEngagements } from '@/app/lib/api/engagements';
 import type { EngagementMetric, DepartmentData, Engagement, DayData } from '@/app/lib/types/engagements';
 import Sidebar from '@/app/components/Sidebar';
+import DashboardHeader from '@/app/components/DashboardHeader';
 
 // Icon mapping for metrics (since we can't store React components in JSON/API)
 const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -201,53 +202,19 @@ export default function EngagementsDashboard() {
 
       {/* Main Content */}
       <main className="flex-1 flex flex-col overflow-hidden">
-        {/* Top Bar with Filters - Glassy */}
-        <header className="flex-shrink-0 bg-black/80 backdrop-blur-md border-b border-zinc-800/50">
-          <div className="px-6 py-4">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <h2 className="text-xl font-semibold text-white">Client Projects</h2>
-                <p className="text-zinc-500 text-sm">Track and manage client projects across all departments</p>
-              </div>
-              <div className="flex items-center gap-2 text-xs text-cyan-400">
-                <span className="px-2 py-1 bg-gradient-to-r from-blue-600/20 to-cyan-600/10 border border-cyan-500/20 backdrop-blur-sm">Viewing: 1YR</span>
-              </div>
-            </div>
-            {/* Global Filters */}
-            <div className="flex items-center gap-2">
-              <div className="relative flex-1 max-w-xs">
-                <Search className="w-4 h-4 text-zinc-500 absolute left-3 top-1/2 -translate-y-1/2" />
-                <input
-                  type="text"
-                  placeholder="Search clients, team members..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-9 pr-3 py-2 bg-zinc-900/50 backdrop-blur-sm border border-zinc-700/50 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-cyan-500/50 transition-colors"
-                />
-              </div>
-              <button className="flex items-center gap-1.5 px-3 py-2 bg-zinc-900/50 backdrop-blur-sm border border-zinc-700/50 text-sm text-zinc-300 hover:bg-zinc-800/50 hover:border-zinc-600/50 transition-colors">
-                <User className="w-4 h-4 text-zinc-500" />
-                All Team Members
-                <ChevronDown className="w-4 h-4 text-zinc-500" />
-              </button>
-              <button className="flex items-center gap-1.5 px-3 py-2 bg-zinc-900/50 backdrop-blur-sm border border-zinc-700/50 text-sm text-zinc-300 hover:bg-zinc-800/50 hover:border-zinc-600/50 transition-colors">
-                <Building2 className="w-4 h-4 text-zinc-500" />
-                All Departments
-                <ChevronDown className="w-4 h-4 text-zinc-500" />
-              </button>
-              <button className="flex items-center gap-1.5 px-3 py-2 bg-zinc-900/50 backdrop-blur-sm border border-zinc-700/50 text-sm text-zinc-300 hover:bg-zinc-800/50 hover:border-zinc-600/50 transition-colors">
-                <Filter className="w-4 h-4 text-zinc-500" />
-                All Types
-                <ChevronDown className="w-4 h-4" />
-              </button>
-              <button className="flex items-center gap-1.5 px-3 py-2 bg-gradient-to-r from-blue-600 to-cyan-500 text-white text-sm font-medium hover:from-blue-500 hover:to-cyan-400 transition-all">
-                <Calendar className="w-4 h-4" />
-                1YR
-                <ChevronDown className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-        </header>
+        {/* Top Bar with Filters */}
+        <DashboardHeader
+          title="Client Projects"
+          subtitle="Track and manage client projects across all departments"
+          searchPlaceholder="Search clients, team members..."
+          searchValue={searchQuery}
+          onSearchChange={setSearchQuery}
+          filters={[
+            { icon: User, label: 'All Team Members' },
+            { icon: Building2, label: 'All Departments' },
+            { icon: Filter, label: 'All Types' },
+          ]}
+        />
 
         <div className="p-6 flex-1 flex flex-col overflow-hidden min-h-0">
           {/* Loading State */}
