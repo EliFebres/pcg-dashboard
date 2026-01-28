@@ -36,6 +36,7 @@ interface DashboardHeaderProps {
   filters: FilterDropdown[];
   period?: string;
   onPeriodChange?: (value: string) => void;
+  periodOptions?: string[]; // Custom period options (e.g., ['1M', '3M', '6M', '1Y', 'ALL'])
   className?: string;
 }
 
@@ -99,7 +100,7 @@ function FilterDropdownButton({ filter }: { filter: FilterDropdown }) {
 }
 
 // Period dropdown component
-function PeriodDropdown({ value, onChange }: { value: string; onChange: (value: string) => void }) {
+function PeriodDropdown({ value, onChange, customOptions }: { value: string; onChange: (value: string) => void; customOptions?: string[] }) {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -113,7 +114,12 @@ function PeriodDropdown({ value, onChange }: { value: string; onChange: (value: 
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const currentOption = PERIOD_OPTIONS.find((p) => p.value === value) || PERIOD_OPTIONS[5]; // Default to 1Y
+  // Use custom options if provided, otherwise use default PERIOD_OPTIONS
+  const options = customOptions
+    ? customOptions.map(val => ({ value: val, label: PERIOD_OPTIONS.find(p => p.value === val)?.label || val }))
+    : PERIOD_OPTIONS;
+
+  const currentOption = options.find((p) => p.value === value) || options[0];
 
   return (
     <div className="relative" ref={dropdownRef}>
@@ -128,7 +134,7 @@ function PeriodDropdown({ value, onChange }: { value: string; onChange: (value: 
 
       {isOpen && (
         <div className="absolute top-full right-0 mt-1 min-w-[140px] bg-zinc-900/95 backdrop-blur-md border border-zinc-700/50 shadow-xl z-[100]">
-          {PERIOD_OPTIONS.map((option) => (
+          {options.map((option) => (
             <button
               key={option.value}
               onClick={() => {
@@ -160,9 +166,10 @@ export default function DashboardHeader({
   filters,
   period = '1Y',
   onPeriodChange,
+  periodOptions,
   className = '',
 }: DashboardHeaderProps) {
-  const currentPeriodLabel = PERIOD_OPTIONS.find((p) => p.value === period)?.label || '1 Year';
+  const currentPeriodLabel = PERIOD_OPTIONS.find((p) => p.value === period)?.label || period;
 
   return (
     <header className={`flex-shrink-0 bg-black/80 backdrop-blur-md border-b border-zinc-800/50 relative z-50 ${className}`}>
@@ -192,7 +199,7 @@ export default function DashboardHeader({
             <FilterDropdownButton key={filter.id} filter={filter} />
           ))}
           {onPeriodChange ? (
-            <PeriodDropdown value={period} onChange={onPeriodChange} />
+            <PeriodDropdown value={period} onChange={onPeriodChange} customOptions={periodOptions} />
           ) : (
             <button className="flex items-center gap-1.5 px-3 py-2 bg-gradient-to-r from-blue-600 to-cyan-500 text-white text-sm font-medium hover:from-blue-500 hover:to-cyan-400 transition-all">
               <Calendar className="w-4 h-4" />

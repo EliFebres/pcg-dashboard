@@ -1,20 +1,6 @@
-// Mock data for Client Engagements Dashboard
-// This file will be replaced with real API calls when connecting to FastAPI
+// Data and functions for Client Engagements Dashboard
 
-import type { EngagementMetric, DepartmentData, Engagement, DayData } from '../types/engagements';
-
-export const engagementMetrics: EngagementMetric[] = [
-  { label: 'Projects', sublabel: '1YR', value: '847', change: '+12%', isPositive: true, icon: 'FileText' },
-  { label: 'In Progress', sublabel: 'Current', value: '24', change: '+3', isPositive: true, icon: 'PlayCircle' },
-  { label: 'Portfolios Logged', sublabel: '1YR', value: '712', change: '84%', isPositive: true, icon: 'CheckCircle2' },
-  { label: 'Touch Points', sublabel: '1YR', value: '156', change: '+18%', isPositive: true, icon: 'MessageSquare' },
-];
-
-export const departmentBreakdown: DepartmentData[] = [
-  { name: 'IAG', value: 49, count: 412, color: '#22d3ee' },
-  { name: 'Broker-Dealer', value: 34, count: 289, color: '#a78bfa' },
-  { name: 'Institution', value: 17, count: 146, color: '#fb923c' },
-];
+import type { Engagement, DayData } from '../types/engagements';
 
 // Internal client (relationship owner/salesperson) roster mapped to GCG departments
 const internalClients = {
@@ -278,8 +264,6 @@ export function generateContributionData(filteredEngagements?: Engagement[]): Da
     const days: DayData[] = [];
     for (let day = 0; day < 5; day++) {
       const currentDate = new Date(startDate);
-      // Calculate the actual weekday (skip weekends)
-      const daysToAdd = week * 7 + day;
       // Adjust for weekday positioning (Mon=0, Tue=1, etc.)
       const weekStart = new Date(startDate);
       weekStart.setDate(startDate.getDate() + week * 7);

@@ -1,21 +1,14 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { Filter, Building2, FileText, ArrowUpRight, ArrowDownRight, Download, User, Check, X, PlayCircle, CheckCircle2, Loader2, MessageSquare, ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
+import { Filter, Building2, FileText, ArrowUpRight, ArrowDownRight, Download, User, Check, X, Loader2, ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell } from 'recharts';
 import { getEngagementsDashboardData, getEngagements } from '@/app/lib/api/engagements';
 import { generateContributionData } from '@/app/lib/data/engagements';
 import type { EngagementMetric, DepartmentData, Engagement, DayData } from '@/app/lib/types/engagements';
 import Sidebar from '@/app/components/Sidebar';
 import DashboardHeader from '@/app/components/DashboardHeader';
-
-// Icon mapping for metrics (since we can't store React components in JSON/API)
-const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
-  FileText,
-  PlayCircle,
-  CheckCircle2,
-  MessageSquare,
-};
+import ClientOnlyChart from '@/app/components/ClientOnlyChart';
 
 // Sort configuration types
 type SortDirection = 'asc' | 'desc' | null;
@@ -158,24 +151,10 @@ const ContributionGraph: React.FC<ContributionGraphProps> = ({ data }) => {
   );
 };
 
-// Loading skeleton component
-const LoadingSkeleton: React.FC = () => (
-  <div className="animate-pulse">
-    <div className="h-8 bg-zinc-800 rounded w-1/3 mb-4"></div>
-    <div className="space-y-3">
-      <div className="h-4 bg-zinc-800 rounded"></div>
-      <div className="h-4 bg-zinc-800 rounded w-5/6"></div>
-    </div>
-  </div>
-);
-
 export default function EngagementsDashboard() {
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(true);
-  const [metrics, setMetrics] = useState<EngagementMetric[]>([]);
-  const [departmentBreakdown, setDepartmentBreakdown] = useState<DepartmentData[]>([]);
   const [engagements, setEngagements] = useState<Engagement[]>([]);
-  const [contributionData, setContributionData] = useState<DayData[][]>([]);
   const [sortConfig, setSortConfig] = useState<SortConfig>({ column: 'dateStarted', direction: 'desc' });
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 25;
@@ -192,10 +171,7 @@ export default function EngagementsDashboard() {
       setIsLoading(true);
       try {
         const data = await getEngagementsDashboardData();
-        setMetrics(data.metrics);
-        setDepartmentBreakdown(data.departments);
         setEngagements(data.engagements);
-        setContributionData(data.contributionData);
       } catch (error) {
         console.error('Failed to load dashboard data:', error);
       } finally {
@@ -516,9 +492,7 @@ export default function EngagementsDashboard() {
             <>
               {/* Metrics Row - Clean Cards (filtered) */}
               <div className="grid grid-cols-4 gap-4 mb-6 flex-shrink-0">
-                {filteredMetrics.map((metric, index) => {
-                  const IconComponent = iconMap[metric.icon] || FileText;
-                  return (
+                {filteredMetrics.map((metric, index) => (
                     <div
                       key={index}
                       className="relative overflow-hidden bg-zinc-900/60 backdrop-blur-md border border-zinc-800/50 p-5 group hover:border-zinc-700/50 transition-all"
@@ -541,8 +515,7 @@ export default function EngagementsDashboard() {
                       </div>
                       <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
                     </div>
-                  );
-                })}
+                ))}
               </div>
 
               {/* Charts Row */}
@@ -584,17 +557,19 @@ export default function EngagementsDashboard() {
                       </button>
                     </div>
                     <div className="flex-1 mb-3">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={filteredDepartmentBreakdown} layout="vertical" barSize={16}>
-                          <XAxis type="number" hide />
-                          <YAxis type="category" dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#a1a1aa', fontSize: 11 }} width={85} />
-                          <Bar dataKey="value" radius={0}>
-                            {filteredDepartmentBreakdown.map((entry, index) => (
-                              <Cell key={`cell-${index}`} fill={entry.color} />
-                            ))}
-                          </Bar>
-                        </BarChart>
-                      </ResponsiveContainer>
+                      <ClientOnlyChart>
+                        <ResponsiveContainer width="100%" height="100%" minWidth={100} minHeight={80}>
+                          <BarChart data={filteredDepartmentBreakdown} layout="vertical" barSize={16}>
+                            <XAxis type="number" hide />
+                            <YAxis type="category" dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#a1a1aa', fontSize: 11 }} width={85} />
+                            <Bar dataKey="value" radius={0}>
+                              {filteredDepartmentBreakdown.map((entry, index) => (
+                                <Cell key={`cell-${index}`} fill={entry.color} />
+                              ))}
+                            </Bar>
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </ClientOnlyChart>
                     </div>
                     <div className="space-y-2 pt-2 border-t border-zinc-800/50 flex-shrink-0">
                       {filteredDepartmentBreakdown.map((dept) => (

@@ -2,8 +2,6 @@
 // When connecting to FastAPI, replace the mock data imports with fetch() calls
 
 import {
-  engagementMetrics,
-  departmentBreakdown,
   engagements,
   generateContributionData,
 } from '../data/engagements';

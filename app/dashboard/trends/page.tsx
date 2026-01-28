@@ -1,12 +1,23 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { Filter, Building2, MoreHorizontal, ArrowUpRight, ArrowDownRight, Download, PieChart, Target, Flame, Award, FileText, ExternalLink, FileDown, Loader2, User } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { Filter, Building2, MoreHorizontal, ArrowUpRight, ArrowDownRight, Download, PieChart, Target, Flame, Award, FileText, ExternalLink, FileDown, User, ChevronDown, ChevronUp, Briefcase, ChevronLeft, ChevronRight } from 'lucide-react';
 import { XAxis, YAxis, ResponsiveContainer, Tooltip, ComposedChart, Line } from 'recharts';
-import { getTrendsDashboardData } from '@/app/lib/api/trends';
-import type { PortfolioMetric, BenchmarkComparison, HotTicker, PopularDFATicker, TickerTrend } from '@/app/lib/types/trends';
+import type { LoggedPortfolio } from '@/app/lib/types/trends';
+import {
+  loggedPortfolios,
+  hotTickers as staticHotTickers,
+  extractFilterOptions,
+  filterPortfolios,
+  computePortfolioMetrics,
+  computeFixedIncomeMetrics,
+  computeBenchmarkComparison,
+  computePopularDFATickers,
+  computeTickerTrendsOverTime,
+} from '@/app/lib/data/trends';
 import Sidebar from '@/app/components/Sidebar';
 import DashboardHeader from '@/app/components/DashboardHeader';
+import ClientOnlyChart from '@/app/components/ClientOnlyChart';
 
 interface TooltipPayloadItem {
   color: string;
@@ -20,57 +31,124 @@ interface CustomTooltipProps {
   label?: string;
 }
 
+// Custom tooltip component for charts - defined outside to prevent re-creation
+function CustomTooltip({ active, payload, label }: CustomTooltipProps) {
+  if (active && payload && payload.length) {
+    return (
+      <div className="bg-zinc-800/90 backdrop-blur-sm border border-zinc-700/50 px-3 py-2 shadow-lg">
+        <p className="text-zinc-400 text-xs mb-1">{label}</p>
+        {payload.map((entry, index) => (
+          <p key={index} className="text-sm" style={{ color: entry.color }}>
+            {entry.name}: {entry.value}
+          </p>
+        ))}
+      </div>
+    );
+  }
+  return null;
+}
+
+type SortColumn = keyof LoggedPortfolio | 'positionCount' | 'internalClientName' | 'department';
+
+// Sort icon component - defined outside to prevent re-creation
+function SortIcon({ column, sortColumn, sortDirection }: { column: SortColumn; sortColumn: SortColumn; sortDirection: 'asc' | 'desc' }) {
+  if (sortColumn !== column) return null;
+  return sortDirection === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />;
+}
+
 export default function TrendsDashboard() {
   const [searchQuery, setSearchQuery] = useState('');
-  const [isLoading, setIsLoading] = useState(true);
-  const [portfolioMetrics, setPortfolioMetrics] = useState<PortfolioMetric[]>([]);
-  const [fixedIncomeMetrics, setFixedIncomeMetrics] = useState<PortfolioMetric[]>([]);
-  const [benchmarkComparison, setBenchmarkComparison] = useState<BenchmarkComparison[]>([]);
-  const [hotTickers, setHotTickers] = useState<HotTicker[]>([]);
-  const [popularDFATickers, setPopularDFATickers] = useState<PopularDFATicker[]>([]);
-  const [tickerTrends, setTickerTrends] = useState<TickerTrend[]>([]);
 
-  // Filter state (placeholder - not yet functional)
+  // Filter state
   const [teamMemberFilter, setTeamMemberFilter] = useState('All Team Members');
   const [departmentFilter, setDepartmentFilter] = useState('All Departments');
   const [assetClassFilter, setAssetClassFilter] = useState('All Asset Classes');
   const [period, setPeriod] = useState('1Y');
 
-  // Fetch all dashboard data on mount
-  useEffect(() => {
-    async function loadData() {
-      setIsLoading(true);
-      try {
-        const data = await getTrendsDashboardData();
-        setPortfolioMetrics(data.portfolioMetrics);
-        setFixedIncomeMetrics(data.fixedIncomeMetrics);
-        setBenchmarkComparison(data.benchmarkComparison);
-        setHotTickers(data.hotTickers);
-        setPopularDFATickers(data.popularDFATickers);
-        setTickerTrends(data.tickerTrends);
-      } catch (error) {
-        console.error('Failed to load dashboard data:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    }
-    loadData();
-  }, []);
+  // Portfolios table state
+  const [expandedPortfolioId, setExpandedPortfolioId] = useState<number | null>(null);
+  const [portfoliosSortColumn, setPortfoliosSortColumn] = useState<SortColumn>('loggedAt');
+  const [portfoliosSortDirection, setPortfoliosSortDirection] = useState<'asc' | 'desc'>('desc');
+  const [portfoliosPage, setPortfoliosPage] = useState(1);
+  const portfoliosPerPage = 5;
 
-  const CustomTooltip: React.FC<CustomTooltipProps> = ({ active, payload, label }) => {
-    if (active && payload && payload.length) {
-      return (
-        <div className="bg-zinc-800/90 backdrop-blur-sm border border-zinc-700/50 px-3 py-2 shadow-lg">
-          <p className="text-zinc-400 text-xs mb-1">{label}</p>
-          {payload.map((entry, index) => (
-            <p key={index} className="text-sm" style={{ color: entry.color }}>
-              {entry.name}: {entry.value}
-            </p>
-          ))}
-        </div>
-      );
+  // Extract filter options from portfolio data
+  const filterOptions = useMemo(() => extractFilterOptions(loggedPortfolios), []);
+
+  // Apply filters to get filtered portfolios
+  const filteredPortfolios = useMemo(() => {
+    return filterPortfolios(loggedPortfolios, teamMemberFilter, departmentFilter, period);
+  }, [teamMemberFilter, departmentFilter, period]);
+
+  // Compute all dashboard data from filtered portfolios
+  const portfolioMetrics = useMemo(() => computePortfolioMetrics(filteredPortfolios), [filteredPortfolios]);
+  const fixedIncomeMetrics = useMemo(() => computeFixedIncomeMetrics(filteredPortfolios), [filteredPortfolios]);
+  const benchmarkComparison = useMemo(() => computeBenchmarkComparison(filteredPortfolios), [filteredPortfolios]);
+  const popularDFATickers = useMemo(() => computePopularDFATickers(filteredPortfolios), [filteredPortfolios]);
+  const tickerTrends = useMemo(() => computeTickerTrendsOverTime(filteredPortfolios), [filteredPortfolios]);
+
+  // Use static hot tickers for now (would be computed from all data sources in production)
+  const hotTickers = staticHotTickers;
+
+  // Get top 3 DFA tickers for the trend chart
+  const topTrendTickers = useMemo(() => {
+    return popularDFATickers.slice(0, 3).map(t => t.ticker);
+  }, [popularDFATickers]);
+
+  // Sort and paginate portfolios
+  const sortedPortfolios = useMemo(() => {
+    const sorted = [...filteredPortfolios].sort((a, b) => {
+      let aVal: string | number;
+      let bVal: string | number;
+
+      switch (portfoliosSortColumn) {
+        case 'positionCount':
+          aVal = a.positions.length;
+          bVal = b.positions.length;
+          break;
+        case 'internalClientName':
+          aVal = a.internalClient.name;
+          bVal = b.internalClient.name;
+          break;
+        case 'department':
+          aVal = a.internalClient.gcgDepartment;
+          bVal = b.internalClient.gcgDepartment;
+          break;
+        case 'loggedAt':
+          aVal = new Date(a.loggedAt).getTime();
+          bVal = new Date(b.loggedAt).getTime();
+          break;
+        case 'dataAsOf':
+          aVal = new Date(a.dataAsOf).getTime();
+          bVal = new Date(b.dataAsOf).getTime();
+          break;
+        default:
+          aVal = String(a[portfoliosSortColumn as keyof LoggedPortfolio] ?? '');
+          bVal = String(b[portfoliosSortColumn as keyof LoggedPortfolio] ?? '');
+      }
+
+      if (typeof aVal === 'string' && typeof bVal === 'string') {
+        return portfoliosSortDirection === 'asc' ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
+      }
+      return portfoliosSortDirection === 'asc' ? (aVal as number) - (bVal as number) : (bVal as number) - (aVal as number);
+    });
+    return sorted;
+  }, [filteredPortfolios, portfoliosSortColumn, portfoliosSortDirection]);
+
+  const paginatedPortfolios = useMemo(() => {
+    const start = (portfoliosPage - 1) * portfoliosPerPage;
+    return sortedPortfolios.slice(start, start + portfoliosPerPage);
+  }, [sortedPortfolios, portfoliosPage]);
+
+  const totalPortfolioPages = Math.ceil(sortedPortfolios.length / portfoliosPerPage);
+
+  const handlePortfolioSort = (column: SortColumn) => {
+    if (portfoliosSortColumn === column) {
+      setPortfoliosSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
+    } else {
+      setPortfoliosSortColumn(column);
+      setPortfoliosSortDirection('desc');
     }
-    return null;
   };
 
   return (
@@ -91,7 +169,7 @@ export default function TrendsDashboard() {
               id: 'teamMember',
               icon: User,
               label: 'Team Member',
-              options: ['All Team Members'],
+              options: filterOptions.teamMembers,
               value: teamMemberFilter,
               onChange: setTeamMemberFilter,
             },
@@ -99,7 +177,7 @@ export default function TrendsDashboard() {
               id: 'department',
               icon: Building2,
               label: 'Department',
-              options: ['All Departments'],
+              options: filterOptions.departments,
               value: departmentFilter,
               onChange: setDepartmentFilter,
             },
@@ -114,19 +192,11 @@ export default function TrendsDashboard() {
           ]}
           period={period}
           onPeriodChange={setPeriod}
+          periodOptions={filterOptions.periods}
           className="sticky top-0 z-10"
         />
 
-        {/* Loading State */}
-        {isLoading ? (
-          <div className="flex-1 flex items-center justify-center min-h-[60vh]">
-            <div className="flex flex-col items-center gap-4">
-              <Loader2 className="w-8 h-8 text-cyan-400 animate-spin" />
-              <p className="text-zinc-400 text-sm">Loading dashboard...</p>
-            </div>
-          </div>
-        ) : (
-          <div className="p-6 space-y-6">
+        <div className="p-6 space-y-6">
             {/* ==================== SECTION 1: PORTFOLIO CONSTRUCTION ==================== */}
             <div>
               <div className="flex items-center gap-2 mb-4">
@@ -548,7 +618,7 @@ export default function TrendsDashboard() {
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-zinc-800/50">
-                        {popularDFATickers.map((ticker) => (
+                        {popularDFATickers.slice(0, 8).map((ticker) => (
                           <tr key={ticker.rank} className="hover:bg-white/[0.02] transition-colors">
                             <td className="px-4 py-2">
                               <span className="text-xs font-medium text-zinc-500">{ticker.rank}</span>
@@ -560,10 +630,10 @@ export default function TrendsDashboard() {
                               </div>
                             </td>
                             <td className="px-4 py-2">
-                              <span className="text-sm font-medium text-zinc-200 font-mono">{ticker.holdings}</span>
+                              <span className="text-sm font-medium text-zinc-200 font-mono">{ticker.count}</span>
                             </td>
                             <td className="px-4 py-2">
-                              <span className="text-sm text-zinc-400">{ticker.pctModels}</span>
+                              <span className="text-sm text-zinc-400">{ticker.pctOfTotal}%</span>
                             </td>
                             <td className="px-4 py-2">
                               <span className={`text-xs font-medium ${ticker.trend.startsWith('+') ? 'text-emerald-400' : 'text-red-400'}`}>
@@ -593,37 +663,306 @@ export default function TrendsDashboard() {
                       </button>
                     </div>
                     <div className="flex-1 min-h-0" style={{ minHeight: '200px' }}>
-                      <ResponsiveContainer width="100%" height="100%">
-                        <ComposedChart data={tickerTrends}>
-                          <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fill: '#71717a', fontSize: 11 }} dy={10} />
-                          <YAxis axisLine={false} tickLine={false} tick={{ fill: '#71717a', fontSize: 11 }} dx={-10} domain={[150, 350]} />
-                          <Tooltip content={<CustomTooltip />} />
-                          <Line type="monotone" dataKey="DFUS" stroke="#22d3ee" strokeWidth={2} dot={{ fill: '#22d3ee', strokeWidth: 0, r: 3 }} />
-                          <Line type="monotone" dataKey="DFAI" stroke="#fbbf24" strokeWidth={2} dot={{ fill: '#fbbf24', strokeWidth: 0, r: 3 }} />
-                          <Line type="monotone" dataKey="DFAE" stroke="#fb923c" strokeWidth={2} dot={{ fill: '#fb923c', strokeWidth: 0, r: 3 }} />
-                        </ComposedChart>
-                      </ResponsiveContainer>
+                      <ClientOnlyChart>
+                        <ResponsiveContainer width="100%" height="100%" minWidth={200} minHeight={200}>
+                          <ComposedChart data={tickerTrends}>
+                            <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fill: '#71717a', fontSize: 11 }} dy={10} />
+                            <YAxis axisLine={false} tickLine={false} tick={{ fill: '#71717a', fontSize: 11 }} dx={-10} domain={[0, 'auto']} />
+                            <Tooltip content={<CustomTooltip />} />
+                            {topTrendTickers[0] && <Line type="monotone" dataKey={topTrendTickers[0]} stroke="#22d3ee" strokeWidth={2} dot={{ fill: '#22d3ee', strokeWidth: 0, r: 3 }} />}
+                            {topTrendTickers[1] && <Line type="monotone" dataKey={topTrendTickers[1]} stroke="#fbbf24" strokeWidth={2} dot={{ fill: '#fbbf24', strokeWidth: 0, r: 3 }} />}
+                            {topTrendTickers[2] && <Line type="monotone" dataKey={topTrendTickers[2]} stroke="#fb923c" strokeWidth={2} dot={{ fill: '#fb923c', strokeWidth: 0, r: 3 }} />}
+                          </ComposedChart>
+                        </ResponsiveContainer>
+                      </ClientOnlyChart>
                     </div>
                     <div className="flex items-center justify-center gap-6 mt-2">
-                      <div className="flex items-center gap-2">
-                        <div className="w-3 h-0.5 bg-cyan-400" />
-                        <span className="text-xs text-zinc-400">DFUS</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <div className="w-3 h-0.5 bg-amber-400" />
-                        <span className="text-xs text-zinc-400">DFAI</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <div className="w-3 h-0.5 bg-orange-400" />
-                        <span className="text-xs text-zinc-400">DFAE</span>
-                      </div>
+                      {topTrendTickers[0] && (
+                        <div className="flex items-center gap-2">
+                          <div className="w-3 h-0.5 bg-cyan-400" />
+                          <span className="text-xs text-zinc-400">{topTrendTickers[0]}</span>
+                        </div>
+                      )}
+                      {topTrendTickers[1] && (
+                        <div className="flex items-center gap-2">
+                          <div className="w-3 h-0.5 bg-amber-400" />
+                          <span className="text-xs text-zinc-400">{topTrendTickers[1]}</span>
+                        </div>
+                      )}
+                      {topTrendTickers[2] && (
+                        <div className="flex items-center gap-2">
+                          <div className="w-3 h-0.5 bg-orange-400" />
+                          <span className="text-xs text-zinc-400">{topTrendTickers[2]}</span>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
               </div>
             </div>
+
+            {/* ==================== SECTION 3: LOGGED PORTFOLIOS ==================== */}
+            <div>
+              <div className="flex items-center gap-2 mb-4 mt-8">
+                <Briefcase className="w-5 h-5 text-cyan-400" />
+                <h3 className="text-lg font-semibold text-white">Logged Portfolios</h3>
+                <span className="text-xs text-zinc-500 ml-2">Client portfolios that have been analyzed ({filteredPortfolios.length} total)</span>
+              </div>
+
+              {/* Portfolios Table */}
+              <div className="relative overflow-hidden bg-zinc-900/60 backdrop-blur-md border border-zinc-800/50">
+                <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] via-transparent to-transparent pointer-events-none" />
+                <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+
+                <div className="relative z-10 overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="bg-zinc-800/30">
+                        <th
+                          className="text-left text-xs font-medium text-zinc-400 uppercase tracking-wider px-4 py-3 cursor-pointer hover:text-zinc-200"
+                          onClick={() => handlePortfolioSort('externalClient')}
+                        >
+                          <div className="flex items-center gap-1">
+                            External Client
+                            <SortIcon column="externalClient" sortColumn={portfoliosSortColumn} sortDirection={portfoliosSortDirection} />
+                          </div>
+                        </th>
+                        <th
+                          className="text-left text-xs font-medium text-zinc-400 uppercase tracking-wider px-4 py-3 cursor-pointer hover:text-zinc-200"
+                          onClick={() => handlePortfolioSort('internalClientName')}
+                        >
+                          <div className="flex items-center gap-1">
+                            Internal Client
+                            <SortIcon column="internalClientName" sortColumn={portfoliosSortColumn} sortDirection={portfoliosSortDirection} />
+                          </div>
+                        </th>
+                        <th
+                          className="text-left text-xs font-medium text-zinc-400 uppercase tracking-wider px-4 py-3 cursor-pointer hover:text-zinc-200"
+                          onClick={() => handlePortfolioSort('department')}
+                        >
+                          <div className="flex items-center gap-1">
+                            Department
+                            <SortIcon column="department" sortColumn={portfoliosSortColumn} sortDirection={portfoliosSortDirection} />
+                          </div>
+                        </th>
+                        <th
+                          className="text-left text-xs font-medium text-zinc-400 uppercase tracking-wider px-4 py-3 cursor-pointer hover:text-zinc-200"
+                          onClick={() => handlePortfolioSort('loggedBy')}
+                        >
+                          <div className="flex items-center gap-1">
+                            Logged By
+                            <SortIcon column="loggedBy" sortColumn={portfoliosSortColumn} sortDirection={portfoliosSortDirection} />
+                          </div>
+                        </th>
+                        <th
+                          className="text-left text-xs font-medium text-zinc-400 uppercase tracking-wider px-4 py-3 cursor-pointer hover:text-zinc-200"
+                          onClick={() => handlePortfolioSort('loggedAt')}
+                        >
+                          <div className="flex items-center gap-1">
+                            Logged At
+                            <SortIcon column="loggedAt" sortColumn={portfoliosSortColumn} sortDirection={portfoliosSortDirection} />
+                          </div>
+                        </th>
+                        <th
+                          className="text-left text-xs font-medium text-zinc-400 uppercase tracking-wider px-4 py-3 cursor-pointer hover:text-zinc-200"
+                          onClick={() => handlePortfolioSort('positionCount')}
+                        >
+                          <div className="flex items-center gap-1">
+                            Positions
+                            <SortIcon column="positionCount" sortColumn={portfoliosSortColumn} sortDirection={portfoliosSortDirection} />
+                          </div>
+                        </th>
+                        <th className="text-left text-xs font-medium text-zinc-400 uppercase tracking-wider px-4 py-3">
+                          Top Holdings
+                        </th>
+                        <th className="px-4 py-3"></th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-zinc-800/50">
+                      {paginatedPortfolios.map((portfolio) => (
+                        <React.Fragment key={portfolio.id}>
+                          <tr className="hover:bg-white/[0.02] transition-colors">
+                            <td className="px-4 py-3">
+                              <span className="text-sm font-medium text-white">{portfolio.externalClient}</span>
+                            </td>
+                            <td className="px-4 py-3">
+                              <span className="text-sm text-zinc-300">{portfolio.internalClient.name}</span>
+                            </td>
+                            <td className="px-4 py-3">
+                              <span className={`text-xs font-medium px-2 py-1 ${
+                                portfolio.internalClient.gcgDepartment === 'IAG'
+                                  ? 'bg-blue-500/15 text-blue-400 border border-blue-500/30'
+                                  : portfolio.internalClient.gcgDepartment === 'Broker-Dealer'
+                                    ? 'bg-purple-500/15 text-purple-400 border border-purple-500/30'
+                                    : 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
+                              }`}>
+                                {portfolio.internalClient.gcgDepartment}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3">
+                              <span className="text-sm text-zinc-400">{portfolio.loggedBy}</span>
+                            </td>
+                            <td className="px-4 py-3">
+                              <span className="text-sm text-zinc-400">{portfolio.loggedAt}</span>
+                            </td>
+                            <td className="px-4 py-3">
+                              <span className="text-sm font-mono text-zinc-300">{portfolio.positions.length}</span>
+                            </td>
+                            <td className="px-4 py-3">
+                              <div className="flex gap-1.5">
+                                {portfolio.positions.slice(0, 3).map((pos, i) => (
+                                  <span key={i} className="text-xs px-1.5 py-0.5 bg-zinc-800 text-zinc-300 rounded">
+                                    {pos.ticker}
+                                  </span>
+                                ))}
+                                {portfolio.positions.length > 3 && (
+                                  <span className="text-xs text-zinc-500">+{portfolio.positions.length - 3}</span>
+                                )}
+                              </div>
+                            </td>
+                            <td className="px-4 py-3">
+                              <button
+                                onClick={() => setExpandedPortfolioId(expandedPortfolioId === portfolio.id ? null : portfolio.id)}
+                                className="p-1.5 hover:bg-white/[0.05] text-zinc-500 hover:text-zinc-300 transition-colors"
+                              >
+                                {expandedPortfolioId === portfolio.id ? (
+                                  <ChevronUp className="w-4 h-4" />
+                                ) : (
+                                  <ChevronDown className="w-4 h-4" />
+                                )}
+                              </button>
+                            </td>
+                          </tr>
+                          {/* Expanded Row */}
+                          {expandedPortfolioId === portfolio.id && (
+                            <tr className="bg-zinc-900/40">
+                              <td colSpan={8} className="px-4 py-4">
+                                <div className="grid grid-cols-3 gap-6">
+                                  {/* Positions List */}
+                                  <div>
+                                    <h5 className="text-xs font-medium text-zinc-400 uppercase tracking-wider mb-2">All Positions</h5>
+                                    <div className="space-y-1 max-h-48 overflow-y-auto">
+                                      {portfolio.positions.map((pos, i) => (
+                                        <div key={i} className="flex items-center justify-between text-sm">
+                                          <div className="flex items-center gap-2">
+                                            <span className="font-medium text-cyan-400">{pos.ticker}</span>
+                                            <span className="text-zinc-500 text-xs truncate max-w-[120px]">{pos.name}</span>
+                                          </div>
+                                          <span className="text-zinc-300 font-mono">{(pos.weight * 100).toFixed(1)}%</span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+
+                                  {/* Characteristics */}
+                                  <div>
+                                    <h5 className="text-xs font-medium text-zinc-400 uppercase tracking-wider mb-2">Characteristics</h5>
+                                    <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
+                                      <div className="flex justify-between">
+                                        <span className="text-zinc-500">Mkt Cap</span>
+                                        <span className="text-zinc-300">${portfolio.characteristics.weightedAvgMarketCap.toFixed(0)}B</span>
+                                      </div>
+                                      <div className="flex justify-between">
+                                        <span className="text-zinc-500">P/B</span>
+                                        <span className="text-zinc-300">{portfolio.characteristics.weightedAvgPB.toFixed(1)}</span>
+                                      </div>
+                                      <div className="flex justify-between">
+                                        <span className="text-zinc-500">Value</span>
+                                        <span className="text-zinc-300">{portfolio.characteristics.valueAllocation}%</span>
+                                      </div>
+                                      <div className="flex justify-between">
+                                        <span className="text-zinc-500">Growth</span>
+                                        <span className="text-zinc-300">{portfolio.characteristics.growthAllocation}%</span>
+                                      </div>
+                                      <div className="flex justify-between">
+                                        <span className="text-zinc-500">US</span>
+                                        <span className="text-zinc-300">{portfolio.characteristics.usEquityAllocation}%</span>
+                                      </div>
+                                      <div className="flex justify-between">
+                                        <span className="text-zinc-500">Dev ex-US</span>
+                                        <span className="text-zinc-300">{portfolio.characteristics.devExUsAllocation}%</span>
+                                      </div>
+                                      <div className="flex justify-between">
+                                        <span className="text-zinc-500">EM</span>
+                                        <span className="text-zinc-300">{portfolio.characteristics.emAllocation}%</span>
+                                      </div>
+                                      <div className="flex justify-between">
+                                        <span className="text-zinc-500">Duration</span>
+                                        <span className="text-zinc-300">{portfolio.characteristics.duration.toFixed(1)} yrs</span>
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  {/* Returns */}
+                                  <div>
+                                    <h5 className="text-xs font-medium text-zinc-400 uppercase tracking-wider mb-2">Returns</h5>
+                                    <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
+                                      <div className="flex justify-between">
+                                        <span className="text-zinc-500">1 Year</span>
+                                        <span className={portfolio.returns.oneYear !== null ? (portfolio.returns.oneYear >= 0 ? 'text-emerald-400' : 'text-red-400') : 'text-zinc-600'}>
+                                          {portfolio.returns.oneYear !== null ? `${portfolio.returns.oneYear.toFixed(1)}%` : '—'}
+                                        </span>
+                                      </div>
+                                      <div className="flex justify-between">
+                                        <span className="text-zinc-500">3 Year</span>
+                                        <span className={portfolio.returns.threeYear !== null ? (portfolio.returns.threeYear >= 0 ? 'text-emerald-400' : 'text-red-400') : 'text-zinc-600'}>
+                                          {portfolio.returns.threeYear !== null ? `${portfolio.returns.threeYear.toFixed(1)}%` : '—'}
+                                        </span>
+                                      </div>
+                                      <div className="flex justify-between">
+                                        <span className="text-zinc-500">5 Year</span>
+                                        <span className={portfolio.returns.fiveYear !== null ? (portfolio.returns.fiveYear >= 0 ? 'text-emerald-400' : 'text-red-400') : 'text-zinc-600'}>
+                                          {portfolio.returns.fiveYear !== null ? `${portfolio.returns.fiveYear.toFixed(1)}%` : '—'}
+                                        </span>
+                                      </div>
+                                      <div className="flex justify-between">
+                                        <span className="text-zinc-500">10 Year</span>
+                                        <span className={portfolio.returns.tenYear !== null ? (portfolio.returns.tenYear >= 0 ? 'text-emerald-400' : 'text-red-400') : 'text-zinc-600'}>
+                                          {portfolio.returns.tenYear !== null ? `${portfolio.returns.tenYear.toFixed(1)}%` : '—'}
+                                        </span>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              </td>
+                            </tr>
+                          )}
+                        </React.Fragment>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Pagination */}
+                {totalPortfolioPages > 1 && (
+                  <div className="relative z-10 flex items-center justify-between px-4 py-3 border-t border-zinc-800/50">
+                    <div className="text-xs text-zinc-500">
+                      Showing {((portfoliosPage - 1) * portfoliosPerPage) + 1} to {Math.min(portfoliosPage * portfoliosPerPage, sortedPortfolios.length)} of {sortedPortfolios.length} portfolios
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => setPortfoliosPage(prev => Math.max(1, prev - 1))}
+                        disabled={portfoliosPage === 1}
+                        className="p-1.5 text-zinc-400 hover:text-white disabled:text-zinc-600 disabled:cursor-not-allowed transition-colors"
+                      >
+                        <ChevronLeft className="w-4 h-4" />
+                      </button>
+                      <span className="text-xs text-zinc-400">
+                        Page {portfoliosPage} of {totalPortfolioPages}
+                      </span>
+                      <button
+                        onClick={() => setPortfoliosPage(prev => Math.min(totalPortfolioPages, prev + 1))}
+                        disabled={portfoliosPage === totalPortfolioPages}
+                        className="p-1.5 text-zinc-400 hover:text-white disabled:text-zinc-600 disabled:cursor-not-allowed transition-colors"
+                      >
+                        <ChevronRight className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
-        )}
       </main>
     </div>
   );
