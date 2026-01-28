@@ -20,7 +20,7 @@ const navSections: NavSection[] = [
   {
     title: 'Engagements',
     items: [
-      { label: 'Client Projects', href: '/dashboard/client-engagements', icon: LayoutDashboard },
+      { label: 'Client Interactions', href: '/dashboard/client-interactions', icon: LayoutDashboard },
       { label: 'Trends', href: '/dashboard/trends', icon: BarChart3 },
     ],
   },
@@ -43,7 +43,7 @@ export default function Sidebar({ className = '' }: SidebarProps) {
   const isActive = (href: string) => pathname === href;
 
   return (
-    <aside className={`w-40 bg-zinc-950/80 backdrop-blur-md border-r border-zinc-800/50 flex flex-col ${className}`}>
+    <aside className={`w-48 bg-zinc-950/80 backdrop-blur-md border-r border-zinc-800/50 flex flex-col ${className}`}>
       <div className="absolute inset-0 bg-gradient-to-b from-white/[0.02] to-transparent pointer-events-none" />
 
       {/* Logo */}

@@ -72,7 +72,7 @@ export default function TrendsDashboard() {
       <Sidebar className="fixed top-0 left-0 h-screen" />
 
       {/* Main Content */}
-      <main className="flex-1 ml-40">
+      <main className="flex-1 ml-48">
         {/* Top Bar with Filters */}
         <DashboardHeader
           title="Trends"

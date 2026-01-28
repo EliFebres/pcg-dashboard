@@ -204,8 +204,8 @@ export default function EngagementsDashboard() {
       <main className="flex-1 flex flex-col overflow-hidden">
         {/* Top Bar with Filters */}
         <DashboardHeader
-          title="Client Projects"
-          subtitle="Track and manage client projects across all departments"
+          title="Client Interactions"
+          subtitle="Track and manage client interactions across all departments"
           searchPlaceholder="Search clients, team members..."
           searchValue={searchQuery}
           onSearchChange={setSearchQuery}
