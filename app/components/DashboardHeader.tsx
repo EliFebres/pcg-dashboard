@@ -12,6 +12,21 @@ export interface FilterDropdown {
   onChange: (value: string) => void;
 }
 
+export interface PeriodOption {
+  value: string;
+  label: string;
+}
+
+export const PERIOD_OPTIONS: PeriodOption[] = [
+  { value: '1W', label: '1 Week' },
+  { value: '1M', label: '1 Month' },
+  { value: '3M', label: '3 Months' },
+  { value: '6M', label: '6 Months' },
+  { value: 'YTD', label: 'Year to Date' },
+  { value: '1Y', label: '1 Year' },
+  { value: 'ALL', label: 'All Time' },
+];
+
 interface DashboardHeaderProps {
   title: string;
   subtitle: string;
@@ -19,6 +34,8 @@ interface DashboardHeaderProps {
   searchValue: string;
   onSearchChange: (value: string) => void;
   filters: FilterDropdown[];
+  period?: string;
+  onPeriodChange?: (value: string) => void;
   className?: string;
 }
 
@@ -81,6 +98,59 @@ function FilterDropdownButton({ filter }: { filter: FilterDropdown }) {
   );
 }
 
+// Period dropdown component
+function PeriodDropdown({ value, onChange }: { value: string; onChange: (value: string) => void }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const currentOption = PERIOD_OPTIONS.find((p) => p.value === value) || PERIOD_OPTIONS[5]; // Default to 1Y
+
+  return (
+    <div className="relative" ref={dropdownRef}>
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="flex items-center gap-1.5 px-3 py-2 bg-gradient-to-r from-blue-600 to-cyan-500 text-white text-sm font-medium hover:from-blue-500 hover:to-cyan-400 transition-all"
+      >
+        <Calendar className="w-4 h-4" />
+        {currentOption.value}
+        <ChevronDown className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+      </button>
+
+      {isOpen && (
+        <div className="absolute top-full right-0 mt-1 min-w-[140px] bg-zinc-900/95 backdrop-blur-md border border-zinc-700/50 shadow-xl z-[100]">
+          {PERIOD_OPTIONS.map((option) => (
+            <button
+              key={option.value}
+              onClick={() => {
+                onChange(option.value);
+                setIsOpen(false);
+              }}
+              className={`w-full flex items-center justify-between px-3 py-2 text-sm text-left transition-colors ${
+                value === option.value
+                  ? 'bg-cyan-500/10 text-cyan-400'
+                  : 'text-zinc-300 hover:bg-white/[0.05]'
+              }`}
+            >
+              {option.label}
+              {value === option.value && <Check className="w-4 h-4" />}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function DashboardHeader({
   title,
   subtitle,
@@ -88,8 +158,12 @@ export default function DashboardHeader({
   searchValue,
   onSearchChange,
   filters,
+  period = '1Y',
+  onPeriodChange,
   className = '',
 }: DashboardHeaderProps) {
+  const currentPeriodLabel = PERIOD_OPTIONS.find((p) => p.value === period)?.label || '1 Year';
+
   return (
     <header className={`flex-shrink-0 bg-black/80 backdrop-blur-md border-b border-zinc-800/50 relative z-50 ${className}`}>
       <div className="px-6 py-4">
@@ -99,7 +173,7 @@ export default function DashboardHeader({
             <p className="text-zinc-500 text-sm">{subtitle}</p>
           </div>
           <div className="flex items-center gap-2 text-xs text-cyan-400">
-            <span className="px-2 py-1 bg-gradient-to-r from-blue-600/20 to-cyan-600/10 border border-cyan-500/20 backdrop-blur-sm">Viewing: 1YR</span>
+            <span className="px-2 py-1 bg-gradient-to-r from-blue-600/20 to-cyan-600/10 border border-cyan-500/20 backdrop-blur-sm">Viewing: {currentPeriodLabel}</span>
           </div>
         </div>
         {/* Global Filters */}
@@ -117,11 +191,15 @@ export default function DashboardHeader({
           {filters.map((filter) => (
             <FilterDropdownButton key={filter.id} filter={filter} />
           ))}
-          <button className="flex items-center gap-1.5 px-3 py-2 bg-gradient-to-r from-blue-600 to-cyan-500 text-white text-sm font-medium hover:from-blue-500 hover:to-cyan-400 transition-all">
-            <Calendar className="w-4 h-4" />
-            1YR
-            <ChevronDown className="w-4 h-4" />
-          </button>
+          {onPeriodChange ? (
+            <PeriodDropdown value={period} onChange={onPeriodChange} />
+          ) : (
+            <button className="flex items-center gap-1.5 px-3 py-2 bg-gradient-to-r from-blue-600 to-cyan-500 text-white text-sm font-medium hover:from-blue-500 hover:to-cyan-400 transition-all">
+              <Calendar className="w-4 h-4" />
+              {period}
+              <ChevronDown className="w-4 h-4" />
+            </button>
+          )}
         </div>
       </div>
     </header>

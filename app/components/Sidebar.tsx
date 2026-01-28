@@ -94,11 +94,11 @@ export default function Sidebar({ className = '' }: SidebarProps) {
       <div className="relative px-1.5 py-2 border-t border-zinc-800/50">
         <div className="flex items-center gap-2 px-2 py-1.5">
           <div className="w-6 h-6 bg-gradient-to-br from-blue-500 to-cyan-400 flex items-center justify-center text-white font-medium text-xs flex-shrink-0">
-            ES
+            EF
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-zinc-200 truncate">Eli S.</p>
-            <p className="text-xs text-zinc-500">Analyst</p>
+            <p className="text-sm font-medium text-zinc-200 truncate">Eli F.</p>
+            <p className="text-xs text-zinc-500">Associate</p>
           </div>
           <button className="p-1 text-zinc-500 hover:text-zinc-300 hover:bg-white/[0.05] transition-colors flex-shrink-0">
             <Settings className="w-3.5 h-3.5" />

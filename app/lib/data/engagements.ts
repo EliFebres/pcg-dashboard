@@ -46,7 +46,7 @@ const externalClients = [
   'Focus Financial', 'Creative Planning', 'Mariner Wealth', 'Captrust Financial',
 ];
 
-const teamMembers = ['Eli S.', 'Sarah K.', 'Mike R.', 'Lisa M.', 'James T.', 'David L.'];
+const teamMembers = ['Eli F.', 'Sarah K.', 'Mike R.', 'Lisa M.', 'James T.', 'David L.'];
 const internalClientKeys = Object.keys(internalClients) as (keyof typeof internalClients)[];
 const departments: ('IAG' | 'Broker-Dealer' | 'Institution')[] = ['IAG', 'Broker-Dealer', 'Institution'];
 const projectTypes = ['Data Request', 'Meeting', 'Analysis', 'Presentation', 'Review', 'PCR'];
@@ -248,15 +248,17 @@ function getDateKey(date: Date): string {
   return date.toISOString().split('T')[0];
 }
 
-// Generate contribution graph data from actual engagements
-export function generateContributionData(): DayData[][] {
+// Generate contribution graph data from engagements
+// Can optionally pass filtered engagements to show filtered heatmap
+export function generateContributionData(filteredEngagements?: Engagement[]): DayData[][] {
   const weeks: DayData[][] = [];
   const startDate = new Date('2024-02-01'); // Start 1 year before most recent data
+  const dataSource = filteredEngagements ?? engagements;
 
   // Build a map of completed engagements by date
   const completionsByDate: Record<string, { projects: number; touchPoints: number }> = {};
 
-  for (const engagement of engagements) {
+  for (const engagement of dataSource) {
     const finishedDate = parseDateString(engagement.dateFinished);
     if (finishedDate) {
       const key = getDateKey(finishedDate);

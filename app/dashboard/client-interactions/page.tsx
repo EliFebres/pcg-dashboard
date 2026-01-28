@@ -4,6 +4,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Filter, Building2, FileText, ArrowUpRight, ArrowDownRight, Download, User, Check, X, PlayCircle, CheckCircle2, Loader2, MessageSquare, ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell } from 'recharts';
 import { getEngagementsDashboardData, getEngagements } from '@/app/lib/api/engagements';
+import { generateContributionData } from '@/app/lib/data/engagements';
 import type { EngagementMetric, DepartmentData, Engagement, DayData } from '@/app/lib/types/engagements';
 import Sidebar from '@/app/components/Sidebar';
 import DashboardHeader from '@/app/components/DashboardHeader';
@@ -183,6 +184,7 @@ export default function EngagementsDashboard() {
   const [teamMemberFilter, setTeamMemberFilter] = useState('All Team Members');
   const [departmentFilter, setDepartmentFilter] = useState('All Departments');
   const [typeFilter, setTypeFilter] = useState('All Types');
+  const [period, setPeriod] = useState('1Y');
 
   // Fetch all dashboard data on mount
   useEffect(() => {
@@ -245,9 +247,41 @@ export default function EngagementsDashboard() {
     };
   }, [engagements]);
 
+  // Get cutoff date based on selected period
+  const getPeriodCutoffDate = (periodValue: string): Date | null => {
+    const now = new Date('2025-01-28'); // Reference date for dummy data
+    switch (periodValue) {
+      case '1W':
+        return new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      case '1M':
+        return new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
+      case '3M':
+        return new Date(now.getFullYear(), now.getMonth() - 3, now.getDate());
+      case '6M':
+        return new Date(now.getFullYear(), now.getMonth() - 6, now.getDate());
+      case 'YTD':
+        return new Date(now.getFullYear(), 0, 1); // Jan 1 of current year
+      case '1Y':
+        return new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
+      case 'ALL':
+        return null; // No cutoff
+      default:
+        return new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
+    }
+  };
+
   // Apply global filters to engagements (but NOT contribution data)
   const filteredEngagements = useMemo(() => {
+    const cutoffDate = getPeriodCutoffDate(period);
+
     return engagements.filter((e) => {
+      // Period filter - check if dateStarted is after cutoff
+      if (cutoffDate) {
+        const startDate = new Date(e.dateStarted);
+        if (startDate < cutoffDate) {
+          return false;
+        }
+      }
       // Team member filter
       if (teamMemberFilter !== 'All Team Members' && !e.teamMembers.includes(teamMemberFilter)) {
         return false;
@@ -262,7 +296,7 @@ export default function EngagementsDashboard() {
       }
       return true;
     });
-  }, [engagements, teamMemberFilter, departmentFilter, typeFilter]);
+  }, [engagements, teamMemberFilter, departmentFilter, typeFilter, period]);
 
   // Compute filtered metrics based on filtered engagements
   const filteredMetrics = useMemo((): EngagementMetric[] => {
@@ -296,6 +330,11 @@ export default function EngagementsDashboard() {
       count,
       color: colors[name] || '#71717a',
     }));
+  }, [filteredEngagements]);
+
+  // Compute filtered contribution data for heatmap
+  const filteredContributionData = useMemo(() => {
+    return generateContributionData(filteredEngagements);
   }, [filteredEngagements]);
 
   // Handle column sort
@@ -370,7 +409,7 @@ export default function EngagementsDashboard() {
   // Reset to page 1 when search, sort, or filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, sortConfig, teamMemberFilter, departmentFilter, typeFilter]);
+  }, [searchQuery, sortConfig, teamMemberFilter, departmentFilter, typeFilter, period]);
 
   // Generate page numbers to display
   const getPageNumbers = (): (number | 'ellipsis')[] => {
@@ -460,6 +499,8 @@ export default function EngagementsDashboard() {
               onChange: setTypeFilter,
             },
           ]}
+          period={period}
+          onPeriodChange={setPeriod}
         />
 
         <div className="p-6 flex-1 flex flex-col overflow-hidden min-h-0">
@@ -522,7 +563,7 @@ export default function EngagementsDashboard() {
                       </button>
                     </div>
                     <div className="flex-1" style={{ minHeight: 0 }}>
-                      {contributionData.length > 0 && <ContributionGraph data={contributionData} />}
+                      {filteredContributionData.length > 0 && <ContributionGraph data={filteredContributionData} />}
                     </div>
                   </div>
                 </div>

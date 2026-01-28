@@ -34,6 +34,7 @@ export default function TrendsDashboard() {
   const [teamMemberFilter, setTeamMemberFilter] = useState('All Team Members');
   const [departmentFilter, setDepartmentFilter] = useState('All Departments');
   const [assetClassFilter, setAssetClassFilter] = useState('All Asset Classes');
+  const [period, setPeriod] = useState('1Y');
 
   // Fetch all dashboard data on mount
   useEffect(() => {
@@ -111,6 +112,8 @@ export default function TrendsDashboard() {
               onChange: setAssetClassFilter,
             },
           ]}
+          period={period}
+          onPeriodChange={setPeriod}
           className="sticky top-0 z-10"
         />
 
