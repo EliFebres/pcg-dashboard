@@ -30,6 +30,11 @@ export default function TrendsDashboard() {
   const [popularDFATickers, setPopularDFATickers] = useState<PopularDFATicker[]>([]);
   const [tickerTrends, setTickerTrends] = useState<TickerTrend[]>([]);
 
+  // Filter state (placeholder - not yet functional)
+  const [teamMemberFilter, setTeamMemberFilter] = useState('All Team Members');
+  const [departmentFilter, setDepartmentFilter] = useState('All Departments');
+  const [assetClassFilter, setAssetClassFilter] = useState('All Asset Classes');
+
   // Fetch all dashboard data on mount
   useEffect(() => {
     async function loadData() {
@@ -81,9 +86,30 @@ export default function TrendsDashboard() {
           searchValue={searchQuery}
           onSearchChange={setSearchQuery}
           filters={[
-            { icon: User, label: 'All Team Members' },
-            { icon: Building2, label: 'All Departments' },
-            { icon: Filter, label: 'All Asset Classes' },
+            {
+              id: 'teamMember',
+              icon: User,
+              label: 'Team Member',
+              options: ['All Team Members'],
+              value: teamMemberFilter,
+              onChange: setTeamMemberFilter,
+            },
+            {
+              id: 'department',
+              icon: Building2,
+              label: 'Department',
+              options: ['All Departments'],
+              value: departmentFilter,
+              onChange: setDepartmentFilter,
+            },
+            {
+              id: 'assetClass',
+              icon: Filter,
+              label: 'Asset Class',
+              options: ['All Asset Classes'],
+              value: assetClassFilter,
+              onChange: setAssetClassFilter,
+            },
           ]}
           className="sticky top-0 z-10"
         />

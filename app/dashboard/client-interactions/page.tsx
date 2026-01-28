@@ -179,6 +179,11 @@ export default function EngagementsDashboard() {
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 25;
 
+  // Global filter state
+  const [teamMemberFilter, setTeamMemberFilter] = useState('All Team Members');
+  const [departmentFilter, setDepartmentFilter] = useState('All Departments');
+  const [typeFilter, setTypeFilter] = useState('All Types');
+
   // Fetch all dashboard data on mount
   useEffect(() => {
     async function loadData() {
@@ -221,6 +226,78 @@ export default function EngagementsDashboard() {
     }
   }, [searchQuery]);
 
+  // Extract unique filter options from engagements
+  const filterOptions = useMemo(() => {
+    const teamMembers = new Set<string>();
+    const departments = new Set<string>();
+    const types = new Set<string>();
+
+    engagements.forEach((e) => {
+      e.teamMembers.forEach((tm) => teamMembers.add(tm));
+      departments.add(e.internalClient.gcgDepartment);
+      types.add(e.intakeType);
+    });
+
+    return {
+      teamMembers: ['All Team Members', ...Array.from(teamMembers).sort()],
+      departments: ['All Departments', ...Array.from(departments).sort()],
+      types: ['All Types', ...Array.from(types).sort()],
+    };
+  }, [engagements]);
+
+  // Apply global filters to engagements (but NOT contribution data)
+  const filteredEngagements = useMemo(() => {
+    return engagements.filter((e) => {
+      // Team member filter
+      if (teamMemberFilter !== 'All Team Members' && !e.teamMembers.includes(teamMemberFilter)) {
+        return false;
+      }
+      // Department filter
+      if (departmentFilter !== 'All Departments' && e.internalClient.gcgDepartment !== departmentFilter) {
+        return false;
+      }
+      // Type filter (intake type)
+      if (typeFilter !== 'All Types' && e.intakeType !== typeFilter) {
+        return false;
+      }
+      return true;
+    });
+  }, [engagements, teamMemberFilter, departmentFilter, typeFilter]);
+
+  // Compute filtered metrics based on filtered engagements
+  const filteredMetrics = useMemo((): EngagementMetric[] => {
+    const total = filteredEngagements.length;
+    const inProgress = filteredEngagements.filter((e) => e.status === 'In Progress').length;
+    const portfoliosLogged = filteredEngagements.filter((e) => e.portfolioLogged).length;
+    const touchPoints = filteredEngagements.filter((e) => e.intakeType === 'Touch Points').length;
+    const portfolioPercent = total > 0 ? Math.round((portfoliosLogged / total) * 100) : 0;
+
+    return [
+      { label: 'Interactions', sublabel: '1YR', value: total.toLocaleString(), change: '+12%', isPositive: true, icon: 'FileText' },
+      { label: 'In Progress', sublabel: 'Current', value: inProgress.toLocaleString(), change: '+3', isPositive: true, icon: 'PlayCircle' },
+      { label: 'Portfolios Logged', sublabel: '1YR', value: portfoliosLogged.toLocaleString(), change: `${portfolioPercent}%`, isPositive: true, icon: 'CheckCircle2' },
+      { label: 'Touch Points', sublabel: '1YR', value: touchPoints.toLocaleString(), change: '+18%', isPositive: true, icon: 'MessageSquare' },
+    ];
+  }, [filteredEngagements]);
+
+  // Compute filtered department breakdown
+  const filteredDepartmentBreakdown = useMemo((): DepartmentData[] => {
+    const deptCounts: Record<string, number> = { IAG: 0, 'Broker-Dealer': 0, Institution: 0 };
+    filteredEngagements.forEach((e) => {
+      deptCounts[e.internalClient.gcgDepartment]++;
+    });
+
+    const total = filteredEngagements.length || 1;
+    const colors: Record<string, string> = { IAG: '#22d3ee', 'Broker-Dealer': '#a78bfa', Institution: '#fb923c' };
+
+    return Object.entries(deptCounts).map(([name, count]) => ({
+      name,
+      value: Math.round((count / total) * 100),
+      count,
+      color: colors[name] || '#71717a',
+    }));
+  }, [filteredEngagements]);
+
   // Handle column sort
   const handleSort = (column: SortColumn) => {
     setSortConfig((prev) => {
@@ -235,9 +312,9 @@ export default function EngagementsDashboard() {
 
   // Sort engagements based on current sort config
   const sortedEngagements = useMemo(() => {
-    if (!sortConfig.column || !sortConfig.direction) return engagements;
+    if (!sortConfig.column || !sortConfig.direction) return filteredEngagements;
 
-    return [...engagements].sort((a, b) => {
+    return [...filteredEngagements].sort((a, b) => {
       const direction = sortConfig.direction === 'asc' ? 1 : -1;
 
       switch (sortConfig.column) {
@@ -281,7 +358,7 @@ export default function EngagementsDashboard() {
           return 0;
       }
     });
-  }, [engagements, sortConfig]);
+  }, [filteredEngagements, sortConfig]);
 
   // Pagination calculations
   const totalPages = Math.ceil(sortedEngagements.length / pageSize);
@@ -290,10 +367,10 @@ export default function EngagementsDashboard() {
     return sortedEngagements.slice(startIndex, startIndex + pageSize);
   }, [sortedEngagements, currentPage, pageSize]);
 
-  // Reset to page 1 when search or sort changes
+  // Reset to page 1 when search, sort, or filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, sortConfig]);
+  }, [searchQuery, sortConfig, teamMemberFilter, departmentFilter, typeFilter]);
 
   // Generate page numbers to display
   const getPageNumbers = (): (number | 'ellipsis')[] => {
@@ -358,9 +435,30 @@ export default function EngagementsDashboard() {
           searchValue={searchQuery}
           onSearchChange={setSearchQuery}
           filters={[
-            { icon: User, label: 'All Team Members' },
-            { icon: Building2, label: 'All Departments' },
-            { icon: Filter, label: 'All Types' },
+            {
+              id: 'teamMember',
+              icon: User,
+              label: 'Team Member',
+              options: filterOptions.teamMembers,
+              value: teamMemberFilter,
+              onChange: setTeamMemberFilter,
+            },
+            {
+              id: 'department',
+              icon: Building2,
+              label: 'Department',
+              options: filterOptions.departments,
+              value: departmentFilter,
+              onChange: setDepartmentFilter,
+            },
+            {
+              id: 'type',
+              icon: Filter,
+              label: 'Type',
+              options: filterOptions.types,
+              value: typeFilter,
+              onChange: setTypeFilter,
+            },
           ]}
         />
 
@@ -375,9 +473,9 @@ export default function EngagementsDashboard() {
             </div>
           ) : (
             <>
-              {/* Metrics Row - Clean Cards */}
+              {/* Metrics Row - Clean Cards (filtered) */}
               <div className="grid grid-cols-4 gap-4 mb-6 flex-shrink-0">
-                {metrics.map((metric, index) => {
+                {filteredMetrics.map((metric, index) => {
                   const IconComponent = iconMap[metric.icon] || FileText;
                   return (
                     <div
@@ -446,11 +544,11 @@ export default function EngagementsDashboard() {
                     </div>
                     <div className="flex-1 mb-3">
                       <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={departmentBreakdown} layout="vertical" barSize={16}>
+                        <BarChart data={filteredDepartmentBreakdown} layout="vertical" barSize={16}>
                           <XAxis type="number" hide />
                           <YAxis type="category" dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#a1a1aa', fontSize: 11 }} width={85} />
                           <Bar dataKey="value" radius={0}>
-                            {departmentBreakdown.map((entry, index) => (
+                            {filteredDepartmentBreakdown.map((entry, index) => (
                               <Cell key={`cell-${index}`} fill={entry.color} />
                             ))}
                           </Bar>
@@ -458,7 +556,7 @@ export default function EngagementsDashboard() {
                       </ResponsiveContainer>
                     </div>
                     <div className="space-y-2 pt-2 border-t border-zinc-800/50 flex-shrink-0">
-                      {departmentBreakdown.map((dept) => (
+                      {filteredDepartmentBreakdown.map((dept) => (
                         <div key={dept.name} className="flex items-center justify-between text-xs">
                           <div className="flex items-center gap-2">
                             <div className="w-2.5 h-2.5" style={{ backgroundColor: dept.color }} />
