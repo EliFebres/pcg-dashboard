@@ -514,17 +514,16 @@ export function isDFATicker(ticker: string): boolean {
 
 // ==================== FILTER HELPERS ====================
 
-export function extractFilterOptions(portfolios: LoggedPortfolio[]): FilterOptions {
-  const teamMembersSet = new Set<string>();
+export function extractFilterOptions(portfolios: LoggedPortfolio[], currentUser: string = 'Eli F.'): FilterOptions {
   const departmentsSet = new Set<string>();
 
   portfolios.forEach(portfolio => {
-    teamMembersSet.add(portfolio.loggedBy);
     departmentsSet.add(portfolio.internalClient.gcgDepartment);
   });
 
   return {
-    teamMembers: ['All Team Members', ...Array.from(teamMembersSet).sort()],
+    // Only show "All Team Members" and current user for privacy
+    teamMembers: ['All Team Members', currentUser],
     departments: ['All Departments', ...Array.from(departmentsSet).sort()],
     periods: ['1M', '3M', '6M', '1Y', 'ALL'],
   };

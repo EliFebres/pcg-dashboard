@@ -205,24 +205,26 @@ export default function EngagementsDashboard() {
     }
   }, [searchQuery]);
 
+  // Mock current user - in production this would come from auth
+  const currentUser = 'Eli F.';
+
   // Extract unique filter options from engagements
   const filterOptions = useMemo(() => {
-    const teamMembers = new Set<string>();
     const departments = new Set<string>();
     const types = new Set<string>();
 
     engagements.forEach((e) => {
-      e.teamMembers.forEach((tm) => teamMembers.add(tm));
       departments.add(e.internalClient.gcgDepartment);
       types.add(e.intakeType);
     });
 
     return {
-      teamMembers: ['All Team Members', ...Array.from(teamMembers).sort()],
+      // Only show "All Team Members" and current user for privacy
+      teamMembers: ['All Team Members', currentUser],
       departments: ['All Departments', ...Array.from(departments).sort()],
       types: ['All Types', ...Array.from(types).sort()],
     };
-  }, [engagements]);
+  }, [engagements, currentUser]);
 
   // Get cutoff date based on selected period
   const getPeriodCutoffDate = (periodValue: string): Date | null => {
