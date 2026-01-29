@@ -162,7 +162,8 @@ export default function EngagementsDashboard() {
   // Global filter state
   const [teamMemberFilter, setTeamMemberFilter] = useState('All Team Members');
   const [departmentFilter, setDepartmentFilter] = useState('All Departments');
-  const [typeFilter, setTypeFilter] = useState('All Types');
+  const [intakeTypeFilter, setIntakeTypeFilter] = useState('All Intake Types');
+  const [projectTypeFilter, setProjectTypeFilter] = useState('All Project Types');
   const [period, setPeriod] = useState('1Y');
   const [isTableFullscreen, setIsTableFullscreen] = useState(false);
 
@@ -211,18 +212,21 @@ export default function EngagementsDashboard() {
   // Extract unique filter options from engagements
   const filterOptions = useMemo(() => {
     const departments = new Set<string>();
-    const types = new Set<string>();
+    const intakeTypes = new Set<string>();
+    const projectTypes = new Set<string>();
 
     engagements.forEach((e) => {
       departments.add(e.internalClient.gcgDepartment);
-      types.add(e.intakeType);
+      intakeTypes.add(e.intakeType);
+      projectTypes.add(e.type);
     });
 
     return {
       // Only show "All Team Members" and current user for privacy
       teamMembers: ['All Team Members', currentUser],
       departments: ['All Departments', ...Array.from(departments).sort()],
-      types: ['All Types', ...Array.from(types).sort()],
+      intakeTypes: ['All Intake Types', ...Array.from(intakeTypes).sort()],
+      projectTypes: ['All Project Types', ...Array.from(projectTypes).sort()],
     };
   }, [engagements, currentUser]);
 
@@ -269,13 +273,17 @@ export default function EngagementsDashboard() {
       if (departmentFilter !== 'All Departments' && e.internalClient.gcgDepartment !== departmentFilter) {
         return false;
       }
-      // Type filter (intake type)
-      if (typeFilter !== 'All Types' && e.intakeType !== typeFilter) {
+      // Intake type filter
+      if (intakeTypeFilter !== 'All Intake Types' && e.intakeType !== intakeTypeFilter) {
+        return false;
+      }
+      // Project type filter
+      if (projectTypeFilter !== 'All Project Types' && e.type !== projectTypeFilter) {
         return false;
       }
       return true;
     });
-  }, [engagements, teamMemberFilter, departmentFilter, typeFilter, period]);
+  }, [engagements, teamMemberFilter, departmentFilter, intakeTypeFilter, projectTypeFilter, period]);
 
   // Compute filtered metrics based on filtered engagements
   const filteredMetrics = useMemo((): EngagementMetric[] => {
@@ -388,7 +396,7 @@ export default function EngagementsDashboard() {
   // Reset to page 1 when search, sort, or filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, sortConfig, teamMemberFilter, departmentFilter, typeFilter, period]);
+  }, [searchQuery, sortConfig, teamMemberFilter, departmentFilter, intakeTypeFilter, projectTypeFilter, period]);
 
   // Generate page numbers to display
   const getPageNumbers = (): (number | 'ellipsis')[] => {
@@ -470,12 +478,20 @@ export default function EngagementsDashboard() {
               onChange: setDepartmentFilter,
             },
             {
-              id: 'type',
+              id: 'intakeType',
               icon: Filter,
-              label: 'Type',
-              options: filterOptions.types,
-              value: typeFilter,
-              onChange: setTypeFilter,
+              label: 'Intake Type',
+              options: filterOptions.intakeTypes,
+              value: intakeTypeFilter,
+              onChange: setIntakeTypeFilter,
+            },
+            {
+              id: 'projectType',
+              icon: Filter,
+              label: 'Project Type',
+              options: filterOptions.projectTypes,
+              value: projectTypeFilter,
+              onChange: setProjectTypeFilter,
             },
           ]}
           period={period}

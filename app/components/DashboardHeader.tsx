@@ -182,7 +182,7 @@ export default function DashboardHeader({
         </div>
         {/* Global Filters */}
         <div className="flex items-center gap-2">
-          <div className="relative max-w-xs">
+          <div className="relative w-[360px]">
             <Search className="w-4 h-4 text-zinc-500 absolute left-3 top-1/2 -translate-y-1/2" />
             <input
               type="text"
