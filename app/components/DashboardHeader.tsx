@@ -38,6 +38,8 @@ interface DashboardHeaderProps {
   onPeriodChange?: (value: string) => void;
   periodOptions?: string[]; // Custom period options (e.g., ['1M', '3M', '6M', '1Y', 'ALL'])
   className?: string;
+  actionButtonLabel?: string;
+  onActionButtonClick?: () => void;
 }
 
 // Dropdown component for filters
@@ -168,24 +170,19 @@ export default function DashboardHeader({
   onPeriodChange,
   periodOptions,
   className = '',
+  actionButtonLabel,
+  onActionButtonClick,
 }: DashboardHeaderProps) {
-  const currentPeriodLabel = PERIOD_OPTIONS.find((p) => p.value === period)?.label || period;
-
   return (
     <header className={`flex-shrink-0 bg-black/80 backdrop-blur-md border-b border-zinc-800/50 relative z-50 ${className}`}>
       <div className="px-6 py-4">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h2 className="text-xl font-semibold text-white">{title}</h2>
-            <p className="text-zinc-500 text-sm">{subtitle}</p>
-          </div>
-          <div className="flex items-center gap-2 text-xs text-cyan-400">
-            <span className="px-2 py-1 bg-gradient-to-r from-blue-600/20 to-cyan-600/10 border border-cyan-500/20 backdrop-blur-sm">Viewing: {currentPeriodLabel}</span>
-          </div>
+        <div className="mb-4">
+          <h2 className="text-xl font-semibold text-white">{title}</h2>
+          <p className="text-zinc-500 text-sm">{subtitle}</p>
         </div>
         {/* Global Filters */}
         <div className="flex items-center gap-2">
-          <div className="relative flex-1 max-w-xs">
+          <div className="relative max-w-xs">
             <Search className="w-4 h-4 text-zinc-500 absolute left-3 top-1/2 -translate-y-1/2" />
             <input
               type="text"
@@ -206,6 +203,17 @@ export default function DashboardHeader({
               {period}
               <ChevronDown className="w-4 h-4" />
             </button>
+          )}
+          {actionButtonLabel && onActionButtonClick && (
+            <>
+              <div className="flex-1" />
+              <button
+                onClick={onActionButtonClick}
+                className="flex items-center gap-1.5 px-3 py-2 bg-gradient-to-r from-blue-600 to-cyan-500 text-white text-sm font-medium hover:from-blue-500 hover:to-cyan-400 transition-all"
+              >
+                {actionButtonLabel}
+              </button>
+            </>
           )}
         </div>
       </div>

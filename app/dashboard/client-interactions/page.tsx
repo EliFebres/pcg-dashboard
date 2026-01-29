@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { Filter, Building2, FileText, ArrowUpRight, ArrowDownRight, Download, User, Check, X, Loader2, ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
+import { Filter, Building2, FileText, ArrowUpRight, ArrowDownRight, Download, User, Check, X, Loader2, ChevronUp, ChevronDown, ChevronsUpDown, Maximize2, Minimize2 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell } from 'recharts';
 import { getEngagementsDashboardData, getEngagements } from '@/app/lib/api/engagements';
 import { generateContributionData } from '@/app/lib/data/engagements';
@@ -164,6 +164,7 @@ export default function EngagementsDashboard() {
   const [departmentFilter, setDepartmentFilter] = useState('All Departments');
   const [typeFilter, setTypeFilter] = useState('All Types');
   const [period, setPeriod] = useState('1Y');
+  const [isTableFullscreen, setIsTableFullscreen] = useState(false);
 
   // Fetch all dashboard data on mount
   useEffect(() => {
@@ -477,6 +478,11 @@ export default function EngagementsDashboard() {
           ]}
           period={period}
           onPeriodChange={setPeriod}
+          actionButtonLabel="+ New Interaction"
+          onActionButtonClick={() => {
+            // TODO: Implement new interaction modal/form
+            console.log('New Interaction clicked');
+          }}
         />
 
         <div className="p-6 flex-1 flex flex-col overflow-hidden min-h-0">
@@ -586,10 +592,22 @@ export default function EngagementsDashboard() {
                 </div>
               </div>
 
-              {/* Table Section - Takes remaining space with internal scroll */}
-              <div className="relative overflow-hidden bg-zinc-900/60 backdrop-blur-md border border-zinc-800/50 flex-1 flex flex-col min-h-0">
+              {/* Table Section - Takes remaining space with internal scroll, min height for 7 rows */}
+              <div className="relative overflow-hidden bg-zinc-900/60 backdrop-blur-md border border-zinc-800/50 flex-1 flex flex-col min-h-[380px]">
                 <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] via-transparent to-transparent pointer-events-none" />
                 <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+
+                {/* Table Header with Fullscreen Toggle */}
+                <div className="relative z-10 px-4 py-2 flex items-center justify-between border-b border-zinc-800/50 flex-shrink-0">
+                  <h3 className="text-sm font-medium text-white">Interactions</h3>
+                  <button
+                    onClick={() => setIsTableFullscreen(true)}
+                    className="p-1.5 text-zinc-400 hover:text-cyan-400 hover:bg-white/[0.05] transition-colors"
+                    title="Expand table"
+                  >
+                    <Maximize2 className="w-4 h-4" />
+                  </button>
+                </div>
 
                 <div className="relative z-10 flex-1 overflow-auto min-h-0">
                   <table className="w-full">
@@ -752,6 +770,194 @@ export default function EngagementsDashboard() {
             </>
           )}
         </div>
+
+        {/* Fullscreen Table Overlay */}
+        {isTableFullscreen && (
+          <div className="absolute inset-0 z-50 flex items-center justify-center p-16">
+            {/* Dimmed backdrop */}
+            <div
+              className="absolute inset-0 bg-black/80"
+              onClick={() => setIsTableFullscreen(false)}
+            />
+
+            {/* Fullscreen table container */}
+            <div className="relative w-full h-full bg-zinc-900 border border-zinc-700/50 flex flex-col shadow-2xl">
+              <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] via-transparent to-transparent pointer-events-none" />
+              <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-cyan-500/30 to-transparent" />
+
+              {/* Header with close button */}
+              <div className="relative z-10 px-4 py-3 flex items-center justify-between border-b border-zinc-800/50 flex-shrink-0">
+                <h3 className="text-sm font-medium text-white">Interactions</h3>
+                <button
+                  onClick={() => setIsTableFullscreen(false)}
+                  className="p-1.5 text-zinc-400 hover:text-cyan-400 hover:bg-white/[0.05] transition-colors"
+                  title="Exit fullscreen"
+                >
+                  <Minimize2 className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Table content */}
+              <div className="relative z-10 flex-1 overflow-auto min-h-0">
+                <table className="w-full">
+                  <thead className="sticky top-0 bg-zinc-800 z-10">
+                    <tr>
+                      <SortableHeader label="External Client" column="externalClient" currentSort={sortConfig} onSort={handleSort} />
+                      <SortableHeader label="Internal Client" column="internalClient" currentSort={sortConfig} onSort={handleSort} />
+                      <SortableHeader label="Intake Type" column="intakeType" currentSort={sortConfig} onSort={handleSort} />
+                      <SortableHeader label="Project Type" column="type" currentSort={sortConfig} onSort={handleSort} />
+                      <SortableHeader label="Team Members" column="teamMembers" currentSort={sortConfig} onSort={handleSort} />
+                      <SortableHeader label="Date Started" column="dateStarted" currentSort={sortConfig} onSort={handleSort} />
+                      <SortableHeader label="Date Finished" column="dateFinished" currentSort={sortConfig} onSort={handleSort} />
+                      <SortableHeader label="Portfolio Logged" column="portfolioLogged" currentSort={sortConfig} onSort={handleSort} />
+                      <SortableHeader label="Status" column="status" currentSort={sortConfig} onSort={handleSort} />
+                      <th className="text-center text-xs font-medium text-zinc-400 uppercase tracking-wider px-4 py-3">Notes</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-zinc-800/50">
+                    {paginatedEngagements.map((engagement) => (
+                      <tr key={engagement.id} className="hover:bg-white/[0.02] transition-colors">
+                        <td className="px-4 py-3">
+                          <span className={`text-sm font-medium ${engagement.externalClient ? 'text-zinc-200' : 'text-zinc-600'}`}>
+                            {engagement.externalClient ?? '—'}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3">
+                          <div>
+                            <span className="text-sm font-medium text-zinc-200">{engagement.internalClient.name}</span>
+                            <p className="text-xs text-zinc-500">{engagement.internalClient.gcgDepartment}</p>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className={`inline-flex px-2 py-0.5 text-xs font-medium backdrop-blur-sm ${getIntakeTypeStyle(engagement.intakeType)}`}>
+                            {engagement.intakeType}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className={`inline-flex px-2 py-0.5 text-xs font-medium backdrop-blur-sm ${getTypeStyle(engagement.type)}`}>
+                            {engagement.type}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="flex -space-x-1.5">
+                            {engagement.teamMembers.slice(0, 4).map((member, idx) => (
+                              <div
+                                key={idx}
+                                className="w-7 h-7 bg-zinc-700/80 backdrop-blur-sm border-2 border-zinc-900/50 flex items-center justify-center text-zinc-300 text-xs font-medium"
+                                title={member}
+                              >
+                                {getInitials(member)}
+                              </div>
+                            ))}
+                            {engagement.teamMembers.length > 4 && (
+                              <div
+                                className="w-7 h-7 bg-zinc-600/80 backdrop-blur-sm border-2 border-zinc-900/50 flex items-center justify-center text-zinc-300 text-xs font-medium"
+                                title={engagement.teamMembers.slice(4).join(', ')}
+                              >
+                                +{engagement.teamMembers.length - 4}
+                              </div>
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className="text-sm text-zinc-400 font-mono">{engagement.dateStarted}</span>
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className={`text-sm font-mono ${engagement.dateFinished === '—' ? 'text-zinc-600' : 'text-zinc-400'}`}>
+                            {engagement.dateFinished}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3">
+                          {engagement.portfolioLogged ? (
+                            <div className="flex items-center gap-1.5 text-emerald-400">
+                              <Check className="w-4 h-4" />
+                              <span className="text-xs font-medium">Yes</span>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-1.5 text-zinc-500">
+                              <X className="w-4 h-4" />
+                              <span className="text-xs font-medium">No</span>
+                            </div>
+                          )}
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className={`inline-flex px-2 py-0.5 text-xs font-medium backdrop-blur-sm ${getStatusStyle(engagement.status)}`}>
+                            {engagement.status}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-center">
+                          {engagement.hasNotes ? (
+                            <button className="p-1.5 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 transition-colors" title="View notes">
+                              <FileText className="w-4 h-4" />
+                            </button>
+                          ) : (
+                            <span className="text-zinc-600 text-xs">—</span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Pagination - Fixed at bottom */}
+              <div className="relative z-10 px-4 py-3 flex items-center justify-between border-t border-zinc-800/50 flex-shrink-0 bg-zinc-900">
+                <div className="flex items-center gap-3">
+                  <p className="text-xs text-zinc-500">
+                    Showing <span className="text-zinc-300 font-medium">{((currentPage - 1) * pageSize) + 1}–{Math.min(currentPage * pageSize, sortedEngagements.length)}</span> of <span className="text-zinc-300 font-medium">{sortedEngagements.length}</span> interactions
+                  </p>
+                  <button className="flex items-center gap-1.5 px-2 py-1 text-xs text-zinc-400 hover:text-cyan-400 transition-colors" title="Download table data">
+                    <Download className="w-3.5 h-3.5" />
+                    Export
+                  </button>
+                </div>
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                    disabled={currentPage === 1}
+                    className={`px-3 py-1.5 text-xs border border-zinc-700/50 transition-colors ${
+                      currentPage === 1
+                        ? 'text-zinc-600 cursor-not-allowed'
+                        : 'text-zinc-400 hover:bg-white/[0.03] hover:text-zinc-200'
+                    }`}
+                  >
+                    Previous
+                  </button>
+                  {getPageNumbers().map((page, idx) =>
+                    page === 'ellipsis' ? (
+                      <span key={`ellipsis-fs-${idx}`} className="px-2 py-1.5 text-xs text-zinc-500">
+                        ...
+                      </span>
+                    ) : (
+                      <button
+                        key={`fs-${page}`}
+                        onClick={() => setCurrentPage(page)}
+                        className={`px-3 py-1.5 text-xs transition-colors ${
+                          currentPage === page
+                            ? 'bg-gradient-to-r from-blue-600 to-cyan-500 text-white'
+                            : 'border border-zinc-700/50 hover:bg-white/[0.03] text-zinc-400 hover:text-zinc-200'
+                        }`}
+                      >
+                        {page}
+                      </button>
+                    )
+                  )}
+                  <button
+                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                    disabled={currentPage === totalPages}
+                    className={`px-3 py-1.5 text-xs border border-zinc-700/50 transition-colors ${
+                      currentPage === totalPages
+                        ? 'text-zinc-600 cursor-not-allowed'
+                        : 'text-zinc-400 hover:bg-white/[0.03] hover:text-zinc-200'
+                    }`}
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </main>
     </div>
   );
