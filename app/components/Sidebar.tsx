@@ -39,6 +39,17 @@ interface SidebarProps {
   className?: string;
 }
 
+// Shorten long names by abbreviating the last name (e.g., "Trace Williams" → "Trace W.")
+function formatDisplayName(fullName: string): string {
+  const parts = fullName.trim().split(/\s+/);
+  if (parts.length < 2) return fullName;
+  const firstName = parts[0];
+  const lastName = parts[parts.length - 1];
+  // If the full name is short enough, return as-is
+  if (fullName.length <= 14) return fullName;
+  return `${firstName} ${lastName[0]}.`;
+}
+
 export default function Sidebar({ className = '' }: SidebarProps) {
   const pathname = usePathname();
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
@@ -92,8 +103,8 @@ export default function Sidebar({ className = '' }: SidebarProps) {
 
           {/* Name and Role */}
           <div className="flex-1 min-w-0 text-left">
-            <p className="text-[1.1rem] font-semibold text-zinc-200 truncate tracking-wide">Eli Febres</p>
-            <p className="text-[0.86rem] text-zinc-500 truncate">Associate</p>
+            <p className="text-[1.21rem] font-semibold text-zinc-200 truncate tracking-wide leading-tight">{formatDisplayName('Eli Febres')}</p>
+            <p className="text-[0.86rem] text-zinc-500 truncate -mt-0.5">Associate</p>
           </div>
 
           {/* Up-Down Arrow */}

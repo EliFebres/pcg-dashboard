@@ -156,7 +156,7 @@ export default function EngagementsDashboard() {
   const [engagements, setEngagements] = useState<Engagement[]>([]);
   const [sortConfig, setSortConfig] = useState<SortConfig>({ column: 'dateStarted', direction: 'desc' });
   const [currentPage, setCurrentPage] = useState(1);
-  const pageSize = 25;
+  const pageSize = 10;
 
   // Global filter state
   const [teamMemberFilter, setTeamMemberFilter] = useState('All Team Members');
@@ -455,6 +455,7 @@ export default function EngagementsDashboard() {
           searchPlaceholder="Search external clients, internal clients..."
           searchValue={searchQuery}
           onSearchChange={setSearchQuery}
+          className="sticky top-0 z-10"
           filters={[
             {
               id: 'teamMember',
@@ -498,7 +499,7 @@ export default function EngagementsDashboard() {
           }}
         />
 
-        <div className="p-6 flex-1 flex flex-col overflow-hidden min-h-0">
+        <div className="p-6 flex flex-col gap-6">
           {/* Loading State */}
           {isLoading ? (
             <div className="flex-1 flex items-center justify-center">
@@ -510,7 +511,7 @@ export default function EngagementsDashboard() {
           ) : (
             <>
               {/* Metrics Row - Clean Cards (filtered) */}
-              <div className="grid grid-cols-4 gap-4 mb-6 flex-shrink-0">
+              <div className="grid grid-cols-4 gap-4">
                 {filteredMetrics.map((metric, index) => (
                     <div
                       key={index}
@@ -538,7 +539,7 @@ export default function EngagementsDashboard() {
               </div>
 
               {/* Charts Row */}
-              <div className="grid grid-cols-3 gap-4 mb-6 flex-shrink-0" style={{ height: '280px' }}>
+              <div className="grid grid-cols-3 gap-4" style={{ height: '280px' }}>
                 {/* Project Frequency - GitHub-style Contribution Graph */}
                 <div className="col-span-2 relative overflow-hidden bg-zinc-900/60 backdrop-blur-md border border-zinc-800/50 p-5 h-full">
                   <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] via-transparent to-transparent pointer-events-none" />
@@ -605,8 +606,8 @@ export default function EngagementsDashboard() {
                 </div>
               </div>
 
-              {/* Table Section - Takes remaining space with internal scroll, min height for 7 rows */}
-              <div className="relative overflow-hidden bg-zinc-900/60 backdrop-blur-md border border-zinc-800/50 flex-1 flex flex-col min-h-[380px]">
+              {/* Table Section */}
+              <div className="relative overflow-hidden bg-zinc-900/60 backdrop-blur-md border border-zinc-800/50 flex flex-col min-h-[380px]">
                 <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] via-transparent to-transparent pointer-events-none" />
                 <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
 
