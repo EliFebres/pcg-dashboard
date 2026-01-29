@@ -293,10 +293,10 @@ export default function EngagementsDashboard() {
     const portfolioPercent = total > 0 ? Math.round((portfoliosLogged / total) * 100) : 0;
 
     return [
-      { label: 'Interactions', sublabel: '1YR', value: total.toLocaleString(), change: '+12%', isPositive: true, icon: 'FileText' },
+      { label: 'Client Projects', sublabel: '1YR', value: total.toLocaleString(), change: '+12%', isPositive: true, icon: 'FileText' },
+      { label: 'Touch Points', sublabel: '1YR', value: touchPoints.toLocaleString(), change: '+18%', isPositive: true, icon: 'MessageSquare' },
       { label: 'In Progress', sublabel: 'Current', value: inProgress.toLocaleString(), change: '+3', isPositive: true, icon: 'PlayCircle' },
       { label: 'Portfolios Logged', sublabel: '1YR', value: portfoliosLogged.toLocaleString(), change: `${portfolioPercent}%`, isPositive: true, icon: 'CheckCircle2' },
-      { label: 'Touch Points', sublabel: '1YR', value: touchPoints.toLocaleString(), change: '+18%', isPositive: true, icon: 'MessageSquare' },
     ];
   }, [filteredEngagements]);
 
@@ -515,19 +515,30 @@ export default function EngagementsDashboard() {
                 {filteredMetrics.map((metric, index) => (
                     <div
                       key={index}
-                      className="relative overflow-hidden bg-zinc-900/60 backdrop-blur-md border border-zinc-800/50 p-5 group hover:border-zinc-700/50 transition-all"
+                      className="relative overflow-hidden bg-zinc-900/60 backdrop-blur-md border border-zinc-800/50 p-5 rounded-xl group hover:border-zinc-700/50 transition-all duration-300 hover:scale-[1.02] hover:-translate-y-1"
                     >
-                      <div className="absolute inset-0 bg-gradient-to-br from-white/[0.03] via-transparent to-transparent pointer-events-none" />
-                      <div className="relative z-10">
-                        <p className="text-zinc-400 text-sm mb-1">{metric.label}</p>
-                        <p className="text-4xl font-bold text-white mb-2 tracking-tight">{metric.value}</p>
+                      <div className="absolute top-5 right-4 flex items-center gap-0.5">
+                        <div className="w-1 h-1 bg-white/80 rounded-full" />
+                        <div className="w-1 h-1 bg-white/80 rounded-full" />
+                        <div className="w-1 h-1 bg-white/80 rounded-full" />
+                      </div>
+                      <div className="absolute top-3.5 left-5 z-10">
+                        <p className="text-white text-[0.8rem]">{metric.label}</p>
+                      </div>
+                      <div className="relative z-10 pt-6">
+                        <p className="text-[3rem] font-bold text-white mb-2 tracking-tight leading-none">{metric.value}</p>
                         <div className="flex items-center gap-2">
-                          <span className={`flex items-center gap-1 text-xs font-medium px-2 py-0.5 backdrop-blur-sm ${
-                            metric.isPositive
-                              ? 'bg-emerald-500/20 text-emerald-400'
-                              : 'bg-red-500/20 text-red-400'
-                          }`}>
-                            {metric.isPositive ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
+                          <span
+                            className={`flex items-center gap-1 text-[0.9rem] font-medium ${
+                              metric.isPositive ? 'text-[#39FF14]' : 'text-[#FF3131]'
+                            }`}
+                            style={{
+                              textShadow: metric.isPositive
+                                ? '0 0 4px rgba(57, 255, 20, 0.3)'
+                                : '0 0 4px rgba(255, 49, 49, 0.3)'
+                            }}
+                          >
+                            {metric.isPositive ? <ArrowUpRight className="w-3.5 h-3.5" /> : <ArrowDownRight className="w-3.5 h-3.5" />}
                             {metric.change}
                           </span>
                           <span className="text-xs text-zinc-500">{metric.sublabel}</span>
