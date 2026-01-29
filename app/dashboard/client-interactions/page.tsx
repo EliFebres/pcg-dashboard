@@ -457,7 +457,7 @@ export default function EngagementsDashboard() {
         <DashboardHeader
           title="Client Interactions"
           subtitle="Track and manage client interactions across all departments"
-          searchPlaceholder="Search clients, team members..."
+          searchPlaceholder="Search external clients, internal clients..."
           searchValue={searchQuery}
           onSearchChange={setSearchQuery}
           filters={[

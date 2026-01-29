@@ -146,6 +146,7 @@ export async function getEngagements(filters?: EngagementsFilters): Promise<Enga
     const searchLower = filters.search.toLowerCase();
     filtered = filtered.filter(e =>
       (e.externalClient?.toLowerCase().includes(searchLower) ?? false) ||
+      e.internalClient.name.toLowerCase().includes(searchLower) ||
       e.teamMembers.some(m => m.toLowerCase().includes(searchLower))
     );
   }

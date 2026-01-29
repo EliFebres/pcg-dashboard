@@ -35,7 +35,7 @@ const externalClients = [
 const teamMembers = ['Eli F.', 'Sarah K.', 'Mike R.', 'Lisa M.', 'James T.', 'David L.'];
 const internalClientKeys = Object.keys(internalClients) as (keyof typeof internalClients)[];
 const departments: ('IAG' | 'Broker-Dealer' | 'Institution')[] = ['IAG', 'Broker-Dealer', 'Institution'];
-const projectTypes = ['Data Request', 'Meeting', 'Analysis', 'Presentation', 'Review', 'PCR'];
+const projectTypes = ['Meeting', 'Follow-Up', 'Data Request', 'PCR'];
 
 // Seeded random for consistent data generation
 function seededRandom(seed: number): number {
