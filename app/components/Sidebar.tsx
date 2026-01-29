@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, BarChart3, ChevronDown, PieChart, Flame, ChevronsUpDown, User } from 'lucide-react';
+import { LayoutDashboard, BarChart3, ChevronDown, PieChart, Flame, ChevronsUpDown, User, Settings, HelpCircle } from 'lucide-react';
 
 interface NavItem {
   label: string;
@@ -51,17 +51,19 @@ export default function Sidebar({ className = '' }: SidebarProps) {
     return false;
   };
 
-  // Auto-expand parent items when on a child page
+  // Auto-expand parent items when on a child page, collapse when navigating away
   useEffect(() => {
+    const itemsToExpand: string[] = [];
+
     navSections.forEach(section => {
       section.items.forEach(item => {
         if (item.children && item.children.some(child => pathname === child.href)) {
-          setExpandedItems(prev =>
-            prev.includes(item.label) ? prev : [...prev, item.label]
-          );
+          itemsToExpand.push(item.label);
         }
       });
     });
+
+    setExpandedItems(itemsToExpand);
   }, [pathname]);
 
   const toggleExpanded = (label: string) => {
@@ -73,9 +75,7 @@ export default function Sidebar({ className = '' }: SidebarProps) {
   };
 
   return (
-    <aside className={`w-52 bg-zinc-950 flex flex-col ${className}`}>
-      <div className="absolute inset-0 bg-gradient-to-b from-white/[0.02] to-transparent pointer-events-none" />
-
+    <aside className={`w-56 bg-[#111113] flex flex-col font-[family-name:var(--font-inter)] ${className}`}>
       {/* User Profile Header */}
       <div className="relative px-2 py-3 border-b border-zinc-800/50">
         <button
@@ -86,14 +86,14 @@ export default function Sidebar({ className = '' }: SidebarProps) {
           }}
         >
           {/* Profile Picture */}
-          <div className="w-9 h-9 bg-zinc-700 rounded-full flex items-center justify-center flex-shrink-0">
-            <User className="w-5 h-5 text-zinc-400" />
+          <div className="w-9 h-9 bg-gradient-to-r from-blue-600 to-cyan-500 rounded-full flex items-center justify-center flex-shrink-0">
+            <User className="w-5 h-5 text-white" />
           </div>
 
           {/* Name and Role */}
           <div className="flex-1 min-w-0 text-left">
-            <p className="text-[0.96rem] font-sans font-semibold text-zinc-200 truncate tracking-wide">Eli Febres</p>
-            <p className="text-xs text-zinc-500 truncate">Associate</p>
+            <p className="text-[1.1rem] font-semibold text-zinc-200 truncate tracking-wide">Eli Febres</p>
+            <p className="text-[0.86rem] text-zinc-500 truncate">Associate</p>
           </div>
 
           {/* Up-Down Arrow */}
@@ -121,17 +121,17 @@ export default function Sidebar({ className = '' }: SidebarProps) {
                     <div key={item.label}>
                       <button
                         onClick={() => toggleExpanded(item.label)}
-                        className={`w-full flex items-center justify-between px-2 py-1.5 transition-colors border-l-2 ${
+                        className={`w-full flex items-center justify-between px-2 py-2 transition-colors border-l-2 ${
                           parentActive
                             ? 'bg-gradient-to-r from-blue-600/20 to-cyan-600/10 text-cyan-400 border-cyan-400 backdrop-blur-sm'
                             : 'text-zinc-400 hover:bg-white/[0.03] hover:text-zinc-200 border-transparent'
                         }`}
                       >
-                        <div className="flex items-center gap-2">
-                          <Icon className="w-4 h-4 flex-shrink-0" />
-                          <span className={`text-sm ${parentActive ? 'font-medium' : ''}`}>{item.label}</span>
+                        <div className="flex items-center gap-2.5">
+                          <Icon className="w-5 h-5 flex-shrink-0" />
+                          <span className="text-[0.9rem] font-semibold tracking-wide">{item.label}</span>
                         </div>
-                        <ChevronDown className={`w-3.5 h-3.5 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                        <ChevronDown className={`w-4 h-4 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
                       </button>
                       {isExpanded && (
                         <div className="ml-4 mt-0.5 space-y-0.5">
@@ -142,14 +142,14 @@ export default function Sidebar({ className = '' }: SidebarProps) {
                               <Link
                                 key={child.href}
                                 href={child.href}
-                                className={`w-full flex items-center gap-2 px-2 py-1.5 transition-colors border-l-2 ${
+                                className={`w-full flex items-center gap-2.5 px-2 py-1.5 transition-colors border-l-2 ${
                                   childActive
                                     ? 'bg-gradient-to-r from-blue-600/20 to-cyan-600/10 text-cyan-400 border-cyan-400 backdrop-blur-sm'
                                     : 'text-zinc-400 hover:bg-white/[0.03] hover:text-zinc-200 border-transparent'
                                 }`}
                               >
-                                <ChildIcon className="w-3.5 h-3.5 flex-shrink-0" />
-                                <span className={`text-sm ${childActive ? 'font-medium' : ''}`}>{child.label}</span>
+                                <ChildIcon className="w-4 h-4 flex-shrink-0" />
+                                <span className="text-[0.85rem] font-semibold tracking-wide">{child.label}</span>
                               </Link>
                             );
                           })}
@@ -163,14 +163,14 @@ export default function Sidebar({ className = '' }: SidebarProps) {
                   <Link
                     key={item.href}
                     href={item.href}
-                    className={`w-full flex items-center gap-2 px-2 py-1.5 transition-colors border-l-2 ${
+                    className={`w-full flex items-center gap-2.5 px-2 py-2 transition-colors border-l-2 ${
                       active
                         ? 'bg-gradient-to-r from-blue-600/20 to-cyan-600/10 text-cyan-400 border-cyan-400 backdrop-blur-sm'
                         : 'text-zinc-400 hover:bg-white/[0.03] hover:text-zinc-200 border-transparent'
                     }`}
                   >
-                    <Icon className="w-4 h-4 flex-shrink-0" />
-                    <span className={`text-sm ${active ? 'font-medium' : ''}`}>{item.label}</span>
+                    <Icon className="w-5 h-5 flex-shrink-0" />
+                    <span className="text-[0.9rem] font-semibold tracking-wide">{item.label}</span>
                   </Link>
                 );
               })}
@@ -178,6 +178,32 @@ export default function Sidebar({ className = '' }: SidebarProps) {
           </div>
         ))}
       </nav>
+
+      {/* Footer Actions - adjust pb-[20px] to change bottom spacing */}
+      <div className="relative px-1.5 pt-3 pb-[20px]">
+        <div className="space-y-0.5">
+          <button
+            className="w-full flex items-center gap-2.5 px-2 py-2 text-zinc-400 hover:bg-white/[0.03] hover:text-zinc-200 border-l-2 border-transparent transition-colors"
+            onClick={() => {
+              // TODO: Open settings
+              console.log('Settings clicked');
+            }}
+          >
+            <Settings className="w-5 h-5 flex-shrink-0" />
+            <span className="text-[0.9rem] font-semibold tracking-wide">Settings</span>
+          </button>
+          <button
+            className="w-full flex items-center gap-2.5 px-2 py-2 text-zinc-400 hover:bg-white/[0.03] hover:text-zinc-200 border-l-2 border-transparent transition-colors"
+            onClick={() => {
+              // TODO: Open help center
+              console.log('Help Center clicked');
+            }}
+          >
+            <HelpCircle className="w-5 h-5 flex-shrink-0" />
+            <span className="text-[0.9rem] font-semibold tracking-wide">Help Center</span>
+          </button>
+        </div>
+      </div>
     </aside>
   );
 }
