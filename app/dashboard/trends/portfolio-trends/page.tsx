@@ -11,7 +11,6 @@ import {
   computeFixedIncomeMetrics,
   computeBenchmarkComparison,
 } from '@/app/lib/data/portfolioTrends';
-import Sidebar from '@/app/components/Sidebar';
 import DashboardHeader from '@/app/components/DashboardHeader';
 
 type SortColumn = keyof LoggedPortfolio | 'positionCount' | 'internalClientName' | 'department';
@@ -108,11 +107,7 @@ export default function PortfolioTrendsDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-black flex">
-      <Sidebar className="fixed top-0 left-0 h-screen" />
-
-      {/* Main Content */}
-      <main className="flex-1 ml-52">
+    <>
         {/* Top Bar with Filters */}
         <DashboardHeader
           title="Portfolio Trends"
@@ -972,7 +967,6 @@ export default function PortfolioTrendsDashboard() {
             </div>
           </div>
         )}
-      </main>
-    </div>
+    </>
   );
 }

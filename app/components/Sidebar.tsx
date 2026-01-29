@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { TrendingUp, LayoutDashboard, BarChart3, Settings, ChevronDown, PieChart, Flame } from 'lucide-react';
+import { LayoutDashboard, BarChart3, ChevronDown, PieChart, Flame, ChevronsUpDown, User } from 'lucide-react';
 
 interface NavItem {
   label: string;
@@ -73,20 +73,32 @@ export default function Sidebar({ className = '' }: SidebarProps) {
   };
 
   return (
-    <aside className={`w-52 bg-zinc-950/80 backdrop-blur-md border-r border-zinc-800/50 flex flex-col ${className}`}>
+    <aside className={`w-52 bg-zinc-950 flex flex-col ${className}`}>
       <div className="absolute inset-0 bg-gradient-to-b from-white/[0.02] to-transparent pointer-events-none" />
 
-      {/* Logo */}
-      <div className="relative px-3 py-3 border-b border-zinc-800/50">
-        <div className="flex items-center gap-2">
-          <div className="w-7 h-7 bg-gradient-to-br from-blue-500 to-cyan-400 flex items-center justify-center flex-shrink-0">
-            <TrendingUp className="w-3.5 h-3.5 text-white" />
+      {/* User Profile Header */}
+      <div className="relative px-2 py-3 border-b border-zinc-800/50">
+        <button
+          className="w-full flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-zinc-800/50 transition-colors cursor-pointer"
+          onClick={() => {
+            // TODO: Open user profile menu/modal
+            console.log('User profile clicked');
+          }}
+        >
+          {/* Profile Picture */}
+          <div className="w-9 h-9 bg-zinc-700 rounded-full flex items-center justify-center flex-shrink-0">
+            <User className="w-5 h-5 text-zinc-400" />
           </div>
-          <div className="min-w-0">
-            <h1 className="text-sm font-semibold text-white tracking-tight">PCG Insights</h1>
-            <p className="text-xs text-zinc-500 truncate">Dimensional</p>
+
+          {/* Name and Role */}
+          <div className="flex-1 min-w-0 text-left">
+            <p className="text-[0.96rem] font-sans font-semibold text-zinc-200 truncate tracking-wide">Eli Febres</p>
+            <p className="text-xs text-zinc-500 truncate">Associate</p>
           </div>
-        </div>
+
+          {/* Up-Down Arrow */}
+          <ChevronsUpDown className="w-4 h-4 text-zinc-500 flex-shrink-0" />
+        </button>
       </div>
 
       {/* Navigation */}
@@ -166,22 +178,6 @@ export default function Sidebar({ className = '' }: SidebarProps) {
           </div>
         ))}
       </nav>
-
-      {/* User Profile & Settings */}
-      <div className="relative px-1.5 py-2 border-t border-zinc-800/50">
-        <div className="flex items-center gap-2 px-2 py-1.5">
-          <div className="w-6 h-6 bg-gradient-to-br from-blue-500 to-cyan-400 flex items-center justify-center text-white font-medium text-xs flex-shrink-0">
-            EF
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-zinc-200 truncate">Eli F.</p>
-            <p className="text-xs text-zinc-500">Associate</p>
-          </div>
-          <button className="p-1 text-zinc-500 hover:text-zinc-300 hover:bg-white/[0.05] transition-colors flex-shrink-0">
-            <Settings className="w-3.5 h-3.5" />
-          </button>
-        </div>
-      </div>
     </aside>
   );
 }

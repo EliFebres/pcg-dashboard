@@ -6,7 +6,6 @@ import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell } from 'recharts
 import { getEngagementsDashboardData, getEngagements } from '@/app/lib/api/engagements';
 import { generateContributionData } from '@/app/lib/data/engagements';
 import type { EngagementMetric, DepartmentData, Engagement, DayData } from '@/app/lib/types/engagements';
-import Sidebar from '@/app/components/Sidebar';
 import DashboardHeader from '@/app/components/DashboardHeader';
 import ClientOnlyChart from '@/app/components/ClientOnlyChart';
 
@@ -448,11 +447,7 @@ export default function EngagementsDashboard() {
   };
 
   return (
-    <div className="h-screen bg-black flex overflow-hidden">
-      <Sidebar className="flex-shrink-0" />
-
-      {/* Main Content */}
-      <main className="flex-1 flex flex-col overflow-hidden">
+    <>
         {/* Top Bar with Filters */}
         <DashboardHeader
           title="Client Interactions"
@@ -976,7 +971,6 @@ export default function EngagementsDashboard() {
             </div>
           </div>
         )}
-      </main>
-    </div>
+    </>
   );
 }

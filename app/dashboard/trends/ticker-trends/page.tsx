@@ -11,7 +11,6 @@ import {
   computePopularDFATickers,
   computeTickerTrendsOverTime,
 } from '@/app/lib/data/tickerTrends';
-import Sidebar from '@/app/components/Sidebar';
 import DashboardHeader from '@/app/components/DashboardHeader';
 import ClientOnlyChart from '@/app/components/ClientOnlyChart';
 
@@ -73,11 +72,7 @@ export default function TickerTrendsDashboard() {
   }, [popularDFATickers]);
 
   return (
-    <div className="min-h-screen bg-black flex">
-      <Sidebar className="fixed top-0 left-0 h-screen" />
-
-      {/* Main Content */}
-      <main className="flex-1 ml-52">
+    <>
         {/* Top Bar with Filters */}
         <DashboardHeader
           title="Ticker Trends"
@@ -362,7 +357,6 @@ export default function TickerTrendsDashboard() {
             </div>
           </div>
         </div>
-      </main>
-    </div>
+    </>
   );
 }
