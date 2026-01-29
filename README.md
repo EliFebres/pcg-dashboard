@@ -61,8 +61,9 @@ app/
 │   └── ClientOnlyChart.tsx  # SSR-safe chart wrapper
 ├── dashboard/
 │   ├── client-interactions/  # Client interactions tracking
-│   ├── portfolio-trends/     # Portfolio analytics
-│   └── ticker-trends/        # Ticker analytics
+│   └── trends/
+│       ├── portfolio-trends/ # Portfolio analytics
+│       └── ticker-trends/    # Ticker analytics
 └── lib/
     ├── api/            # API functions (mock data)
     ├── data/           # Data generation utilities

@@ -10,7 +10,7 @@ import {
   computePortfolioMetrics,
   computeFixedIncomeMetrics,
   computeBenchmarkComparison,
-} from '@/app/lib/data/trends';
+} from '@/app/lib/data/portfolioTrends';
 import Sidebar from '@/app/components/Sidebar';
 import DashboardHeader from '@/app/components/DashboardHeader';
 

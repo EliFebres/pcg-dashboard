@@ -27,8 +27,8 @@ const navSections: NavSection[] = [
         href: '/dashboard/trends',
         icon: BarChart3,
         children: [
-          { label: 'Portfolio Trends', href: '/dashboard/portfolio-trends', icon: PieChart },
-          { label: 'Ticker Trends', href: '/dashboard/ticker-trends', icon: Flame },
+          { label: 'Portfolio Trends', href: '/dashboard/trends/portfolio-trends', icon: PieChart },
+          { label: 'Ticker Trends', href: '/dashboard/trends/ticker-trends', icon: Flame },
         ],
       },
     ],

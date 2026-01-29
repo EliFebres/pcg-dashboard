@@ -10,7 +10,7 @@ import {
   filterPortfolios,
   computePopularDFATickers,
   computeTickerTrendsOverTime,
-} from '@/app/lib/data/trends';
+} from '@/app/lib/data/tickerTrends';
 import Sidebar from '@/app/components/Sidebar';
 import DashboardHeader from '@/app/components/DashboardHeader';
 import ClientOnlyChart from '@/app/components/ClientOnlyChart';
