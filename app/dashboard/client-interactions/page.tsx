@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { Filter, Building2, FileText, ArrowUpRight, ArrowDownRight, Download, User, Check, X, Loader2, ChevronUp, ChevronDown, ChevronsUpDown, Maximize2, Minimize2 } from 'lucide-react';
+import { Building2, FileText, ArrowUpRight, ArrowDownRight, Download, User, Check, X, Loader2, ChevronUp, ChevronDown, ChevronsUpDown, Maximize2, Minimize2, Inbox, Briefcase } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell } from 'recharts';
 import { getEngagementsDashboardData, getEngagements } from '@/app/lib/api/engagements';
 import { generateContributionData } from '@/app/lib/data/engagements';
@@ -286,14 +286,22 @@ export default function EngagementsDashboard() {
 
   // Compute filtered metrics based on filtered engagements
   const filteredMetrics = useMemo((): EngagementMetric[] => {
-    const total = filteredEngagements.length;
+    // Client Projects = GRRFs + IRQs - PCRs (PCRs that came from GRRF/IRQ intakes)
+    const grffsAndIrqs = filteredEngagements.filter((e) => e.intakeType === 'GRRF' || e.intakeType === 'IRQ');
+    const pcrsFromGrffsAndIrqs = grffsAndIrqs.filter((e) => e.type === 'PCR').length;
+    const clientProjects = grffsAndIrqs.length - pcrsFromGrffsAndIrqs;
+
     const inProgress = filteredEngagements.filter((e) => e.status === 'In Progress').length;
-    const portfoliosLogged = filteredEngagements.filter((e) => e.portfolioLogged).length;
+    // Only count portfolios logged for GRRFs and IRQs that are not PCRs (Touch Points and PCRs don't have logged portfolios)
+    const eligibleForPortfolio = filteredEngagements.filter((e) =>
+      (e.intakeType === 'GRRF' || e.intakeType === 'IRQ') && e.type !== 'PCR'
+    );
+    const portfoliosLogged = eligibleForPortfolio.filter((e) => e.portfolioLogged).length;
     const touchPoints = filteredEngagements.filter((e) => e.intakeType === 'Touch Points').length;
-    const portfolioPercent = total > 0 ? Math.round((portfoliosLogged / total) * 100) : 0;
+    const portfolioPercent = eligibleForPortfolio.length > 0 ? Math.round((portfoliosLogged / eligibleForPortfolio.length) * 100) : 0;
 
     return [
-      { label: 'Client Projects', sublabel: '1YR', value: total.toLocaleString(), change: '+12%', isPositive: true, icon: 'FileText' },
+      { label: 'Client Projects', sublabel: '1YR', value: clientProjects.toLocaleString(), change: '+12%', isPositive: true, icon: 'FileText' },
       { label: 'Touch Points', sublabel: '1YR', value: touchPoints.toLocaleString(), change: '+18%', isPositive: true, icon: 'MessageSquare' },
       { label: 'In Progress', sublabel: 'Current', value: inProgress.toLocaleString(), change: '+3', isPositive: true, icon: 'PlayCircle' },
       { label: 'Portfolios Logged', sublabel: '1YR', value: portfoliosLogged.toLocaleString(), change: `${portfolioPercent}%`, isPositive: true, icon: 'CheckCircle2' },
@@ -475,7 +483,7 @@ export default function EngagementsDashboard() {
             },
             {
               id: 'intakeType',
-              icon: Filter,
+              icon: Inbox,
               label: 'Intake Type',
               options: filterOptions.intakeTypes,
               value: intakeTypeFilter,
@@ -483,7 +491,7 @@ export default function EngagementsDashboard() {
             },
             {
               id: 'projectType',
-              icon: Filter,
+              icon: Briefcase,
               label: 'Project Type',
               options: filterOptions.projectTypes,
               value: projectTypeFilter,

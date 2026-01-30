@@ -76,27 +76,31 @@ function FilterDropdownButton({ filter }: { filter: FilterDropdown }) {
         <ChevronDown className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''} ${isFiltered ? 'text-cyan-400' : 'text-zinc-500'}`} />
       </button>
 
-      {isOpen && (
-        <div className="absolute top-full left-0 mt-1 min-w-[180px] bg-zinc-900/95 backdrop-blur-md border border-zinc-700/50 shadow-xl z-[100]">
-          {filter.options.map((option) => (
-            <button
-              key={option}
-              onClick={() => {
-                filter.onChange(option);
-                setIsOpen(false);
-              }}
-              className={`w-full flex items-center justify-between px-3 py-2 text-sm text-left transition-colors ${
-                filter.value === option
-                  ? 'bg-cyan-500/10 text-cyan-400'
-                  : 'text-zinc-300 hover:bg-white/[0.05]'
-              }`}
-            >
-              {option}
-              {filter.value === option && <Check className="w-4 h-4" />}
-            </button>
-          ))}
-        </div>
-      )}
+      <div
+        className={`absolute top-full left-0 mt-1 min-w-full w-max bg-zinc-900 border border-zinc-700/50 shadow-xl z-[100] origin-top transition-all duration-200 ease-in ${
+          isOpen
+            ? 'opacity-100 scale-y-100 scale-x-100 translate-y-0 pointer-events-auto'
+            : 'opacity-0 scale-y-50 scale-x-95 -translate-y-4 pointer-events-none'
+        }`}
+      >
+        {filter.options.map((option) => (
+          <button
+            key={option}
+            onClick={() => {
+              filter.onChange(option);
+              setIsOpen(false);
+            }}
+            className={`w-full flex items-center justify-between px-3 py-2 text-sm text-left transition-colors ${
+              filter.value === option
+                ? 'bg-cyan-500/10 text-cyan-400'
+                : 'text-zinc-300 hover:bg-white/[0.05]'
+            }`}
+          >
+            {option}
+            {filter.value === option && <Check className="w-4 h-4" />}
+          </button>
+        ))}
+      </div>
     </div>
   );
 }
@@ -134,27 +138,31 @@ function PeriodDropdown({ value, onChange, customOptions }: { value: string; onC
         <ChevronDown className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
       </button>
 
-      {isOpen && (
-        <div className="absolute top-full right-0 mt-1 min-w-[140px] bg-zinc-900/95 backdrop-blur-md border border-zinc-700/50 shadow-xl z-[100]">
-          {options.map((option) => (
-            <button
-              key={option.value}
-              onClick={() => {
-                onChange(option.value);
-                setIsOpen(false);
-              }}
-              className={`w-full flex items-center justify-between px-3 py-2 text-sm text-left transition-colors ${
-                value === option.value
-                  ? 'bg-cyan-500/10 text-cyan-400'
-                  : 'text-zinc-300 hover:bg-white/[0.05]'
-              }`}
-            >
-              {option.label}
-              {value === option.value && <Check className="w-4 h-4" />}
-            </button>
-          ))}
-        </div>
-      )}
+      <div
+        className={`absolute top-full left-0 mt-1 min-w-full w-max bg-zinc-900 border border-zinc-700/50 shadow-xl z-[100] origin-top transition-all duration-200 ease-in ${
+          isOpen
+            ? 'opacity-100 scale-y-100 scale-x-100 translate-y-0 pointer-events-auto'
+            : 'opacity-0 scale-y-50 scale-x-95 -translate-y-4 pointer-events-none'
+        }`}
+      >
+        {options.map((option) => (
+          <button
+            key={option.value}
+            onClick={() => {
+              onChange(option.value);
+              setIsOpen(false);
+            }}
+            className={`w-full flex items-center justify-between px-3 py-2 text-sm text-left transition-colors ${
+              value === option.value
+                ? 'bg-cyan-500/10 text-cyan-400'
+                : 'text-zinc-300 hover:bg-white/[0.05]'
+            }`}
+          >
+            {option.label}
+            {value === option.value && <Check className="w-4 h-4" />}
+          </button>
+        ))}
+      </div>
     </div>
   );
 }
@@ -174,9 +182,71 @@ export default function DashboardHeader({
   onActionButtonClick,
 }: DashboardHeaderProps) {
   const [filtersExpanded, setFiltersExpanded] = useState(false);
+  const collapseTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const prevFiltersRef = useRef<string>(JSON.stringify(filters.map(f => f.value)));
+  const isHoveringRef = useRef(false);
 
   // Check if any filter is active (not on default "All" option)
   const hasActiveFilters = filters.some(filter => filter.value !== filter.options[0]);
+
+  // Start or restart the collapse timeout (only if no active filters)
+  const startCollapseTimeout = () => {
+    if (collapseTimeoutRef.current) {
+      clearTimeout(collapseTimeoutRef.current);
+    }
+    // Don't start timeout if there are active filters
+    if (hasActiveFilters) return;
+
+    collapseTimeoutRef.current = setTimeout(() => {
+      if (!isHoveringRef.current && !hasActiveFilters) {
+        setFiltersExpanded(false);
+      }
+    }, 30000);
+  };
+
+  // Auto-collapse filters after 30 seconds of inactivity (only if no active filters)
+  useEffect(() => {
+    if (filtersExpanded && !hasActiveFilters) {
+      startCollapseTimeout();
+    }
+
+    // Clear timeout if filters become active
+    if (hasActiveFilters && collapseTimeoutRef.current) {
+      clearTimeout(collapseTimeoutRef.current);
+    }
+
+    return () => {
+      if (collapseTimeoutRef.current) {
+        clearTimeout(collapseTimeoutRef.current);
+      }
+    };
+  }, [filtersExpanded, hasActiveFilters]);
+
+  // Reset timeout when any filter value changes (only if no active filters)
+  useEffect(() => {
+    const currentFilters = JSON.stringify(filters.map(f => f.value));
+    if (prevFiltersRef.current !== currentFilters && filtersExpanded) {
+      prevFiltersRef.current = currentFilters;
+      if (!hasActiveFilters) {
+        startCollapseTimeout();
+      }
+    }
+  }, [filters, filtersExpanded, hasActiveFilters]);
+
+  // Hover handlers for the filters container
+  const handleMouseEnter = () => {
+    isHoveringRef.current = true;
+    if (collapseTimeoutRef.current) {
+      clearTimeout(collapseTimeoutRef.current);
+    }
+  };
+
+  const handleMouseLeave = () => {
+    isHoveringRef.current = false;
+    if (filtersExpanded) {
+      startCollapseTimeout();
+    }
+  };
 
   return (
     <header className={`flex-shrink-0 bg-black/80 backdrop-blur-md border-b border-zinc-800/50 relative z-50 ${className}`}>
@@ -222,12 +292,14 @@ export default function DashboardHeader({
 
           {/* Animated Filters Container */}
           <div
-            className={`flex items-center overflow-hidden transition-all duration-1000 ease-out whitespace-nowrap ${
-              filtersExpanded ? 'max-w-[1000px] opacity-100 gap-2' : 'max-w-0 opacity-0 gap-0'
+            className={`flex items-center transition-all duration-1000 ease-out whitespace-nowrap ${
+              filtersExpanded ? 'max-w-[1000px] opacity-100 gap-2 overflow-visible' : 'max-w-0 opacity-0 gap-0 overflow-hidden'
             }`}
             style={{
               transitionDelay: filtersExpanded ? '200ms' : '0ms'
             }}
+            onMouseEnter={handleMouseEnter}
+            onMouseLeave={handleMouseLeave}
           >
             {filters.map((filter) => (
               <FilterDropdownButton key={filter.id} filter={filter} />
@@ -248,7 +320,7 @@ export default function DashboardHeader({
               <div className="flex-1" />
               <button
                 onClick={onActionButtonClick}
-                className="flex items-center gap-1.5 px-3 py-2 bg-gradient-to-r from-blue-600 to-cyan-500 text-white text-sm font-medium hover:from-blue-500 hover:to-cyan-400 transition-all"
+                className="flex items-center gap-1.5 px-3 py-2 bg-gradient-to-r from-blue-600 to-cyan-500 text-white text-sm font-medium hover:from-blue-500 hover:to-cyan-400 transition-all rounded-[6px]"
               >
                 {actionButtonLabel}
               </button>

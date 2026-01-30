@@ -133,7 +133,7 @@ function generateYearOfEngagements(): Engagement[] {
         dateStarted: dateStr,
         dateFinished: finishStr,
         status: isAfterCutoff ? 'In Progress' : 'Completed',
-        portfolioLogged: isAfterCutoff ? false : seededRandom(seed + 5) > 0.2,
+        portfolioLogged: false, // Touch points don't have logged portfolios
         hasNotes: seededRandom(seed + 6) > 0.6,
       });
     }
@@ -173,7 +173,7 @@ function generateYearOfEngagements(): Engagement[] {
         dateStarted: dateStr,
         dateFinished: finishStr,
         status: isAfterCutoff ? 'In Progress' : 'Completed',
-        portfolioLogged: isAfterCutoff ? false : seededRandom(seed + 7) > 0.15,
+        portfolioLogged: isAfterCutoff || projectType === 'PCR' ? false : seededRandom(seed + 7) > 0.15, // PCRs don't have logged portfolios
         hasNotes: seededRandom(seed + 8) > 0.5,
       });
     }
