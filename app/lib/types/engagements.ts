@@ -15,6 +15,7 @@ export interface EngagementMetric {
   change: string;
   isPositive: boolean;
   icon: string; // Icon name as string - component will map to actual icon
+  percent?: number; // Optional percentage for progress bar visualization
 }
 
 export interface DepartmentData {

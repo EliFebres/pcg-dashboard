@@ -307,7 +307,7 @@ export default function EngagementsDashboard() {
       { label: 'Client Projects', sublabel: '1YR', value: clientProjects.toLocaleString(), change: '+12%', isPositive: true, icon: 'FileText' },
       { label: 'Touch Points', sublabel: '1YR', value: touchPoints.toLocaleString(), change: '+18%', isPositive: true, icon: 'MessageSquare' },
       { label: 'In Progress', sublabel: 'Current', value: inProgress.toLocaleString(), change: '+3', isPositive: true, icon: 'PlayCircle' },
-      { label: 'Portfolios Logged', sublabel: '1YR', value: portfoliosLogged.toLocaleString(), change: `${portfolioPercent}%`, isPositive: true, icon: 'CheckCircle2' },
+      { label: 'Portfolios Logged', sublabel: '1YR', value: portfoliosLogged.toLocaleString(), change: `${portfolioPercent}%`, isPositive: true, icon: 'CheckCircle2', percent: portfolioPercent },
     ];
   }, [filteredEngagements]);
 
@@ -538,7 +538,7 @@ export default function EngagementsDashboard() {
                   </div>
                   <div className="relative z-10 pt-6">
                     <p className="text-[3rem] font-bold text-white mb-2 tracking-tight leading-none">{metric.value}</p>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 ml-1">
                       <span
                         className={`flex items-center gap-1 text-[0.9rem] font-medium ${metric.isPositive ? 'text-[#39FF14]' : 'text-[#FF3131]'
                           }`}
@@ -548,13 +548,28 @@ export default function EngagementsDashboard() {
                             : '0 0 4px rgba(255, 49, 49, 0.3)'
                         }}
                       >
-                        {metric.isPositive ? <ArrowUpRight className="w-3.5 h-3.5" /> : <ArrowDownRight className="w-3.5 h-3.5" />}
+                        {metric.percent === undefined && (metric.isPositive ? <ArrowUpRight className="w-3.5 h-3.5" /> : <ArrowDownRight className="w-3.5 h-3.5" />)}
                         {metric.change}
                       </span>
                       <span className="text-xs text-zinc-500">{metric.sublabel}</span>
                     </div>
                   </div>
                   <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+                  {/* Progress bar for metrics with percent - lower right quarter */}
+                  {metric.percent !== undefined && (
+                    <div className="absolute bottom-8 right-4 w-[45%]">
+                      <div className="h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+                        <div
+                          className="h-full rounded-full transition-all duration-700 ease-out"
+                          style={{
+                            width: `${metric.percent}%`,
+                            backgroundColor: '#39FF14',
+                            boxShadow: '0 0 8px rgba(57, 255, 20, 0.5)'
+                          }}
+                        />
+                      </div>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
