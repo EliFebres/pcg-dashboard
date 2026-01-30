@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { Building2, FileText, ArrowUpRight, ArrowDownRight, Download, User, Check, X, Loader2, ChevronUp, ChevronDown, ChevronsUpDown, Maximize2, Minimize2, Inbox, Briefcase } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell, LabelList } from 'recharts';
 import { getEngagementsDashboardData, getEngagements } from '@/app/lib/api/engagements';
 import { generateContributionData } from '@/app/lib/data/engagements';
 import type { EngagementMetric, DepartmentData, Engagement, DayData } from '@/app/lib/types/engagements';
@@ -316,7 +316,7 @@ export default function EngagementsDashboard() {
     });
 
     const total = filteredEngagements.length || 1;
-    const colors: Record<string, string> = { IAG: '#22d3ee', 'Broker-Dealer': '#a78bfa', Institution: '#fb923c' };
+    const colors: Record<string, string> = { IAG: '#a5f3fc', 'Broker-Dealer': '#22d3ee', Institution: '#0e7490' };
 
     return Object.entries(deptCounts).map(([name, count]) => ({
       name,
@@ -560,7 +560,7 @@ export default function EngagementsDashboard() {
               {/* Charts Row */}
               <div className="grid grid-cols-3 gap-4" style={{ height: '280px' }}>
                 {/* Project Frequency - GitHub-style Contribution Graph */}
-                <div className="col-span-2 relative overflow-hidden bg-zinc-900/60 backdrop-blur-md border border-zinc-800/50 p-5 h-full">
+                <div className="col-span-2 relative overflow-hidden bg-zinc-900/60 backdrop-blur-md border border-zinc-800/50 p-5 h-full rounded-xl">
                   <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] via-transparent to-transparent pointer-events-none" />
                   <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
 
@@ -581,7 +581,7 @@ export default function EngagementsDashboard() {
                 </div>
 
                 {/* Department Breakdown - Glassy */}
-                <div className="relative overflow-hidden bg-zinc-900/60 backdrop-blur-md border border-zinc-800/50 p-5 h-full">
+                <div className="relative overflow-hidden bg-zinc-900/60 backdrop-blur-md border border-zinc-800/50 p-5 h-full rounded-xl">
                   <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] via-transparent to-transparent pointer-events-none" />
                   <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
 
@@ -599,12 +599,13 @@ export default function EngagementsDashboard() {
                       <ClientOnlyChart>
                         <ResponsiveContainer width="100%" height="100%" minWidth={100} minHeight={80}>
                           <BarChart data={filteredDepartmentBreakdown} layout="vertical" barSize={16}>
-                            <XAxis type="number" hide />
+                            <XAxis type="number" domain={[0, 100]} hide />
                             <YAxis type="category" dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#a1a1aa', fontSize: 11 }} width={85} />
                             <Bar dataKey="value" radius={0}>
                               {filteredDepartmentBreakdown.map((entry, index) => (
                                 <Cell key={`cell-${index}`} fill={entry.color} />
                               ))}
+                              <LabelList dataKey="value" position="right" formatter={(value: number) => `${value}%`} style={{ fill: '#a1a1aa', fontSize: 11 }} />
                             </Bar>
                           </BarChart>
                         </ResponsiveContainer>

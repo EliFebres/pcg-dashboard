@@ -97,7 +97,7 @@ export default function Sidebar({ className = '' }: SidebarProps) {
   return (
     <aside className={`w-56 bg-[#111113] flex flex-col font-[family-name:var(--font-inter)] ${className}`}>
       {/* User Profile Header */}
-      <div className="relative px-2 py-3 border-b border-zinc-800/50">
+      <div className="relative px-2 pt-5 pb-3 border-b border-zinc-800/50">
         <button
           className="w-full flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-zinc-800/50 transition-colors cursor-pointer"
           onClick={() => {
