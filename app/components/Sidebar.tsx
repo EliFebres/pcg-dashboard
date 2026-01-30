@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { LayoutDashboard, BarChart3, ChevronDown, PieChart, Flame, ChevronsUpDown, User, Settings, HelpCircle } from 'lucide-react';
@@ -52,7 +52,21 @@ function formatDisplayName(fullName: string): string {
 
 export default function Sidebar({ className = '' }: SidebarProps) {
   const pathname = usePathname();
-  const [expandedItems, setExpandedItems] = useState<string[]>([]);
+  // Compute which items should be expanded based on current pathname
+  const getExpandedItemsForPath = (path: string) => {
+    const items: string[] = [];
+    navSections.forEach(section => {
+      section.items.forEach(item => {
+        if (item.children && item.children.some(child => path === child.href)) {
+          items.push(item.label);
+        }
+      });
+    });
+    return items;
+  };
+
+  const [expandedItems, setExpandedItems] = useState<string[]>(() => getExpandedItemsForPath(pathname));
+  const prevPathnameRef = useRef(pathname);
 
   const isActive = (href: string) => pathname === href;
   const isParentActive = (item: NavItem) => {
@@ -62,19 +76,14 @@ export default function Sidebar({ className = '' }: SidebarProps) {
     return false;
   };
 
-  // Auto-expand parent items when on a child page, collapse when navigating away
+  // Auto-expand parent items when navigating to a new page
   useEffect(() => {
-    const itemsToExpand: string[] = [];
-
-    navSections.forEach(section => {
-      section.items.forEach(item => {
-        if (item.children && item.children.some(child => pathname === child.href)) {
-          itemsToExpand.push(item.label);
-        }
-      });
-    });
-
-    setExpandedItems(itemsToExpand);
+    if (prevPathnameRef.current !== pathname) {
+      prevPathnameRef.current = pathname;
+      const newExpanded = getExpandedItemsForPath(pathname);
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setExpandedItems(newExpanded);
+    }
   }, [pathname]);
 
   const toggleExpanded = (label: string) => {

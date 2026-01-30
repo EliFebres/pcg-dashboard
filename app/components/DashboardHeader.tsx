@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Search, Calendar, ChevronDown, Check, Filter, X } from 'lucide-react';
+import { Search, Calendar, ChevronDown, Check, Filter } from 'lucide-react';
 
 export interface FilterDropdown {
   id: string;

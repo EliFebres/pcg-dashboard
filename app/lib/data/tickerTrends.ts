@@ -8,13 +8,11 @@ import type {
   ComputedPopularDFATicker,
   ComputedTickerTrend,
   LoggedPortfolio,
-  FilterOptions,
 } from '../types/trends';
-import { loggedPortfolios, isDFATicker } from './portfolioTrends';
+import { isDFATicker } from './portfolioTrends';
 
 // Re-export portfolio data and filter functions needed by Ticker Trends
-export { loggedPortfolios } from './portfolioTrends';
-export { extractFilterOptions, filterPortfolios } from './portfolioTrends';
+export { loggedPortfolios, extractFilterOptions, filterPortfolios } from './portfolioTrends';
 
 // ==================== HOT TICKERS DATA ====================
 
