@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { Building2, FileText, ArrowUpRight, ArrowDownRight, Download, User, Check, X, Loader2, ChevronUp, ChevronDown, ChevronsUpDown, Maximize2, Minimize2, Inbox, Briefcase } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell, LabelList, AreaChart, Area } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell, LabelList, AreaChart, Area, PieChart, Pie, Tooltip } from 'recharts';
 import { getEngagementsDashboardData, getEngagements } from '@/app/lib/api/engagements';
 import { generateContributionData } from '@/app/lib/data/engagements';
 import type { EngagementMetric, DepartmentData, Engagement, DayData } from '@/app/lib/types/engagements';
@@ -122,7 +122,7 @@ const ContributionGraph: React.FC<ContributionGraphProps> = ({ data }) => {
                 cursor: 'pointer',
                 minWidth: 0,
                 minHeight: 0,
-                transition: 'background-color 400ms ease-out, transform 200ms ease-out',
+                transition: 'background-color 600ms ease-out, transform 200ms ease-out',
                 transform: 'scale(1)',
               }}
               className="hover:scale-110"
@@ -289,10 +289,74 @@ export default function EngagementsDashboard() {
 
   // Compute filtered metrics based on filtered engagements
   const filteredMetrics = useMemo((): EngagementMetric[] => {
+    const now = new Date('2025-01-28');
+
+    // Get period date ranges for comparison
+    const getPeriodDates = (periodValue: string): { currentStart: Date; previousStart: Date; previousEnd: Date; label: string } => {
+      switch (periodValue) {
+        case '1W': {
+          const currentStart = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+          const previousEnd = new Date(currentStart.getTime() - 1);
+          const previousStart = new Date(previousEnd.getTime() - 7 * 24 * 60 * 60 * 1000);
+          return { currentStart, previousStart, previousEnd, label: 'vs prev week' };
+        }
+        case '1M': {
+          const currentStart = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
+          const previousEnd = new Date(currentStart.getTime() - 1);
+          const previousStart = new Date(now.getFullYear(), now.getMonth() - 2, now.getDate());
+          return { currentStart, previousStart, previousEnd, label: 'vs prev month' };
+        }
+        case '3M': {
+          const currentStart = new Date(now.getFullYear(), now.getMonth() - 3, now.getDate());
+          const previousEnd = new Date(currentStart.getTime() - 1);
+          const previousStart = new Date(now.getFullYear(), now.getMonth() - 6, now.getDate());
+          return { currentStart, previousStart, previousEnd, label: 'vs prev 3M' };
+        }
+        case '6M': {
+          const currentStart = new Date(now.getFullYear(), now.getMonth() - 6, now.getDate());
+          const previousEnd = new Date(currentStart.getTime() - 1);
+          const previousStart = new Date(now.getFullYear(), now.getMonth() - 12, now.getDate());
+          return { currentStart, previousStart, previousEnd, label: 'vs prev 6M' };
+        }
+        case 'YTD': {
+          const currentStart = new Date(now.getFullYear(), 0, 1);
+          const previousEnd = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
+          const previousStart = new Date(now.getFullYear() - 1, 0, 1);
+          return { currentStart, previousStart, previousEnd, label: 'vs prev YTD' };
+        }
+        case '1Y':
+        default: {
+          const currentStart = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
+          const previousEnd = new Date(currentStart.getTime() - 1);
+          const previousStart = new Date(now.getFullYear() - 2, now.getMonth(), now.getDate());
+          return { currentStart, previousStart, previousEnd, label: 'YoY' };
+        }
+        case 'ALL': {
+          // For ALL, compare to nothing meaningful - just show the count
+          const currentStart = new Date(2000, 0, 1);
+          return { currentStart, previousStart: new Date(1990, 0, 1), previousEnd: new Date(1999, 11, 31), label: 'All Time' };
+        }
+      }
+    };
+
+    const periodDates = getPeriodDates(period);
+
     // Client Projects = GRRFs + IRQs - PCRs (PCRs that came from GRRF/IRQ intakes)
     const grffsAndIrqs = filteredEngagements.filter((e) => e.intakeType === 'GRRF' || e.intakeType === 'IRQ');
     const pcrsFromGrffsAndIrqs = grffsAndIrqs.filter((e) => e.type === 'PCR').length;
     const clientProjects = grffsAndIrqs.length - pcrsFromGrffsAndIrqs;
+
+    // Calculate previous period's client projects for comparison
+    const prevPeriodGrffsAndIrqs = engagements.filter((e) => {
+      const startDate = new Date(e.dateStarted);
+      return (e.intakeType === 'GRRF' || e.intakeType === 'IRQ') &&
+        startDate >= periodDates.previousStart && startDate <= periodDates.previousEnd;
+    });
+    const prevClientProjects = prevPeriodGrffsAndIrqs.length - prevPeriodGrffsAndIrqs.filter((e) => e.type === 'PCR').length;
+    const clientProjectsChangePercent = prevClientProjects > 0
+      ? Math.round(((clientProjects - prevClientProjects) / prevClientProjects) * 100)
+      : (clientProjects > 0 ? 100 : 0);
+    const clientProjectsChangeStr = clientProjectsChangePercent >= 0 ? `+${clientProjectsChangePercent}%` : `${clientProjectsChangePercent}%`;
 
     const inProgress = filteredEngagements.filter((e) => e.status === 'In Progress').length;
     // Only count portfolios logged for GRRFs and IRQs that are not PCRs (Touch Points and PCRs don't have logged portfolios)
@@ -303,26 +367,51 @@ export default function EngagementsDashboard() {
     const touchPoints = filteredEngagements.filter((e) => e.intakeType === 'Touch Points').length;
     const portfolioPercent = eligibleForPortfolio.length > 0 ? Math.round((portfoliosLogged / eligibleForPortfolio.length) * 100) : 0;
 
-    // Generate sparkline data for In Progress trend (last 8 weeks)
+    // Calculate previous period's touch points for comparison
+    const prevTouchPoints = engagements.filter((e) => {
+      const startDate = new Date(e.dateStarted);
+      return e.intakeType === 'Touch Points' &&
+        startDate >= periodDates.previousStart && startDate <= periodDates.previousEnd;
+    }).length;
+    const touchPointsChangePercent = prevTouchPoints > 0
+      ? Math.round(((touchPoints - prevTouchPoints) / prevTouchPoints) * 100)
+      : (touchPoints > 0 ? 100 : 0);
+    const touchPointsChangeStr = touchPointsChangePercent >= 0 ? `+${touchPointsChangePercent}%` : `${touchPointsChangePercent}%`;
+
+    // Generate sparkline data for In Progress trend based on period
+    const getSparklineConfig = (periodValue: string): { points: number; label: string } => {
+      switch (periodValue) {
+        case '1W': return { points: 7, label: 'vs prev day' };
+        case '1M': return { points: 8, label: 'vs prev week' };
+        case '3M': return { points: 12, label: 'vs prev week' };
+        case '6M': return { points: 12, label: 'vs prev month' };
+        case 'YTD': return { points: 12, label: 'vs prev month' };
+        case '1Y': return { points: 12, label: 'vs prev month' };
+        case 'ALL': return { points: 12, label: 'vs prev month' };
+        default: return { points: 8, label: 'vs prev week' };
+      }
+    };
+
+    const sparklineConfig = getSparklineConfig(period);
     const baseInProgress = Math.max(inProgress - 3, 5);
-    const inProgressSparkline = Array.from({ length: 8 }, (_, i) => ({
-      value: baseInProgress + Math.floor(Math.random() * 4) + (i < 4 ? 0 : Math.floor(i / 2))
+    const inProgressSparkline = Array.from({ length: sparklineConfig.points }, (_, i) => ({
+      value: baseInProgress + Math.floor(Math.random() * 4) + (i < sparklineConfig.points / 2 ? 0 : Math.floor(i / 2))
     }));
     // Ensure the last point matches current value
-    inProgressSparkline[7] = { value: inProgress };
+    inProgressSparkline[sparklineConfig.points - 1] = { value: inProgress };
 
-    // Calculate week-over-week change
-    const lastWeekInProgress = inProgressSparkline[6].value;
-    const inProgressChange = inProgress - lastWeekInProgress;
+    // Calculate period-over-period change
+    const prevInProgress = inProgressSparkline[sparklineConfig.points - 2].value;
+    const inProgressChange = inProgress - prevInProgress;
     const inProgressChangeStr = inProgressChange >= 0 ? `+${inProgressChange}` : `${inProgressChange}`;
 
     return [
-      { label: 'Client Projects', sublabel: '1YR', value: clientProjects.toLocaleString(), change: '+12%', isPositive: true, icon: 'FileText' },
-      { label: 'Touch Points', sublabel: '1YR', value: touchPoints.toLocaleString(), change: '+18%', isPositive: true, icon: 'MessageSquare' },
-      { label: 'In Progress', sublabel: 'vs last week', value: inProgress.toLocaleString(), change: inProgressChangeStr, isPositive: inProgressChange >= 0, icon: 'PlayCircle', sparklineData: inProgressSparkline },
+      { label: 'Client Projects', sublabel: periodDates.label, value: clientProjects.toLocaleString(), change: clientProjectsChangeStr, isPositive: clientProjectsChangePercent >= 0, icon: 'FileText' },
+      { label: 'Touch Points', sublabel: periodDates.label, value: touchPoints.toLocaleString(), change: touchPointsChangeStr, isPositive: touchPointsChangePercent >= 0, icon: 'MessageSquare' },
+      { label: 'In Progress', sublabel: sparklineConfig.label, value: inProgress.toLocaleString(), change: inProgressChangeStr, isPositive: inProgressChange >= 0, icon: 'PlayCircle', sparklineData: inProgressSparkline },
       { label: 'Portfolios Logged', sublabel: 'of Client Projects', value: portfoliosLogged.toLocaleString(), change: `${portfolioPercent}%`, isPositive: true, icon: 'CheckCircle2', percent: portfolioPercent },
     ];
-  }, [filteredEngagements]);
+  }, [filteredEngagements, engagements, period]);
 
   // Compute filtered department breakdown
   const filteredDepartmentBreakdown = useMemo((): DepartmentData[] => {
@@ -539,7 +628,7 @@ export default function EngagementsDashboard() {
               {filteredMetrics.map((metric, index) => (
                 <div
                   key={index}
-                  className="relative overflow-hidden bg-zinc-900/60 backdrop-blur-md border border-zinc-800/50 p-5 rounded-xl group hover:border-zinc-700/50 transition-all duration-300 hover:scale-[1.02] hover:-translate-y-1"
+                  className="relative overflow-visible bg-zinc-900/60 backdrop-blur-md border border-zinc-800/50 p-5 rounded-xl group hover:border-zinc-700/50 transition-all duration-300 hover:scale-[1.02] hover:-translate-y-1"
                 >
                   <div className="absolute top-5 right-4 flex items-center gap-0.5">
                     <div className="w-1 h-1 bg-white/80 rounded-full" />
@@ -561,7 +650,7 @@ export default function EngagementsDashboard() {
                             : '0 0 4px rgba(255, 49, 49, 0.3)'
                         }}
                       >
-                        {metric.percent === undefined && !metric.sparklineData && (metric.isPositive ? <ArrowUpRight className="w-3.5 h-3.5" /> : <ArrowDownRight className="w-3.5 h-3.5" />)}
+                        {metric.percent === undefined && !metric.sparklineData && !metric.pieData && !metric.stackedBarData && (metric.isPositive ? <ArrowUpRight className="w-3.5 h-3.5" /> : <ArrowDownRight className="w-3.5 h-3.5" />)}
                         {metric.change}
                       </span>
                       <span className="text-xs text-zinc-500">{metric.sublabel}</span>
@@ -604,6 +693,82 @@ export default function EngagementsDashboard() {
                             animationDuration={700}
                           />
                         </AreaChart>
+                      </ResponsiveContainer>
+                    </div>
+                  )}
+                  {/* Mini donut chart for metrics with pie data - lower right quarter */}
+                  {metric.pieData && metric.pieData.length > 0 && (
+                    <div className="absolute bottom-2 right-2 w-16 h-16">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie
+                            data={metric.pieData}
+                            dataKey="value"
+                            nameKey="name"
+                            cx="50%"
+                            cy="50%"
+                            innerRadius={18}
+                            outerRadius={28}
+                            paddingAngle={2}
+                            isAnimationActive={true}
+                            animationDuration={700}
+                          >
+                            {metric.pieData.map((entry, i) => (
+                              <Cell key={`cell-${i}`} fill={entry.color} />
+                            ))}
+                          </Pie>
+                          <Tooltip
+                            content={({ active, payload }) => {
+                              if (active && payload && payload.length) {
+                                const data = payload[0].payload;
+                                const total = metric.pieData!.reduce((sum, d) => sum + d.value, 0);
+                                const percent = Math.round((data.value / total) * 100);
+                                return (
+                                  <div className="bg-zinc-800 border border-zinc-700 px-2 py-1 rounded text-xs">
+                                    <span style={{ color: data.color }}>{data.name}</span>
+                                    <span className="text-zinc-300 ml-1">{percent}%</span>
+                                  </div>
+                                );
+                              }
+                              return null;
+                            }}
+                          />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </div>
+                  )}
+                  {/* Mini stacked bar chart for metrics with stacked bar data - lower right quarter */}
+                  {metric.stackedBarData && metric.stackedBarData.length > 0 && (
+                    <div className="absolute bottom-3 right-3 w-[50%] h-14 overflow-visible">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={metric.stackedBarData} margin={{ top: 2, right: 2, bottom: 2, left: 2 }} barCategoryGap="20%">
+                          <XAxis dataKey="month" hide />
+                          <YAxis hide domain={[0, 'auto']} />
+                          <Tooltip
+                            cursor={{ fill: 'rgba(255,255,255,0.05)' }}
+                            wrapperStyle={{ zIndex: 1000 }}
+                            content={({ active, payload, label }) => {
+                              if (active && payload && payload.length) {
+                                return (
+                                  <div className="bg-zinc-800 border border-zinc-700 px-2 py-1 rounded text-xs">
+                                    <p className="text-zinc-300 font-medium mb-1">{label}</p>
+                                    {payload.map((entry, i) => (
+                                      <div key={i} className="flex items-center gap-1">
+                                        <div className="w-2 h-2 rounded-sm" style={{ backgroundColor: entry.color }} />
+                                        <span className="text-zinc-400">{entry.name}:</span>
+                                        <span className="text-zinc-200">{entry.value}</span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                );
+                              }
+                              return null;
+                            }}
+                          />
+                          <Bar dataKey="IAG" stackId="a" fill="#a5f3fc" radius={[0, 0, 0, 0]} isAnimationActive={true} animationDuration={700} />
+                          <Bar dataKey="Broker-Dealer" stackId="a" fill="#22d3ee" radius={[0, 0, 0, 0]} isAnimationActive={true} animationDuration={700} />
+                          <Bar dataKey="Institution" stackId="a" fill="#0e7490" radius={[2, 2, 0, 0]} isAnimationActive={true} animationDuration={700} />
+                        </BarChart>
                       </ResponsiveContainer>
                     </div>
                   )}

@@ -17,6 +17,8 @@ export interface EngagementMetric {
   icon: string; // Icon name as string - component will map to actual icon
   percent?: number; // Optional percentage for progress bar visualization
   sparklineData?: { value: number }[]; // Optional sparkline data for trend visualization
+  pieData?: { name: string; value: number; color: string }[]; // Optional pie chart data for breakdown visualization
+  stackedBarData?: { month: string; IAG: number; 'Broker-Dealer': number; Institution: number }[]; // Optional stacked bar data
 }
 
 export interface DepartmentData {
