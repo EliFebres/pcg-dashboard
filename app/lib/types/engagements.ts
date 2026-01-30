@@ -16,6 +16,7 @@ export interface EngagementMetric {
   isPositive: boolean;
   icon: string; // Icon name as string - component will map to actual icon
   percent?: number; // Optional percentage for progress bar visualization
+  sparklineData?: { value: number }[]; // Optional sparkline data for trend visualization
 }
 
 export interface DepartmentData {

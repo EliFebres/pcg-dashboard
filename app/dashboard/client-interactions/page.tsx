@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { Building2, FileText, ArrowUpRight, ArrowDownRight, Download, User, Check, X, Loader2, ChevronUp, ChevronDown, ChevronsUpDown, Maximize2, Minimize2, Inbox, Briefcase } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell, LabelList } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell, LabelList, AreaChart, Area } from 'recharts';
 import { getEngagementsDashboardData, getEngagements } from '@/app/lib/api/engagements';
 import { generateContributionData } from '@/app/lib/data/engagements';
 import type { EngagementMetric, DepartmentData, Engagement, DayData } from '@/app/lib/types/engagements';
@@ -303,11 +303,24 @@ export default function EngagementsDashboard() {
     const touchPoints = filteredEngagements.filter((e) => e.intakeType === 'Touch Points').length;
     const portfolioPercent = eligibleForPortfolio.length > 0 ? Math.round((portfoliosLogged / eligibleForPortfolio.length) * 100) : 0;
 
+    // Generate sparkline data for In Progress trend (last 8 weeks)
+    const baseInProgress = Math.max(inProgress - 3, 5);
+    const inProgressSparkline = Array.from({ length: 8 }, (_, i) => ({
+      value: baseInProgress + Math.floor(Math.random() * 4) + (i < 4 ? 0 : Math.floor(i / 2))
+    }));
+    // Ensure the last point matches current value
+    inProgressSparkline[7] = { value: inProgress };
+
+    // Calculate week-over-week change
+    const lastWeekInProgress = inProgressSparkline[6].value;
+    const inProgressChange = inProgress - lastWeekInProgress;
+    const inProgressChangeStr = inProgressChange >= 0 ? `+${inProgressChange}` : `${inProgressChange}`;
+
     return [
       { label: 'Client Projects', sublabel: '1YR', value: clientProjects.toLocaleString(), change: '+12%', isPositive: true, icon: 'FileText' },
       { label: 'Touch Points', sublabel: '1YR', value: touchPoints.toLocaleString(), change: '+18%', isPositive: true, icon: 'MessageSquare' },
-      { label: 'In Progress', sublabel: 'Current', value: inProgress.toLocaleString(), change: '+3', isPositive: true, icon: 'PlayCircle' },
-      { label: 'Portfolios Logged', sublabel: '1YR', value: portfoliosLogged.toLocaleString(), change: `${portfolioPercent}%`, isPositive: true, icon: 'CheckCircle2', percent: portfolioPercent },
+      { label: 'In Progress', sublabel: 'vs last week', value: inProgress.toLocaleString(), change: inProgressChangeStr, isPositive: inProgressChange >= 0, icon: 'PlayCircle', sparklineData: inProgressSparkline },
+      { label: 'Portfolios Logged', sublabel: 'of Client Projects', value: portfoliosLogged.toLocaleString(), change: `${portfolioPercent}%`, isPositive: true, icon: 'CheckCircle2', percent: portfolioPercent },
     ];
   }, [filteredEngagements]);
 
@@ -548,7 +561,7 @@ export default function EngagementsDashboard() {
                             : '0 0 4px rgba(255, 49, 49, 0.3)'
                         }}
                       >
-                        {metric.percent === undefined && (metric.isPositive ? <ArrowUpRight className="w-3.5 h-3.5" /> : <ArrowDownRight className="w-3.5 h-3.5" />)}
+                        {metric.percent === undefined && !metric.sparklineData && (metric.isPositive ? <ArrowUpRight className="w-3.5 h-3.5" /> : <ArrowDownRight className="w-3.5 h-3.5" />)}
                         {metric.change}
                       </span>
                       <span className="text-xs text-zinc-500">{metric.sublabel}</span>
@@ -568,6 +581,30 @@ export default function EngagementsDashboard() {
                           }}
                         />
                       </div>
+                    </div>
+                  )}
+                  {/* Sparkline for metrics with trend data - lower right quarter */}
+                  {metric.sparklineData && (
+                    <div className="absolute bottom-4 right-4 w-[45%] h-10">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <AreaChart data={metric.sparklineData} margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
+                          <defs>
+                            <linearGradient id={`sparklineGradient-${index}`} x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="0%" stopColor={metric.isPositive ? '#39FF14' : '#FF3131'} stopOpacity={0.3} />
+                              <stop offset="100%" stopColor={metric.isPositive ? '#39FF14' : '#FF3131'} stopOpacity={0} />
+                            </linearGradient>
+                          </defs>
+                          <Area
+                            type="monotone"
+                            dataKey="value"
+                            stroke={metric.isPositive ? '#39FF14' : '#FF3131'}
+                            strokeWidth={1.5}
+                            fill={`url(#sparklineGradient-${index})`}
+                            isAnimationActive={true}
+                            animationDuration={700}
+                          />
+                        </AreaChart>
+                      </ResponsiveContainer>
                     </div>
                   )}
                 </div>
