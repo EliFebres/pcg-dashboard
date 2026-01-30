@@ -201,20 +201,29 @@ export default function DashboardHeader({
           {/* Filter Toggle Button */}
           <button
             onClick={() => setFiltersExpanded(!filtersExpanded)}
-            className={`relative flex items-center justify-center rounded-lg bg-gradient-to-r from-blue-600 to-cyan-500 text-white hover:from-blue-500 hover:to-cyan-400 transition-all duration-300 ${
+            className={`relative flex items-center justify-center rounded-lg bg-gradient-to-r from-blue-600 to-cyan-500 text-white hover:from-blue-500 hover:to-cyan-400 transition-all duration-300 overflow-hidden group/filter ${
               hasActiveFilters ? 'ring-2 ring-cyan-400/50' : ''
             } ${filtersExpanded ? 'w-0 h-0 p-0 opacity-0 mr-0' : 'w-9 h-9 opacity-100 mr-0'}`}
           >
-            <Filter className={`w-4 h-4 transition-all duration-300 ${filtersExpanded ? 'scale-0' : 'scale-100'}`} />
+            {/* Glass shine animation */}
+            {!filtersExpanded && (
+              <span
+                className="absolute inset-0 pointer-events-none animate-[shine_3s_ease-in-out_infinite]"
+                style={{
+                  background: 'linear-gradient(105deg, transparent 20%, rgba(255,255,255,0.35) 50%, transparent 80%)',
+                }}
+              />
+            )}
+            <Filter className={`relative z-10 w-4 h-4 transition-all duration-300 ${filtersExpanded ? 'scale-0' : 'scale-100'}`} />
             {hasActiveFilters && !filtersExpanded && (
-              <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-cyan-400 rounded-full" />
+              <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-cyan-400 rounded-full z-20" />
             )}
           </button>
 
           {/* Animated Filters Container */}
           <div
-            className={`flex items-center overflow-hidden transition-all duration-500 ease-out ${
-              filtersExpanded ? 'max-w-[1000px] opacity-100 gap-2 delay-200' : 'max-w-0 opacity-0 gap-0 delay-0'
+            className={`flex items-center overflow-hidden transition-all duration-1000 ease-out whitespace-nowrap ${
+              filtersExpanded ? 'max-w-[1000px] opacity-100 gap-2' : 'max-w-0 opacity-0 gap-0'
             }`}
             style={{
               transitionDelay: filtersExpanded ? '200ms' : '0ms'
