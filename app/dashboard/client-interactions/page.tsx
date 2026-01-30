@@ -121,8 +121,11 @@ const ContributionGraph: React.FC<ContributionGraphProps> = ({ data }) => {
                 borderRadius: '2px',
                 cursor: 'pointer',
                 minWidth: 0,
-                minHeight: 0
+                minHeight: 0,
+                transition: 'background-color 400ms ease-out, transform 200ms ease-out',
+                transform: 'scale(1)',
               }}
+              className="hover:scale-110"
               title={`${new Date(day.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}\n${day.projectCount} project${day.projectCount !== 1 ? 's' : ''}, ${day.touchPointCount} touch point${day.touchPointCount !== 1 ? 's' : ''}`}
             />
           ))}
