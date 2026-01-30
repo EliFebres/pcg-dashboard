@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Search, Calendar, ChevronDown, Check } from 'lucide-react';
+import { Search, Calendar, ChevronDown, Check, Filter, X } from 'lucide-react';
 
 export interface FilterDropdown {
   id: string;
@@ -173,6 +173,11 @@ export default function DashboardHeader({
   actionButtonLabel,
   onActionButtonClick,
 }: DashboardHeaderProps) {
+  const [filtersExpanded, setFiltersExpanded] = useState(false);
+
+  // Check if any filter is active (not on default "All" option)
+  const hasActiveFilters = filters.some(filter => filter.value !== filter.options[0]);
+
   return (
     <header className={`flex-shrink-0 bg-black/80 backdrop-blur-md border-b border-zinc-800/50 relative z-50 ${className}`}>
       <div className="px-6 py-4">
@@ -181,7 +186,7 @@ export default function DashboardHeader({
           <p className="text-zinc-500 text-sm">{subtitle}</p>
         </div>
         {/* Global Filters */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 h-9">
           <div className="relative w-[360px]">
             <Search className="w-4 h-4 text-zinc-500 absolute left-3 top-1/2 -translate-y-1/2" />
             <input
@@ -192,18 +197,43 @@ export default function DashboardHeader({
               className="w-full pl-9 pr-3 py-2 bg-zinc-900/50 backdrop-blur-sm border border-zinc-700/50 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-cyan-500/50 transition-colors"
             />
           </div>
-          {filters.map((filter) => (
-            <FilterDropdownButton key={filter.id} filter={filter} />
-          ))}
-          {onPeriodChange ? (
-            <PeriodDropdown value={period} onChange={onPeriodChange} customOptions={periodOptions} />
-          ) : (
-            <button className="flex items-center gap-1.5 px-3 py-2 bg-gradient-to-r from-blue-600 to-cyan-500 text-white text-sm font-medium hover:from-blue-500 hover:to-cyan-400 transition-all">
-              <Calendar className="w-4 h-4" />
-              {period}
-              <ChevronDown className="w-4 h-4" />
-            </button>
-          )}
+
+          {/* Filter Toggle Button */}
+          <button
+            onClick={() => setFiltersExpanded(!filtersExpanded)}
+            className={`relative flex items-center justify-center rounded-lg bg-gradient-to-r from-blue-600 to-cyan-500 text-white hover:from-blue-500 hover:to-cyan-400 transition-all duration-300 ${
+              hasActiveFilters ? 'ring-2 ring-cyan-400/50' : ''
+            } ${filtersExpanded ? 'w-0 h-0 p-0 opacity-0 mr-0' : 'w-9 h-9 opacity-100 mr-0'}`}
+          >
+            <Filter className={`w-4 h-4 transition-all duration-300 ${filtersExpanded ? 'scale-0' : 'scale-100'}`} />
+            {hasActiveFilters && !filtersExpanded && (
+              <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-cyan-400 rounded-full" />
+            )}
+          </button>
+
+          {/* Animated Filters Container */}
+          <div
+            className={`flex items-center overflow-hidden transition-all duration-500 ease-out ${
+              filtersExpanded ? 'max-w-[1000px] opacity-100 gap-2 delay-200' : 'max-w-0 opacity-0 gap-0 delay-0'
+            }`}
+            style={{
+              transitionDelay: filtersExpanded ? '200ms' : '0ms'
+            }}
+          >
+            {filters.map((filter) => (
+              <FilterDropdownButton key={filter.id} filter={filter} />
+            ))}
+            {onPeriodChange ? (
+              <PeriodDropdown value={period} onChange={onPeriodChange} customOptions={periodOptions} />
+            ) : (
+              <button className="flex items-center gap-1.5 px-3 py-2 bg-gradient-to-r from-blue-600 to-cyan-500 text-white text-sm font-medium hover:from-blue-500 hover:to-cyan-400 transition-all">
+                <Calendar className="w-4 h-4" />
+                {period}
+                <ChevronDown className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+
           {actionButtonLabel && onActionButtonClick && (
             <>
               <div className="flex-1" />
