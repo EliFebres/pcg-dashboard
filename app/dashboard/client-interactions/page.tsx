@@ -4,7 +4,7 @@ import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { Building2, FileText, ArrowUpRight, ArrowDownRight, Download, User, Check, X, Loader2, ChevronUp, ChevronDown, ChevronsUpDown, Maximize2, Minimize2, Inbox, Briefcase } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell, LabelList, AreaChart, Area, PieChart, Pie, Tooltip } from 'recharts';
 import { getEngagementsDashboardData, getEngagements } from '@/app/lib/api/engagements';
-import { generateContributionData } from '@/app/lib/data/engagements';
+import { generateContributionData, teamMemberOffices } from '@/app/lib/data/engagements';
 import type { EngagementMetric, DepartmentData, Engagement, DayData } from '@/app/lib/types/engagements';
 import DashboardHeader from '@/app/components/DashboardHeader';
 import ClientOnlyChart from '@/app/components/ClientOnlyChart';
@@ -215,8 +215,19 @@ export default function EngagementsDashboard() {
   const [isAdHocCardFlipped, setIsAdHocCardFlipped] = useState(false);
   const flipTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const flipStartTimeRef = useRef<number>(0);
+  const lastFilterChangeRef = useRef<number>(0);
+
+  // Track filter changes to prevent accidental flips after clicking dropdowns
+  const handleFilterChange = useCallback(<T,>(setter: React.Dispatch<React.SetStateAction<T>>, value: T) => {
+    lastFilterChangeRef.current = Date.now();
+    setter(value);
+  }, []);
 
   const handleAdHocCardEnter = useCallback(() => {
+    // Don't flip if a filter was just changed (prevents accidental flip after dropdown click)
+    const timeSinceFilterChange = Date.now() - lastFilterChangeRef.current;
+    if (timeSinceFilterChange < 1000) return;
+
     // Clear any pending unflip timeout
     if (flipTimeoutRef.current) {
       clearTimeout(flipTimeoutRef.current);
@@ -294,8 +305,8 @@ export default function EngagementsDashboard() {
     });
 
     return {
-      // Only show "All Team Members" and current user for privacy
-      teamMembers: ['All Team Members', currentUser],
+      // Show "All Team Members", office locations, and current user for privacy
+      teamMembers: ['All Team Members', 'Charlotte Office', 'Austin Office', currentUser],
       departments: ['All Departments', ...Array.from(departments).sort()],
       intakeTypes: ['All Intake Types', ...Array.from(intakeTypes).sort()],
       projectTypes: ['All Project Types', ...Array.from(projectTypes).sort()],
@@ -337,9 +348,17 @@ export default function EngagementsDashboard() {
           return false;
         }
       }
-      // Team member filter
-      if (teamMemberFilter !== 'All Team Members' && !e.teamMembers.includes(teamMemberFilter)) {
-        return false;
+      // Team member filter (supports individual members and office locations)
+      if (teamMemberFilter !== 'All Team Members') {
+        if (teamMemberFilter === 'Charlotte Office') {
+          const hasCharlotteMember = e.teamMembers.some(m => teamMemberOffices[m] === 'Charlotte');
+          if (!hasCharlotteMember) return false;
+        } else if (teamMemberFilter === 'Austin Office') {
+          const hasAustinMember = e.teamMembers.some(m => teamMemberOffices[m] === 'Austin');
+          if (!hasAustinMember) return false;
+        } else if (!e.teamMembers.includes(teamMemberFilter)) {
+          return false;
+        }
       }
       // Department filter
       if (departmentFilter !== 'All Departments' && e.internalClient.gcgDepartment !== departmentFilter) {
@@ -438,27 +457,27 @@ export default function EngagementsDashboard() {
     const gcgAdHoc = gcgAdHocEngagements.length;
     const portfolioPercent = eligibleForPortfolio.length > 0 ? Math.round((portfoliosLogged / eligibleForPortfolio.length) * 100) : 0;
 
-    // Calculate channel breakdown for GCG Ad-Hoc
-    const channelCounts: Record<string, number> = {
+    // Calculate intake breakdown for GCG Ad-Hoc
+    const intakeCounts: Record<string, number> = {
       'In-Person': 0,
       'Email': 0,
       'Teams': 0,
     };
     gcgAdHocEngagements.forEach((e) => {
-      if (e.adHocChannel && e.adHocChannel in channelCounts) {
-        channelCounts[e.adHocChannel]++;
+      if (e.adHocChannel && e.adHocChannel in intakeCounts) {
+        intakeCounts[e.adHocChannel]++;
       }
     });
-    const channelColors: Record<string, string> = {
+    const intakeColors: Record<string, string> = {
       'In-Person': '#a5f3fc', // light cyan (matches IAG)
       'Email': '#22d3ee',     // cyan (matches Broker-Dealer)
       'Teams': '#0e7490',     // dark cyan (matches Institution)
     };
-    const channelBreakdown = Object.entries(channelCounts).map(([channel, count]) => ({
-      channel,
+    const intakeBreakdown = Object.entries(intakeCounts).map(([intake, count]) => ({
+      intake,
       count,
       percent: gcgAdHoc > 0 ? Math.round((count / gcgAdHoc) * 100) : 0,
-      color: channelColors[channel] || '#71717a',
+      color: intakeColors[intake] || '#71717a',
     }));
 
     // Calculate previous period's GCG Ad-Hoc for comparison
@@ -501,7 +520,7 @@ export default function EngagementsDashboard() {
 
     return [
       { label: 'Client Projects', sublabel: periodDates.label, value: clientProjects.toLocaleString(), change: clientProjectsChangeStr, isPositive: clientProjectsChangePercent >= 0, icon: 'FileText' },
-      { label: 'GCG Ad-Hoc', sublabel: periodDates.label, value: gcgAdHoc.toLocaleString(), change: gcgAdHocChangeStr, isPositive: gcgAdHocChangePercent >= 0, icon: 'MessageSquare', channelBreakdown },
+      { label: 'GCG Ad-Hoc', sublabel: periodDates.label, value: gcgAdHoc.toLocaleString(), change: gcgAdHocChangeStr, isPositive: gcgAdHocChangePercent >= 0, icon: 'MessageSquare', intakeBreakdown },
       { label: 'In Progress', sublabel: sparklineConfig.label, value: inProgress.toLocaleString(), change: inProgressChangeStr, isPositive: inProgressChange >= 0, icon: 'PlayCircle', sparklineData: inProgressSparkline },
       { label: 'Portfolios Logged', sublabel: 'of Client Projects', value: portfoliosLogged.toLocaleString(), change: `${portfolioPercent}%`, isPositive: true, icon: 'CheckCircle2', percent: portfolioPercent },
     ];
@@ -671,7 +690,7 @@ export default function EngagementsDashboard() {
             label: 'Team Member',
             options: filterOptions.teamMembers,
             value: teamMemberFilter,
-            onChange: setTeamMemberFilter,
+            onChange: (v: string) => handleFilterChange(setTeamMemberFilter, v),
           },
           {
             id: 'department',
@@ -679,7 +698,7 @@ export default function EngagementsDashboard() {
             label: 'Department',
             options: filterOptions.departments,
             value: departmentFilter,
-            onChange: setDepartmentFilter,
+            onChange: (v: string) => handleFilterChange(setDepartmentFilter, v),
           },
           {
             id: 'intakeType',
@@ -687,7 +706,7 @@ export default function EngagementsDashboard() {
             label: 'Intake Type',
             options: filterOptions.intakeTypes,
             value: intakeTypeFilter,
-            onChange: setIntakeTypeFilter,
+            onChange: (v: string) => handleFilterChange(setIntakeTypeFilter, v),
           },
           {
             id: 'projectType',
@@ -695,11 +714,11 @@ export default function EngagementsDashboard() {
             label: 'Project Type',
             options: filterOptions.projectTypes,
             value: projectTypeFilter,
-            onChange: setProjectTypeFilter,
+            onChange: (v: string) => handleFilterChange(setProjectTypeFilter, v),
           },
         ]}
         period={period}
-        onPeriodChange={setPeriod}
+        onPeriodChange={(v: string) => handleFilterChange(setPeriod, v)}
         actionButtonLabel="+ New Interaction"
         onActionButtonClick={() => {
           // TODO: Implement new interaction modal/form
@@ -721,26 +740,26 @@ export default function EngagementsDashboard() {
             {/* Metrics Row - Clean Cards (filtered) */}
             <div className="grid grid-cols-4 gap-4">
               {filteredMetrics.map((metric, index) => {
-                const hasChannelBreakdown = metric.channelBreakdown && metric.channelBreakdown.length > 0;
+                const hasIntakeBreakdown = metric.intakeBreakdown && metric.intakeBreakdown.length > 0;
 
                 return (
                   <div
                     key={index}
                     className="relative h-[140px] group/card"
                     style={{ perspective: '1000px' }}
-                    onMouseEnter={hasChannelBreakdown ? handleAdHocCardEnter : undefined}
-                    onMouseLeave={hasChannelBreakdown ? handleAdHocCardLeave : undefined}
+                    onMouseEnter={hasIntakeBreakdown ? handleAdHocCardEnter : undefined}
+                    onMouseLeave={hasIntakeBreakdown ? handleAdHocCardLeave : undefined}
                   >
                     <div
                       className="relative w-full h-full transition-transform duration-500"
                       style={{
                         transformStyle: 'preserve-3d',
-                        transform: hasChannelBreakdown && isAdHocCardFlipped ? 'rotateX(180deg)' : 'rotateX(0deg)',
+                        transform: hasIntakeBreakdown && isAdHocCardFlipped ? 'rotateX(180deg)' : 'rotateX(0deg)',
                       }}
                     >
                       {/* Front Face */}
                       <div
-                        className={`absolute inset-0 overflow-visible bg-zinc-900/60 backdrop-blur-md border border-zinc-800/50 p-5 rounded-xl hover:border-zinc-700/50 transition-all duration-300 ${!hasChannelBreakdown ? 'group hover:scale-[1.02] hover:-translate-y-1' : ''}`}
+                        className={`absolute inset-0 overflow-visible bg-zinc-900/60 backdrop-blur-md border border-zinc-800/50 p-5 rounded-xl hover:border-zinc-700/50 transition-all duration-300 ${!hasIntakeBreakdown ? 'group hover:scale-[1.02] hover:-translate-y-1' : ''}`}
                         style={{ backfaceVisibility: 'hidden' }}
                       >
                         <div className="absolute top-5 right-4 flex items-center gap-0.5">
@@ -887,8 +906,8 @@ export default function EngagementsDashboard() {
                         )}
                       </div>
 
-                      {/* Back Face - Channel Breakdown */}
-                      {hasChannelBreakdown && (
+                      {/* Back Face - Intake Breakdown */}
+                      {hasIntakeBreakdown && (
                         <div
                           className="absolute inset-0 overflow-hidden bg-zinc-900/60 backdrop-blur-md border border-zinc-800/50 p-4 rounded-xl"
                           style={{
@@ -902,26 +921,26 @@ export default function EngagementsDashboard() {
                             <div className="w-1 h-1 bg-white/80 rounded-full" />
                           </div>
                           <div className="absolute top-3 left-4 z-10">
-                            <p className="text-white text-[0.75rem]">Channel Breakdown</p>
+                            <p className="text-white text-[0.75rem]">Intake Breakdown</p>
                           </div>
                           <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
                           <div className="relative z-10 pt-6 space-y-1.5">
-                            {metric.channelBreakdown!.map((channel, i) => (
+                            {metric.intakeBreakdown!.map((item, i) => (
                               <div key={i} className="flex items-center gap-2">
-                                <div className="w-[70px] text-[11px] text-zinc-400 truncate">{channel.channel}</div>
+                                <div className="w-[70px] text-[11px] text-zinc-400 truncate">{item.intake}</div>
                                 <div className="flex-1 h-1.5 bg-zinc-800 rounded-full overflow-hidden">
                                   <div
                                     className="h-full rounded-full transition-all duration-500"
                                     style={{
-                                      width: `${channel.percent}%`,
-                                      backgroundColor: channel.color,
-                                      boxShadow: `0 0 6px ${channel.color}40`
+                                      width: `${item.percent}%`,
+                                      backgroundColor: item.color,
+                                      boxShadow: `0 0 6px ${item.color}40`
                                     }}
                                   />
                                 </div>
                                 <div className="w-14 text-right">
-                                  <span className="text-[11px] text-zinc-300">{channel.count}</span>
-                                  <span className="text-[10px] text-zinc-500 ml-0.5">({channel.percent}%)</span>
+                                  <span className="text-[11px] text-zinc-300">{item.count}</span>
+                                  <span className="text-[10px] text-zinc-500 ml-0.5">({item.percent}%)</span>
                                 </div>
                               </div>
                             ))}

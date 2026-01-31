@@ -10,8 +10,8 @@ export interface DayData {
   adHocCount: number;
 }
 
-export interface ChannelBreakdown {
-  channel: string;
+export interface IntakeBreakdown {
+  intake: string;
   count: number;
   percent: number;
   color: string;
@@ -28,7 +28,7 @@ export interface EngagementMetric {
   sparklineData?: { value: number }[]; // Optional sparkline data for trend visualization
   pieData?: { name: string; value: number; color: string }[]; // Optional pie chart data for breakdown visualization
   stackedBarData?: { month: string; IAG: number; 'Broker-Dealer': number; Institution: number }[]; // Optional stacked bar data
-  channelBreakdown?: ChannelBreakdown[]; // Optional channel breakdown for GCG Ad-Hoc
+  intakeBreakdown?: IntakeBreakdown[]; // Optional intake breakdown for GCG Ad-Hoc
 }
 
 export interface DepartmentData {

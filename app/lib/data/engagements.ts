@@ -35,7 +35,23 @@ const externalClients = [
   'Focus Financial', 'Creative Planning', 'Mariner Wealth', 'Captrust Financial',
 ];
 
-const teamMembers = ['Eli F.', 'Sarah K.', 'Mike R.', 'Lisa M.', 'James T.', 'David L.'];
+// Team members with office assignments (5 Charlotte, 7 Austin)
+export const teamMemberOffices: Record<string, 'Charlotte' | 'Austin'> = {
+  'Eli F.': 'Charlotte',
+  'Sarah K.': 'Charlotte',
+  'Mike R.': 'Charlotte',
+  'Lisa M.': 'Charlotte',
+  'James T.': 'Charlotte',
+  'David L.': 'Austin',
+  'Rachel W.': 'Austin',
+  'Chris B.': 'Austin',
+  'Amanda P.': 'Austin',
+  'Kevin H.': 'Austin',
+  'Nicole S.': 'Austin',
+  'Brandon T.': 'Austin',
+};
+
+const teamMembers = Object.keys(teamMemberOffices);
 const internalClientKeys = Object.keys(internalClients) as (keyof typeof internalClients)[];
 const departments: ('IAG' | 'Broker-Dealer' | 'Institution')[] = ['IAG', 'Broker-Dealer', 'Institution'];
 const projectTypes = ['Meeting', 'Follow-Up', 'Data Request', 'PCR'];

@@ -4,6 +4,7 @@
 import {
   engagements,
   generateContributionData,
+  teamMemberOffices,
 } from '../data/engagements';
 import type {
   EngagementMetric,
@@ -144,11 +145,23 @@ export async function getEngagements(filters?: EngagementsFilters): Promise<Enga
 
   if (filters?.search) {
     const searchLower = filters.search.toLowerCase();
-    filtered = filtered.filter(e =>
-      (e.externalClient?.toLowerCase().includes(searchLower) ?? false) ||
-      e.internalClient.name.toLowerCase().includes(searchLower) ||
-      e.teamMembers.some(m => m.toLowerCase().includes(searchLower))
-    );
+    // Note: Team members are intentionally excluded from search for privacy
+    // Users can only filter by team member using the dedicated dropdown
+    // But office location IS searchable
+    filtered = filtered.filter(e => {
+      // Check if any team member's office matches the search
+      const officeMatch = e.teamMembers.some(member =>
+        teamMemberOffices[member]?.toLowerCase().includes(searchLower)
+      );
+      return (
+        (e.externalClient?.toLowerCase().includes(searchLower) ?? false) ||
+        e.internalClient.name.toLowerCase().includes(searchLower) ||
+        e.intakeType.toLowerCase().includes(searchLower) ||
+        e.type.toLowerCase().includes(searchLower) ||
+        e.internalClient.gcgDepartment.toLowerCase().includes(searchLower) ||
+        officeMatch
+      );
+    });
   }
 
   if (filters?.department) {
