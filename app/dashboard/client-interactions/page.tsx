@@ -621,12 +621,50 @@ export default function EngagementsDashboard() {
     return `$${value.toLocaleString()}`;
   };
 
-  // Handle new interaction form submission
+  // Map internal client name to department
+  const getClientDepartment = (clientName: string): 'IAG' | 'Broker-Dealer' | 'Institution' => {
+    const deptMap: Record<string, 'IAG' | 'Broker-Dealer' | 'Institution'> = {
+      'Jennifer Martinez': 'IAG', 'Robert Chen': 'IAG', 'Amanda Foster': 'IAG',
+      'Michael Thompson': 'Broker-Dealer', 'Jessica Williams': 'Broker-Dealer', 'Daniel Park': 'Broker-Dealer',
+      'Christopher Lee': 'Institution', 'Rachel Goldman': 'Institution', 'Andrew Mitchell': 'Institution',
+    };
+    return deptMap[clientName] || 'IAG';
+  };
+
+  // Handle new interaction form submission with optimistic UI update
   const handleNewInteraction = (data: InteractionFormData) => {
-    // TODO: In production, this would POST to an API
-    console.log('New interaction created:', data);
-    // For now, we could add it to local state to show it in the table
-    // In production this would refresh data from the server
+    // Format date for display
+    const formatDate = (dateStr: string) => {
+      const date = new Date(dateStr);
+      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    };
+
+    // Create new engagement from form data
+    const newEngagement: Engagement = {
+      id: Date.now(), // Use timestamp as unique ID
+      externalClient: data.externalClient,
+      internalClient: {
+        name: data.internalClient,
+        gcgDepartment: getClientDepartment(data.internalClient),
+      },
+      intakeType: data.intakeType as 'IRQ' | 'GRRF' | 'GCG Ad-Hoc',
+      adHocChannel: data.adHocChannel,
+      type: data.projectType,
+      teamMembers: data.teamMembers,
+      department: getClientDepartment(data.internalClient),
+      dateStarted: formatDate(data.dateStarted),
+      dateFinished: '—', // New interactions are not finished yet
+      status: 'In Progress',
+      portfolioLogged: data.portfolioLogged,
+      nna: data.nna || undefined,
+      hasNotes: data.notes.trim().length > 0,
+    };
+
+    // Optimistically add to state (prepend so it appears first)
+    setEngagements(prev => [newEngagement, ...prev]);
+
+    // TODO: In production, POST to API and handle rollback on error
+    console.log('New interaction created:', newEngagement);
   };
 
   return (
