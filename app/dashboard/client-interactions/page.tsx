@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
-import { Building2, FileText, ArrowUpRight, ArrowDownRight, Download, User, Check, X, Loader2, ChevronUp, ChevronDown, ChevronsUpDown, Maximize2, Minimize2, Inbox, Briefcase } from 'lucide-react';
+import { Building2, FileText, ArrowUpRight, ArrowDownRight, Download, User, Check, X, Loader2, ChevronUp, ChevronDown, ChevronsUpDown, Maximize2, Minimize2, Inbox, Briefcase, DollarSign } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell, LabelList, AreaChart, Area, PieChart, Pie, Tooltip } from 'recharts';
 import { getEngagementsDashboardData, getEngagements } from '@/app/lib/api/engagements';
 import { generateContributionData, teamMemberOffices } from '@/app/lib/data/engagements';
@@ -20,6 +20,7 @@ type SortColumn =
   | 'dateStarted'
   | 'dateFinished'
   | 'portfolioLogged'
+  | 'nna'
   | 'status'
   | null;
 
@@ -465,6 +466,34 @@ export default function EngagementsDashboard() {
     const gcgAdHoc = gcgAdHocEngagements.length;
     const portfolioPercent = eligibleForPortfolio.length > 0 ? Math.round((portfoliosLogged / eligibleForPortfolio.length) * 100) : 0;
 
+    // Calculate NNA (Net New Assets) totals
+    const totalNNA = filteredEngagements.reduce((sum, e) => sum + (e.nna || 0), 0);
+    const nnaProjectCount = filteredEngagements.filter((e) => e.nna && e.nna > 0).length;
+
+    // Format NNA as currency string
+    const formatNNAValue = (value: number): string => {
+      if (value >= 1_000_000_000) {
+        return `$${(value / 1_000_000_000).toFixed(1)}B`;
+      } else if (value >= 1_000_000) {
+        return `$${(value / 1_000_000).toFixed(0)}M`;
+      } else if (value >= 1_000) {
+        return `$${(value / 1_000).toFixed(0)}K`;
+      }
+      return `$${value}`;
+    };
+
+    // Calculate previous period's NNA for comparison
+    const prevPeriodNNA = engagements
+      .filter((e) => {
+        const startDate = new Date(e.dateStarted);
+        return startDate >= periodDates.previousStart && startDate <= periodDates.previousEnd;
+      })
+      .reduce((sum, e) => sum + (e.nna || 0), 0);
+    const nnaChangePercent = prevPeriodNNA > 0
+      ? Math.round(((totalNNA - prevPeriodNNA) / prevPeriodNNA) * 100)
+      : (totalNNA > 0 ? 100 : 0);
+    const nnaChangeStr = nnaChangePercent >= 0 ? `+${nnaChangePercent}%` : `${nnaChangePercent}%`;
+
     // Create intake source breakdown object for Client Projects card
     const intakeSourceBreakdown = {
       irqCount,
@@ -541,7 +570,7 @@ export default function EngagementsDashboard() {
       { label: 'Client Projects', sublabel: periodDates.label, value: clientProjects.toLocaleString(), change: clientProjectsChangeStr, isPositive: clientProjectsChangePercent >= 0, icon: 'FileText', intakeSourceBreakdown },
       { label: 'GCG Ad-Hoc', sublabel: periodDates.label, value: gcgAdHoc.toLocaleString(), change: gcgAdHocChangeStr, isPositive: gcgAdHocChangePercent >= 0, icon: 'MessageSquare', intakeBreakdown },
       { label: 'In Progress', sublabel: sparklineConfig.label, value: inProgress.toLocaleString(), change: inProgressChangeStr, isPositive: inProgressChange >= 0, icon: 'PlayCircle', sparklineData: inProgressSparkline },
-      { label: 'Portfolios Logged', sublabel: 'of Client Projects', value: portfoliosLogged.toLocaleString(), change: `${portfolioPercent}%`, isPositive: true, icon: 'CheckCircle2', percent: portfolioPercent },
+      { label: 'NNA', sublabel: `${nnaProjectCount} projects`, value: formatNNAValue(totalNNA), change: nnaChangeStr, isPositive: nnaChangePercent >= 0, icon: 'DollarSign' },
     ];
   }, [filteredEngagements, engagements, period]);
 
@@ -617,6 +646,11 @@ export default function EngagementsDashboard() {
         }
         case 'portfolioLogged':
           return ((a.portfolioLogged ? 1 : 0) - (b.portfolioLogged ? 1 : 0)) * direction;
+        case 'nna': {
+          const aNNA = a.nna || 0;
+          const bNNA = b.nna || 0;
+          return (aNNA - bNNA) * direction;
+        }
         case 'status': {
           // Custom sort order: In Progress, Pending, Completed
           const statusOrder: Record<string, number> = { 'In Progress': 0, 'Pending': 1, 'Completed': 2 };
@@ -690,6 +724,19 @@ export default function EngagementsDashboard() {
 
   const getInitials = (name: string): string => {
     return name.split(' ').map(n => n[0]).join('');
+  };
+
+  // Format NNA value for table display
+  const formatTableNNA = (value: number | undefined): string => {
+    if (!value || value === 0) return '—';
+    if (value >= 1_000_000_000) {
+      return `$${(value / 1_000_000_000).toFixed(1)}B`;
+    } else if (value >= 1_000_000) {
+      return `$${(value / 1_000_000).toFixed(0)}M`;
+    } else if (value >= 1_000) {
+      return `$${(value / 1_000).toFixed(0)}K`;
+    }
+    return `$${value.toLocaleString()}`;
   };
 
   return (
@@ -1126,6 +1173,7 @@ export default function EngagementsDashboard() {
                       <SortableHeader label="Date Started" column="dateStarted" currentSort={sortConfig} onSort={handleSort} />
                       <SortableHeader label="Date Finished" column="dateFinished" currentSort={sortConfig} onSort={handleSort} />
                       <SortableHeader label="Portfolio Logged" column="portfolioLogged" currentSort={sortConfig} onSort={handleSort} />
+                      <SortableHeader label="NNA" column="nna" currentSort={sortConfig} onSort={handleSort} />
                       <SortableHeader label="Status" column="status" currentSort={sortConfig} onSort={handleSort} />
                       <th className="text-center text-xs font-medium text-zinc-400 uppercase tracking-wider px-4 py-3">Notes</th>
                     </tr>
@@ -1195,6 +1243,11 @@ export default function EngagementsDashboard() {
                               <span className="text-xs font-medium">No</span>
                             </div>
                           )}
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className={`text-sm font-mono ${engagement.nna ? 'text-emerald-400' : 'text-zinc-600'}`}>
+                            {formatTableNNA(engagement.nna)}
+                          </span>
                         </td>
                         <td className="px-4 py-3">
                           <span className={`inline-flex px-2 py-0.5 text-xs font-medium backdrop-blur-sm ${getStatusStyle(engagement.status)}`}>
@@ -1312,6 +1365,7 @@ export default function EngagementsDashboard() {
                     <SortableHeader label="Date Started" column="dateStarted" currentSort={sortConfig} onSort={handleSort} />
                     <SortableHeader label="Date Finished" column="dateFinished" currentSort={sortConfig} onSort={handleSort} />
                     <SortableHeader label="Portfolio Logged" column="portfolioLogged" currentSort={sortConfig} onSort={handleSort} />
+                    <SortableHeader label="NNA" column="nna" currentSort={sortConfig} onSort={handleSort} />
                     <SortableHeader label="Status" column="status" currentSort={sortConfig} onSort={handleSort} />
                     <th className="text-center text-xs font-medium text-zinc-400 uppercase tracking-wider px-4 py-3">Notes</th>
                   </tr>
@@ -1381,6 +1435,11 @@ export default function EngagementsDashboard() {
                             <span className="text-xs font-medium">No</span>
                           </div>
                         )}
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className={`text-sm font-mono ${engagement.nna ? 'text-emerald-400' : 'text-zinc-600'}`}>
+                          {formatTableNNA(engagement.nna)}
+                        </span>
                       </td>
                       <td className="px-4 py-3">
                         <span className={`inline-flex px-2 py-0.5 text-xs font-medium backdrop-blur-sm ${getStatusStyle(engagement.status)}`}>

@@ -44,14 +44,24 @@ export async function getEngagementMetrics(): Promise<EngagementMetric[]> {
   // In Progress = projects (non-GCG Ad-Hoc) with status "In Progress"
   const inProgressCount = projects.filter(e => e.status === 'In Progress').length;
 
-  // Portfolios Logged = projects (non-GCG Ad-Hoc) where portfolioLogged is true
-  const portfoliosLoggedCount = projects.filter(e => e.portfolioLogged).length;
-  const portfoliosLoggedPct = projectCount > 0
-    ? Math.round((portfoliosLoggedCount / projectCount) * 100)
-    : 0;
+  // NNA (Net New Assets) = sum of all NNA values across all engagements
+  const totalNNA = engagements.reduce((sum, e) => sum + (e.nna || 0), 0);
+  const nnaCount = engagements.filter(e => e.nna && e.nna > 0).length;
 
   // GCG Ad-Hoc = engagements with intakeType "GCG Ad-Hoc"
   const gcgAdHocCount = engagements.filter(e => e.intakeType === 'GCG Ad-Hoc').length;
+
+  // Format NNA as currency string
+  const formatNNA = (value: number): string => {
+    if (value >= 1_000_000_000) {
+      return `$${(value / 1_000_000_000).toFixed(1)}B`;
+    } else if (value >= 1_000_000) {
+      return `$${(value / 1_000_000).toFixed(0)}M`;
+    } else if (value >= 1_000) {
+      return `$${(value / 1_000).toFixed(0)}K`;
+    }
+    return `$${value}`;
+  };
 
   return [
     {
@@ -71,12 +81,12 @@ export async function getEngagementMetrics(): Promise<EngagementMetric[]> {
       icon: 'PlayCircle'
     },
     {
-      label: 'Portfolios Logged',
+      label: 'NNA',
       sublabel: '1YR',
-      value: portfoliosLoggedCount.toString(),
-      change: `${portfoliosLoggedPct}%`,
-      isPositive: portfoliosLoggedPct >= 80,
-      icon: 'CheckCircle2'
+      value: formatNNA(totalNNA),
+      change: `${nnaCount} projects`,
+      isPositive: true,
+      icon: 'DollarSign'
     },
     {
       label: 'GCG Ad-Hoc',

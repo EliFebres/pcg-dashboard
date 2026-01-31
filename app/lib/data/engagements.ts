@@ -78,6 +78,33 @@ function getInternalClientByDepartment(dept: 'IAG' | 'Broker-Dealer' | 'Institut
   return internalClients[selectedKey];
 }
 
+// Generate NNA (Net New Assets) value based on department
+// IAG: averages ~$20M, Broker-Dealer/Institution: usually ~$100M, rare $1B (whales)
+function generateNNA(dept: 'IAG' | 'Broker-Dealer' | 'Institution', seed: number): number {
+  const rand = seededRandom(seed);
+
+  if (dept === 'IAG') {
+    // IAG: $5M to $50M range, averaging around $20M
+    const base = 5_000_000;
+    const variance = rand * 45_000_000; // 0-45M variance
+    return Math.round((base + variance) / 100_000) * 100_000; // Round to nearest 100k
+  } else {
+    // Broker-Dealer and Institution: usually ~$100M, rare $1B whales
+    const isWhale = seededRandom(seed + 100) < 0.05; // 5% chance of whale
+    if (isWhale) {
+      // Whale: $500M to $1.5B
+      const base = 500_000_000;
+      const variance = rand * 1_000_000_000;
+      return Math.round((base + variance) / 10_000_000) * 10_000_000; // Round to nearest 10M
+    } else {
+      // Normal: $50M to $200M range, averaging around $100M
+      const base = 50_000_000;
+      const variance = rand * 150_000_000;
+      return Math.round((base + variance) / 1_000_000) * 1_000_000; // Round to nearest 1M
+    }
+  }
+}
+
 // Generate 2 years of engagement data
 function generateEngagements(): Engagement[] {
   const engagements: Engagement[] = [];
@@ -160,6 +187,10 @@ function generateEngagements(): Engagement[] {
       // Randomly assign a channel for the ad-hoc interaction
       const adHocChannel = adHocChannels[Math.floor(seededRandom(seed + 11) * adHocChannels.length)];
 
+      // NNA: Extremely rare for GCG Ad-Hoc (~0.001% chance), only if completed
+      const hasNNA = !isAfterCutoff && seededRandom(seed + 12) < 0.00001;
+      const nnaValue = hasNNA ? generateNNA(dept, seed + 13) : undefined;
+
       engagements.push({
         id: id++,
         externalClient: hasExternalClient ? externalClients[Math.floor(seededRandom(seed + 4) * externalClients.length)] : null,
@@ -173,6 +204,7 @@ function generateEngagements(): Engagement[] {
         dateFinished: finishStr,
         status: isAfterCutoff ? 'In Progress' : 'Completed',
         portfolioLogged: false, // GCG Ad-Hoc don't have logged portfolios
+        nna: nnaValue,
         hasNotes: seededRandom(seed + 6) > 0.6,
       });
     }
@@ -200,6 +232,10 @@ function generateEngagements(): Engagement[] {
       const isAfterCutoff = finishDate > cutoffDate;
       const finishStr = isAfterCutoff ? '—' : finishDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 
+      // NNA: ~10% of completed client projects result in NNA
+      const hasNNA = !isAfterCutoff && seededRandom(seed + 11) < 0.10;
+      const nnaValue = hasNNA ? generateNNA(dept, seed + 12) : undefined;
+
       engagements.push({
         id: id++,
         externalClient: externalClients[Math.floor(seededRandom(seed + 6) * externalClients.length)],
@@ -212,6 +248,7 @@ function generateEngagements(): Engagement[] {
         dateFinished: finishStr,
         status: isAfterCutoff ? 'In Progress' : 'Completed',
         portfolioLogged: isAfterCutoff || projectType === 'PCR' ? false : seededRandom(seed + 7) > 0.15, // PCRs don't have logged portfolios
+        nna: nnaValue,
         hasNotes: seededRandom(seed + 8) > 0.5,
       });
     }
@@ -250,6 +287,7 @@ function generateEngagements(): Engagement[] {
       dateFinished: '—',
       status,
       portfolioLogged: false,
+      nna: undefined, // In-progress items don't have NNA yet
       hasNotes: seededRandom(seed + 8) > 0.5,
     });
   }
