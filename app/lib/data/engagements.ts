@@ -5,6 +5,25 @@ import type { Engagement, DayData, GCGAdHocChannel } from '../types/engagements'
 // GCG Ad-Hoc interaction channels
 const adHocChannels: GCGAdHocChannel[] = ['In-Person', 'Email', 'Teams'];
 
+// Sample notes for dummy data
+const sampleNotes = [
+  'Client requested additional breakdowns by sector. Follow up scheduled for next week.',
+  'Discussed portfolio rebalancing strategy. Client prefers conservative approach with 60/40 allocation.',
+  'Meeting went well. Client interested in DFA funds for tax-loss harvesting opportunities.',
+  'Need to send updated performance report. Client comparing against Vanguard benchmark.',
+  'Client has concerns about interest rate sensitivity. Recommended shorter duration bonds.',
+  'Follow-up call to discuss model changes. Client approved new allocation.',
+  'Reviewed quarterly performance. Client satisfied with results relative to benchmark.',
+  'Client requested information on ESG integration options. Will prepare materials.',
+  'Discussed fee structure and provided comparison to competitors.',
+  'Client considering consolidating accounts. Need to prepare transition plan.',
+  'Technical issue with data export resolved. Client received updated files.',
+  'Annual review completed. No changes to IPS at this time.',
+  'Client inquired about alternative investments. Explained limitations within current mandate.',
+  'Prepared custom report for board presentation. Client very appreciative.',
+  'Addressed compliance questions regarding trading restrictions.',
+];
+
 // Internal client (relationship owner/salesperson) roster mapped to GCG departments
 const internalClients = {
   // IAG Team
@@ -205,7 +224,7 @@ function generateEngagements(): Engagement[] {
         status: isAfterCutoff ? 'In Progress' : 'Completed',
         portfolioLogged: false, // GCG Ad-Hoc don't have logged portfolios
         nna: nnaValue,
-        hasNotes: seededRandom(seed + 6) > 0.6,
+        notes: seededRandom(seed + 6) > 0.6 ? sampleNotes[Math.floor(seededRandom(seed + 14) * sampleNotes.length)] : undefined,
       });
     }
 
@@ -249,7 +268,7 @@ function generateEngagements(): Engagement[] {
         status: isAfterCutoff ? 'In Progress' : 'Completed',
         portfolioLogged: isAfterCutoff || projectType === 'PCR' ? false : seededRandom(seed + 7) > 0.15, // PCRs don't have logged portfolios
         nna: nnaValue,
-        hasNotes: seededRandom(seed + 8) > 0.5,
+        notes: seededRandom(seed + 8) > 0.5 ? sampleNotes[Math.floor(seededRandom(seed + 13) * sampleNotes.length)] : undefined,
       });
     }
 
@@ -288,7 +307,7 @@ function generateEngagements(): Engagement[] {
       status,
       portfolioLogged: false,
       nna: undefined, // In-progress items don't have NNA yet
-      hasNotes: seededRandom(seed + 8) > 0.5,
+      notes: seededRandom(seed + 8) > 0.5 ? sampleNotes[Math.floor(seededRandom(seed + 13) * sampleNotes.length)] : undefined,
     });
   }
 

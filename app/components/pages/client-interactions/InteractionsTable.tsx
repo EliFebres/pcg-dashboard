@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { FileText, Download, Check, X, ChevronUp, ChevronDown, ChevronsUpDown, Maximize2, Minimize2 } from 'lucide-react';
+import { FileText, Download, Check, X, ChevronUp, ChevronDown, ChevronsUpDown, Maximize2, Minimize2, Plus } from 'lucide-react';
+import NotesModal from './NotesModal';
 import type { Engagement } from '@/app/lib/types/engagements';
 
 // Sort configuration types
@@ -61,13 +62,15 @@ const SortableHeader: React.FC<SortableHeaderProps> = ({ label, column, currentS
 interface InteractionsTableProps {
   engagements: Engagement[];
   onStatusChange: (engagementId: number, newStatus: string) => void;
+  onNotesChange: (engagementId: number, notes: string) => void;
 }
 
-const InteractionsTable: React.FC<InteractionsTableProps> = ({ engagements, onStatusChange }) => {
+const InteractionsTable: React.FC<InteractionsTableProps> = ({ engagements, onStatusChange, onNotesChange }) => {
   const [sortConfig, setSortConfig] = useState<SortConfig>({ column: 'dateStarted', direction: 'desc' });
   const [currentPage, setCurrentPage] = useState(1);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [openStatusDropdown, setOpenStatusDropdown] = useState<number | null>(null);
+  const [notesModalEngagement, setNotesModalEngagement] = useState<Engagement | null>(null);
   const statusDropdownRef = useRef<HTMLDivElement>(null);
   const pageSize = 10;
 
@@ -326,13 +329,21 @@ const InteractionsTable: React.FC<InteractionsTableProps> = ({ engagements, onSt
         </div>
       </td>
       <td className="px-4 py-3 text-center">
-        {engagement.hasNotes ? (
-          <button className="p-1.5 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 transition-colors" title="View notes">
+        <button
+          onClick={() => setNotesModalEngagement(engagement)}
+          className={`p-1.5 transition-colors ${
+            engagement.notes
+              ? 'bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400'
+              : 'bg-zinc-800/50 hover:bg-zinc-700/50 text-zinc-500 hover:text-zinc-300'
+          }`}
+          title={engagement.notes ? 'View/edit notes' : 'Add notes'}
+        >
+          {engagement.notes ? (
             <FileText className="w-4 h-4" />
-          </button>
-        ) : (
-          <span className="text-zinc-600 text-xs">—</span>
-        )}
+          ) : (
+            <Plus className="w-4 h-4" />
+          )}
+        </button>
       </td>
     </tr>
   );
@@ -413,6 +424,17 @@ const InteractionsTable: React.FC<InteractionsTableProps> = ({ engagements, onSt
 
   return (
     <>
+      {/* Notes Modal */}
+      <NotesModal
+        isOpen={notesModalEngagement !== null}
+        onClose={() => setNotesModalEngagement(null)}
+        engagementId={notesModalEngagement?.id ?? 0}
+        externalClient={notesModalEngagement?.externalClient ?? null}
+        internalClient={notesModalEngagement?.internalClient.name ?? ''}
+        currentNotes={notesModalEngagement?.notes ?? ''}
+        onSave={onNotesChange}
+      />
+
       {/* Main Table */}
       <div className="relative overflow-hidden bg-zinc-900/60 backdrop-blur-md border border-zinc-800/50 flex flex-col min-h-[380px]">
         <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] via-transparent to-transparent pointer-events-none" />

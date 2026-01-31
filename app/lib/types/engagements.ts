@@ -75,7 +75,7 @@ export interface Engagement {
   status: string;
   portfolioLogged: boolean;
   nna?: number; // Net New Assets - dollar amount of AUM moved into funds (optional)
-  hasNotes: boolean;
+  notes?: string; // Optional notes field
 }
 
 export interface ContributionData {

@@ -470,7 +470,7 @@ export default function EngagementsDashboard() {
       status: 'In Progress',
       portfolioLogged: data.portfolioLogged,
       nna: data.nna || undefined,
-      hasNotes: data.notes.trim().length > 0,
+      notes: data.notes.trim() || undefined,
     };
 
     // Optimistically add to state (prepend so it appears first)
@@ -490,6 +490,17 @@ export default function EngagementsDashboard() {
           : newStatus === 'In Progress' ? '—' : eng.dateFinished;
 
         return { ...eng, status: newStatus, dateFinished };
+      }
+      return eng;
+    }));
+    // TODO: In production, PATCH to API and handle rollback on error
+  };
+
+  // Handle notes change with optimistic UI update
+  const handleNotesChange = (engagementId: number, notes: string) => {
+    setEngagements(prev => prev.map(eng => {
+      if (eng.id === engagementId) {
+        return { ...eng, notes: notes.trim() || undefined };
       }
       return eng;
     }));
@@ -620,6 +631,7 @@ export default function EngagementsDashboard() {
             <InteractionsTable
               engagements={filteredEngagements}
               onStatusChange={handleStatusChange}
+              onNotesChange={handleNotesChange}
             />
           </>
         )}
