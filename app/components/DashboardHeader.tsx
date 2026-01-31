@@ -249,7 +249,7 @@ export default function DashboardHeader({
   };
 
   return (
-    <header className={`flex-shrink-0 bg-black/80 backdrop-blur-md border-b border-zinc-800/50 relative z-50 ${className}`}>
+    <header className={`flex-shrink-0 bg-transparent backdrop-blur-md border-b border-zinc-800/50 relative z-50 ${className}`}>
       <div className="px-6 py-4">
         <div className="mb-4">
           <h2 className="text-xl font-semibold text-white">{title}</h2>
