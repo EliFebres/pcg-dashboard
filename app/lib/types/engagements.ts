@@ -27,6 +27,12 @@ export interface IntakeSourceBreakdown {
   portfoliosPercent: number;
 }
 
+export interface NNATier {
+  label: string;
+  count: number;
+  color: string;
+}
+
 export interface EngagementMetric {
   label: string;
   sublabel: string;
@@ -40,6 +46,7 @@ export interface EngagementMetric {
   stackedBarData?: { month: string; IAG: number; 'Broker-Dealer': number; Institution: number }[]; // Optional stacked bar data
   intakeBreakdown?: IntakeBreakdown[]; // Optional intake breakdown for GCG Ad-Hoc
   intakeSourceBreakdown?: IntakeSourceBreakdown; // Optional intake source breakdown for Client Projects
+  nnaTiers?: NNATier[]; // Optional NNA distribution tiers
 }
 
 export interface DepartmentData {

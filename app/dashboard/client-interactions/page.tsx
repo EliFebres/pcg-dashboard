@@ -494,6 +494,14 @@ export default function EngagementsDashboard() {
       : (totalNNA > 0 ? 100 : 0);
     const nnaChangeStr = nnaChangePercent >= 0 ? `+${nnaChangePercent}%` : `${nnaChangePercent}%`;
 
+    // Calculate NNA distribution tiers
+    const nnaEngagements = filteredEngagements.filter((e) => e.nna && e.nna > 0);
+    const nnaTiers = [
+      { label: '<$50M', count: nnaEngagements.filter((e) => e.nna! < 50_000_000).length, color: '#0e7490' },
+      { label: '$50-200M', count: nnaEngagements.filter((e) => e.nna! >= 50_000_000 && e.nna! < 200_000_000).length, color: '#22d3ee' },
+      { label: '$200M+', count: nnaEngagements.filter((e) => e.nna! >= 200_000_000).length, color: '#39FF14' },
+    ];
+
     // Create intake source breakdown object for Client Projects card
     const intakeSourceBreakdown = {
       irqCount,
@@ -570,7 +578,7 @@ export default function EngagementsDashboard() {
       { label: 'Client Projects', sublabel: periodDates.label, value: clientProjects.toLocaleString(), change: clientProjectsChangeStr, isPositive: clientProjectsChangePercent >= 0, icon: 'FileText', intakeSourceBreakdown },
       { label: 'GCG Ad-Hoc', sublabel: periodDates.label, value: gcgAdHoc.toLocaleString(), change: gcgAdHocChangeStr, isPositive: gcgAdHocChangePercent >= 0, icon: 'MessageSquare', intakeBreakdown },
       { label: 'In Progress', sublabel: sparklineConfig.label, value: inProgress.toLocaleString(), change: inProgressChangeStr, isPositive: inProgressChange >= 0, icon: 'PlayCircle', sparklineData: inProgressSparkline },
-      { label: 'NNA', sublabel: `${nnaProjectCount} projects`, value: formatNNAValue(totalNNA), change: nnaChangeStr, isPositive: nnaChangePercent >= 0, icon: 'DollarSign' },
+      { label: 'NNA', sublabel: `${nnaProjectCount} projects`, value: formatNNAValue(totalNNA), change: nnaChangeStr, isPositive: nnaChangePercent >= 0, icon: 'DollarSign', nnaTiers },
     ];
   }, [filteredEngagements, engagements, period]);
 
@@ -971,6 +979,33 @@ export default function EngagementsDashboard() {
                                 <Bar dataKey="Institution" stackId="a" fill="#0e7490" radius={[2, 2, 0, 0]} isAnimationActive={true} animationDuration={700} />
                               </BarChart>
                             </ResponsiveContainer>
+                          </div>
+                        )}
+                        {/* NNA distribution tiers - lower right */}
+                        {metric.nnaTiers && metric.nnaTiers.length > 0 && (
+                          <div className="absolute bottom-3 right-4 w-[50%]">
+                            <div className="space-y-1">
+                              {metric.nnaTiers.map((tier, i) => {
+                                const maxCount = Math.max(...metric.nnaTiers!.map(t => t.count), 1);
+                                const widthPercent = (tier.count / maxCount) * 100;
+                                return (
+                                  <div key={i} className="flex items-center gap-2">
+                                    <span className="text-[9px] text-zinc-500 w-12 text-right">{tier.label}</span>
+                                    <div className="flex-1 h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+                                      <div
+                                        className="h-full rounded-full transition-all duration-500"
+                                        style={{
+                                          width: `${widthPercent}%`,
+                                          backgroundColor: tier.color,
+                                          boxShadow: `0 0 4px ${tier.color}40`
+                                        }}
+                                      />
+                                    </div>
+                                    <span className="text-[10px] text-zinc-400 w-4 font-mono">{tier.count}</span>
+                                  </div>
+                                );
+                              })}
+                            </div>
                           </div>
                         )}
                       </div>
