@@ -5,6 +5,7 @@ import { Building2, FileText, Download, User, Check, X, Loader2, ChevronUp, Chev
 import MetricCards from '@/app/components/pages/client-interactions/MetricCards';
 import ContributionGraph from '@/app/components/pages/client-interactions/ContributionGraph';
 import DepartmentChart from '@/app/components/pages/client-interactions/DepartmentChart';
+import NewInteractionForm, { InteractionFormData } from '@/app/components/pages/client-interactions/NewInteractionForm';
 import { getEngagementsDashboardData, getEngagements } from '@/app/lib/api/engagements';
 import { generateContributionData, teamMemberOffices } from '@/app/lib/data/engagements';
 import type { EngagementMetric, DepartmentData, Engagement, DayData } from '@/app/lib/types/engagements';
@@ -79,6 +80,7 @@ export default function EngagementsDashboard() {
   const [projectTypeFilter, setProjectTypeFilter] = useState('All Project Types');
   const [period, setPeriod] = useState('1Y');
   const [isTableFullscreen, setIsTableFullscreen] = useState(false);
+  const [isNewInteractionOpen, setIsNewInteractionOpen] = useState(false);
 
   // Flip card state for metric cards (supports multiple flip cards)
   const [flippedCard, setFlippedCard] = useState<string | null>(null);
@@ -619,8 +621,23 @@ export default function EngagementsDashboard() {
     return `$${value.toLocaleString()}`;
   };
 
+  // Handle new interaction form submission
+  const handleNewInteraction = (data: InteractionFormData) => {
+    // TODO: In production, this would POST to an API
+    console.log('New interaction created:', data);
+    // For now, we could add it to local state to show it in the table
+    // In production this would refresh data from the server
+  };
+
   return (
     <>
+      {/* New Interaction Form */}
+      <NewInteractionForm
+        isOpen={isNewInteractionOpen}
+        onClose={() => setIsNewInteractionOpen(false)}
+        onSubmit={handleNewInteraction}
+      />
+
       {/* Top Bar with Filters */}
       <DashboardHeader
         title="Client Interactions"
@@ -667,10 +684,7 @@ export default function EngagementsDashboard() {
         period={period}
         onPeriodChange={(v: string) => handleFilterChange(setPeriod, v)}
         actionButtonLabel="+ New Interaction"
-        onActionButtonClick={() => {
-          // TODO: Implement new interaction modal/form
-          console.log('New Interaction clicked');
-        }}
+        onActionButtonClick={() => setIsNewInteractionOpen(true)}
       />
 
       <div className="p-6 flex flex-col gap-6">

@@ -22,7 +22,7 @@ const DepartmentChart = React.memo<DepartmentChartProps>(({ data }) => {
                 {data.map((entry, index) => (
                   <Cell key={`cell-${index}`} fill={entry.color} />
                 ))}
-                <LabelList dataKey="value" position="right" formatter={(value: number) => `${value}%`} style={{ fill: '#a1a1aa', fontSize: 11 }} />
+                <LabelList dataKey="value" position="right" formatter={(value) => `${value}%`} style={{ fill: '#a1a1aa', fontSize: 11 }} />
               </Bar>
             </BarChart>
           </ResponsiveContainer>
