@@ -19,7 +19,7 @@ interface NavSection {
 
 const navSections: NavSection[] = [
   {
-    title: 'Engagements',
+    title: 'Interactions & Trends',
     items: [
       { label: 'Client Interactions', href: '/dashboard/client-interactions', icon: LayoutDashboard },
       {

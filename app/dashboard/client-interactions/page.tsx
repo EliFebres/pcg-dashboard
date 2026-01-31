@@ -175,7 +175,11 @@ export default function EngagementsDashboard() {
 
     return {
       // Show "All Team Members", office locations, and current user for privacy
-      teamMembers: ['All Team Members', 'Charlotte Office', 'Austin Office', currentUser],
+      teamMembers: ['All Team Members', 'Austin Office', 'Charlotte Office', currentUser],
+      teamMemberGroups: [
+        { label: 'Office', options: ['Austin Office', 'Charlotte Office'] },
+        { label: 'Members', options: [currentUser] },
+      ],
       departments: ['All Departments', ...Array.from(departments).sort()],
       intakeTypes: ['All Intake Types', ...Array.from(intakeTypes).sort()],
       projectTypes: ['All Project Types', ...Array.from(projectTypes).sort()],
@@ -631,6 +635,7 @@ export default function EngagementsDashboard() {
             icon: User,
             label: 'Team Member',
             options: filterOptions.teamMembers,
+            optionGroups: filterOptions.teamMemberGroups,
             value: teamMemberFilter,
             onChange: (v: string) => handleFilterChange(setTeamMemberFilter, v),
           },

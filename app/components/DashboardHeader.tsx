@@ -3,11 +3,17 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Search, Calendar, ChevronDown, Check, Filter } from 'lucide-react';
 
+export interface FilterOptionGroup {
+  label: string;
+  options: string[];
+}
+
 export interface FilterDropdown {
   id: string;
   icon: React.ComponentType<{ className?: string }>;
   label: string;
   options: string[];
+  optionGroups?: FilterOptionGroup[]; // Optional grouped options with category headers
   value: string;
   onChange: (value: string) => void;
 }
@@ -83,23 +89,71 @@ function FilterDropdownButton({ filter }: { filter: FilterDropdown }) {
             : 'opacity-0 scale-y-50 scale-x-95 -translate-y-4 pointer-events-none'
         }`}
       >
-        {filter.options.map((option) => (
-          <button
-            key={option}
-            onClick={() => {
-              filter.onChange(option);
-              setIsOpen(false);
-            }}
-            className={`w-full flex items-center justify-between px-3 py-2 text-sm text-left transition-colors ${
-              filter.value === option
-                ? 'bg-cyan-500/10 text-cyan-400'
-                : 'text-zinc-300 hover:bg-white/[0.05]'
-            }`}
-          >
-            {option}
-            {filter.value === option && <Check className="w-4 h-4" />}
-          </button>
-        ))}
+        {filter.optionGroups ? (
+          // Render grouped options with category headers
+          <>
+            {/* First option (e.g., "All Team Members") without indentation */}
+            <button
+              key={filter.options[0]}
+              onClick={() => {
+                filter.onChange(filter.options[0]);
+                setIsOpen(false);
+              }}
+              className={`w-full flex items-center justify-between px-3 py-2 text-sm text-left transition-colors ${
+                filter.value === filter.options[0]
+                  ? 'bg-cyan-500/10 text-cyan-400'
+                  : 'text-zinc-300 hover:bg-white/[0.05]'
+              }`}
+            >
+              {filter.options[0]}
+              {filter.value === filter.options[0] && <Check className="w-4 h-4" />}
+            </button>
+            {/* Grouped options */}
+            {filter.optionGroups.map((group) => (
+              <div key={group.label}>
+                <div className="px-3 py-1.5 text-[10px] font-semibold text-zinc-500 uppercase tracking-wider">
+                  {group.label}
+                </div>
+                {group.options.map((option) => (
+                  <button
+                    key={option}
+                    onClick={() => {
+                      filter.onChange(option);
+                      setIsOpen(false);
+                    }}
+                    className={`w-full flex items-center justify-between pl-5 pr-3 py-2 text-sm text-left transition-colors ${
+                      filter.value === option
+                        ? 'bg-cyan-500/10 text-cyan-400'
+                        : 'text-zinc-300 hover:bg-white/[0.05]'
+                    }`}
+                  >
+                    {option}
+                    {filter.value === option && <Check className="w-4 h-4" />}
+                  </button>
+                ))}
+              </div>
+            ))}
+          </>
+        ) : (
+          // Render flat options (default behavior)
+          filter.options.map((option) => (
+            <button
+              key={option}
+              onClick={() => {
+                filter.onChange(option);
+                setIsOpen(false);
+              }}
+              className={`w-full flex items-center justify-between px-3 py-2 text-sm text-left transition-colors ${
+                filter.value === option
+                  ? 'bg-cyan-500/10 text-cyan-400'
+                  : 'text-zinc-300 hover:bg-white/[0.05]'
+              }`}
+            >
+              {option}
+              {filter.value === option && <Check className="w-4 h-4" />}
+            </button>
+          ))
+        )}
       </div>
     </div>
   );
@@ -273,7 +327,7 @@ export default function DashboardHeader({
             onClick={() => setFiltersExpanded(!filtersExpanded)}
             className={`relative flex items-center justify-center rounded-lg bg-gradient-to-r from-blue-600 to-cyan-500 text-white hover:from-blue-500 hover:to-cyan-400 transition-all duration-300 overflow-hidden group/filter ${
               hasActiveFilters ? 'ring-2 ring-cyan-400/50' : ''
-            } ${filtersExpanded ? 'w-0 h-0 p-0 opacity-0 mr-0' : 'w-9 h-9 opacity-100 mr-0'}`}
+            } ${filtersExpanded ? 'w-0 h-0 p-0 opacity-0 -ml-2' : 'w-9 h-9 opacity-100'}`}
           >
             {/* Glass shine animation */}
             {!filtersExpanded && (
