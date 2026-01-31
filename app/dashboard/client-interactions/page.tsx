@@ -211,8 +211,8 @@ export default function EngagementsDashboard() {
   const [period, setPeriod] = useState('1Y');
   const [isTableFullscreen, setIsTableFullscreen] = useState(false);
 
-  // Flip card state for GCG Ad-Hoc metric
-  const [isAdHocCardFlipped, setIsAdHocCardFlipped] = useState(false);
+  // Flip card state for metric cards (supports multiple flip cards)
+  const [flippedCard, setFlippedCard] = useState<string | null>(null);
   const flipTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const flipStartTimeRef = useRef<number>(0);
   const lastFilterChangeRef = useRef<number>(0);
@@ -223,7 +223,7 @@ export default function EngagementsDashboard() {
     setter(value);
   }, []);
 
-  const handleAdHocCardEnter = useCallback(() => {
+  const handleCardEnter = useCallback((cardLabel: string) => {
     // Don't flip if a filter was just changed (prevents accidental flip after dropdown click)
     const timeSinceFilterChange = Date.now() - lastFilterChangeRef.current;
     if (timeSinceFilterChange < 1000) return;
@@ -235,17 +235,17 @@ export default function EngagementsDashboard() {
     }
     // Record when flip started
     flipStartTimeRef.current = Date.now();
-    setIsAdHocCardFlipped(true);
+    setFlippedCard(cardLabel);
   }, []);
 
-  const handleAdHocCardLeave = useCallback(() => {
+  const handleCardLeave = useCallback(() => {
     const elapsed = Date.now() - flipStartTimeRef.current;
     const minDuration = 1000; // 1 second minimum flip time
     const remaining = Math.max(0, minDuration - elapsed);
 
     // If already flipped for 1+ second, flip back immediately; otherwise wait for remaining time
     flipTimeoutRef.current = setTimeout(() => {
-      setIsAdHocCardFlipped(false);
+      setFlippedCard(null);
       flipTimeoutRef.current = null;
     }, remaining);
   }, []);
@@ -447,6 +447,14 @@ export default function EngagementsDashboard() {
       : (clientProjects > 0 ? 100 : 0);
     const clientProjectsChangeStr = clientProjectsChangePercent >= 0 ? `+${clientProjectsChangePercent}%` : `${clientProjectsChangePercent}%`;
 
+    // Calculate intake source breakdown for Client Projects (IRQ vs GRRF, excluding PCRs)
+    const nonPcrProjects = grffsAndIrqs.filter((e) => e.type !== 'PCR');
+    const irqProjects = nonPcrProjects.filter((e) => e.intakeType === 'IRQ');
+    const grffProjects = nonPcrProjects.filter((e) => e.intakeType === 'GRRF');
+    const irqCount = irqProjects.length;
+    const grffCount = grffProjects.length;
+    const totalProjects = irqCount + grffCount;
+
     const inProgress = filteredEngagements.filter((e) => e.status === 'In Progress').length;
     // Only count portfolios logged for GRRFs and IRQs that are not PCRs (GCG Ad-Hoc and PCRs don't have logged portfolios)
     const eligibleForPortfolio = filteredEngagements.filter((e) =>
@@ -456,6 +464,17 @@ export default function EngagementsDashboard() {
     const gcgAdHocEngagements = filteredEngagements.filter((e) => e.intakeType === 'GCG Ad-Hoc');
     const gcgAdHoc = gcgAdHocEngagements.length;
     const portfolioPercent = eligibleForPortfolio.length > 0 ? Math.round((portfoliosLogged / eligibleForPortfolio.length) * 100) : 0;
+
+    // Create intake source breakdown object for Client Projects card
+    const intakeSourceBreakdown = {
+      irqCount,
+      irqPercent: totalProjects > 0 ? Math.round((irqCount / totalProjects) * 100) : 0,
+      grffCount,
+      grffPercent: totalProjects > 0 ? Math.round((grffCount / totalProjects) * 100) : 0,
+      portfoliosLogged,
+      portfoliosTotal: eligibleForPortfolio.length,
+      portfoliosPercent: portfolioPercent,
+    };
 
     // Calculate intake breakdown for GCG Ad-Hoc
     const intakeCounts: Record<string, number> = {
@@ -519,7 +538,7 @@ export default function EngagementsDashboard() {
     const inProgressChangeStr = inProgressChange >= 0 ? `+${inProgressChange}` : `${inProgressChange}`;
 
     return [
-      { label: 'Client Projects', sublabel: periodDates.label, value: clientProjects.toLocaleString(), change: clientProjectsChangeStr, isPositive: clientProjectsChangePercent >= 0, icon: 'FileText' },
+      { label: 'Client Projects', sublabel: periodDates.label, value: clientProjects.toLocaleString(), change: clientProjectsChangeStr, isPositive: clientProjectsChangePercent >= 0, icon: 'FileText', intakeSourceBreakdown },
       { label: 'GCG Ad-Hoc', sublabel: periodDates.label, value: gcgAdHoc.toLocaleString(), change: gcgAdHocChangeStr, isPositive: gcgAdHocChangePercent >= 0, icon: 'MessageSquare', intakeBreakdown },
       { label: 'In Progress', sublabel: sparklineConfig.label, value: inProgress.toLocaleString(), change: inProgressChangeStr, isPositive: inProgressChange >= 0, icon: 'PlayCircle', sparklineData: inProgressSparkline },
       { label: 'Portfolios Logged', sublabel: 'of Client Projects', value: portfoliosLogged.toLocaleString(), change: `${portfolioPercent}%`, isPositive: true, icon: 'CheckCircle2', percent: portfolioPercent },
@@ -741,25 +760,28 @@ export default function EngagementsDashboard() {
             <div className="grid grid-cols-4 gap-4">
               {filteredMetrics.map((metric, index) => {
                 const hasIntakeBreakdown = metric.intakeBreakdown && metric.intakeBreakdown.length > 0;
+                const hasIntakeSourceBreakdown = !!metric.intakeSourceBreakdown;
+                const isFlippable = hasIntakeBreakdown || hasIntakeSourceBreakdown;
+                const isFlipped = flippedCard === metric.label;
 
                 return (
                   <div
                     key={index}
                     className="relative h-[140px] group/card"
                     style={{ perspective: '1000px' }}
-                    onMouseEnter={hasIntakeBreakdown ? handleAdHocCardEnter : undefined}
-                    onMouseLeave={hasIntakeBreakdown ? handleAdHocCardLeave : undefined}
+                    onMouseEnter={isFlippable ? () => handleCardEnter(metric.label) : undefined}
+                    onMouseLeave={isFlippable ? handleCardLeave : undefined}
                   >
                     <div
                       className="relative w-full h-full transition-transform duration-500"
                       style={{
                         transformStyle: 'preserve-3d',
-                        transform: hasIntakeBreakdown && isAdHocCardFlipped ? 'rotateX(180deg)' : 'rotateX(0deg)',
+                        transform: isFlipped ? 'rotateX(180deg)' : 'rotateX(0deg)',
                       }}
                     >
                       {/* Front Face */}
                       <div
-                        className={`absolute inset-0 overflow-visible bg-zinc-900/60 backdrop-blur-md border border-zinc-800/50 p-5 rounded-xl hover:border-zinc-700/50 transition-all duration-300 ${!hasIntakeBreakdown ? 'group hover:scale-[1.02] hover:-translate-y-1' : ''}`}
+                        className={`absolute inset-0 overflow-visible bg-zinc-900/60 backdrop-blur-md border border-zinc-800/50 p-5 rounded-xl hover:border-zinc-700/50 transition-all duration-300 ${!isFlippable ? 'group hover:scale-[1.02] hover:-translate-y-1' : ''}`}
                         style={{ backfaceVisibility: 'hidden' }}
                       >
                         <div className="absolute top-5 right-4 flex items-center gap-0.5">
@@ -906,7 +928,7 @@ export default function EngagementsDashboard() {
                         )}
                       </div>
 
-                      {/* Back Face - Intake Breakdown */}
+                      {/* Back Face - Intake Breakdown (for GCG Ad-Hoc) */}
                       {hasIntakeBreakdown && (
                         <div
                           className="absolute inset-0 overflow-hidden bg-zinc-900/60 backdrop-blur-md border border-zinc-800/50 p-4 rounded-xl"
@@ -939,11 +961,90 @@ export default function EngagementsDashboard() {
                                   />
                                 </div>
                                 <div className="w-14 text-right">
-                                  <span className="text-[11px] text-zinc-300">{item.count}</span>
-                                  <span className="text-[10px] text-zinc-500 ml-0.5">({item.percent}%)</span>
+                                  <span className="text-xs text-zinc-300">{item.count}</span>
+                                  <span className="text-[11px] text-zinc-500 ml-1.5">({item.percent}%)</span>
                                 </div>
                               </div>
                             ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Back Face - Intake Source Breakdown (for Client Projects) */}
+                      {hasIntakeSourceBreakdown && (
+                        <div
+                          className="absolute inset-0 overflow-hidden bg-zinc-900/60 backdrop-blur-md border border-zinc-800/50 p-4 rounded-xl"
+                          style={{
+                            backfaceVisibility: 'hidden',
+                            transform: 'rotateX(180deg)',
+                          }}
+                        >
+                          <div className="absolute top-4 right-4 flex items-center gap-0.5">
+                            <div className="w-1 h-1 bg-white/80 rounded-full" />
+                            <div className="w-1 h-1 bg-white/80 rounded-full" />
+                            <div className="w-1 h-1 bg-white/80 rounded-full" />
+                          </div>
+                          <div className="absolute top-3 left-4 z-10">
+                            <p className="text-white text-[0.75rem]">Source & Portfolios</p>
+                          </div>
+                          <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+                          <div className="relative z-10 pt-6 space-y-1">
+                            {/* IRQ Bar */}
+                            <div className="flex items-center gap-2">
+                              <div className="w-[45px] text-[11px] text-zinc-400">IRQ</div>
+                              <div className="flex-1 h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+                                <div
+                                  className="h-full rounded-full transition-all duration-500"
+                                  style={{
+                                    width: `${metric.intakeSourceBreakdown!.irqPercent}%`,
+                                    backgroundColor: '#22d3ee',
+                                    boxShadow: '0 0 6px #22d3ee40'
+                                  }}
+                                />
+                              </div>
+                              <div className="w-14 text-right">
+                                <span className="text-xs text-zinc-300">{metric.intakeSourceBreakdown!.irqCount}</span>
+                                <span className="text-[11px] text-zinc-500 ml-1.5">({metric.intakeSourceBreakdown!.irqPercent}%)</span>
+                              </div>
+                            </div>
+                            {/* GRRF Bar */}
+                            <div className="flex items-center gap-2">
+                              <div className="w-[45px] text-[11px] text-zinc-400">GRRF</div>
+                              <div className="flex-1 h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+                                <div
+                                  className="h-full rounded-full transition-all duration-500"
+                                  style={{
+                                    width: `${metric.intakeSourceBreakdown!.grffPercent}%`,
+                                    backgroundColor: '#a5f3fc',
+                                    boxShadow: '0 0 6px #a5f3fc40'
+                                  }}
+                                />
+                              </div>
+                              <div className="w-14 text-right">
+                                <span className="text-xs text-zinc-300">{metric.intakeSourceBreakdown!.grffCount}</span>
+                                <span className="text-[11px] text-zinc-500 ml-1.5">({metric.intakeSourceBreakdown!.grffPercent}%)</span>
+                              </div>
+                            </div>
+                            {/* Divider */}
+                            <div className="border-t border-zinc-700/50 my-1" />
+                            {/* Portfolios Logged */}
+                            <div className="flex items-center gap-2">
+                              <div className="w-[45px] text-[11px] text-zinc-400">Logged</div>
+                              <div className="flex-1 h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+                                <div
+                                  className="h-full rounded-full transition-all duration-500"
+                                  style={{
+                                    width: `${metric.intakeSourceBreakdown!.portfoliosPercent}%`,
+                                    backgroundColor: '#39FF14',
+                                    boxShadow: '0 0 6px #39FF1440'
+                                  }}
+                                />
+                              </div>
+                              <div className="w-14 text-right">
+                                <span className="text-xs text-zinc-300">{metric.intakeSourceBreakdown!.portfoliosLogged}</span>
+                                <span className="text-[11px] text-zinc-500 ml-1.5">({metric.intakeSourceBreakdown!.portfoliosPercent}%)</span>
+                              </div>
+                            </div>
                           </div>
                         </div>
                       )}

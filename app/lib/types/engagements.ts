@@ -17,6 +17,16 @@ export interface IntakeBreakdown {
   color: string;
 }
 
+export interface IntakeSourceBreakdown {
+  irqCount: number;
+  irqPercent: number;
+  grffCount: number;
+  grffPercent: number;
+  portfoliosLogged: number;
+  portfoliosTotal: number;
+  portfoliosPercent: number;
+}
+
 export interface EngagementMetric {
   label: string;
   sublabel: string;
@@ -29,6 +39,7 @@ export interface EngagementMetric {
   pieData?: { name: string; value: number; color: string }[]; // Optional pie chart data for breakdown visualization
   stackedBarData?: { month: string; IAG: number; 'Broker-Dealer': number; Institution: number }[]; // Optional stacked bar data
   intakeBreakdown?: IntakeBreakdown[]; // Optional intake breakdown for GCG Ad-Hoc
+  intakeSourceBreakdown?: IntakeSourceBreakdown; // Optional intake source breakdown for Client Projects
 }
 
 export interface DepartmentData {
