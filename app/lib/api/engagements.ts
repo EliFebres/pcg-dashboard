@@ -36,21 +36,21 @@ export async function getEngagementMetrics(): Promise<EngagementMetric[]> {
   // TODO: Replace with fetch('/api/engagements/metrics')
 
   // Calculate metrics from actual engagements data
-  // Projects = all engagements EXCEPT Touch Points
-  const projects = engagements.filter(e => e.intakeType !== 'Touch Points');
+  // Projects = all engagements EXCEPT GCG Ad-Hoc
+  const projects = engagements.filter(e => e.intakeType !== 'GCG Ad-Hoc');
   const projectCount = projects.length;
 
-  // In Progress = projects (non-Touch Points) with status "In Progress"
+  // In Progress = projects (non-GCG Ad-Hoc) with status "In Progress"
   const inProgressCount = projects.filter(e => e.status === 'In Progress').length;
 
-  // Portfolios Logged = projects (non-Touch Points) where portfolioLogged is true
+  // Portfolios Logged = projects (non-GCG Ad-Hoc) where portfolioLogged is true
   const portfoliosLoggedCount = projects.filter(e => e.portfolioLogged).length;
   const portfoliosLoggedPct = projectCount > 0
     ? Math.round((portfoliosLoggedCount / projectCount) * 100)
     : 0;
 
-  // Touch Points = engagements with intakeType "Touch Points"
-  const touchPointsCount = engagements.filter(e => e.intakeType === 'Touch Points').length;
+  // GCG Ad-Hoc = engagements with intakeType "GCG Ad-Hoc"
+  const gcgAdHocCount = engagements.filter(e => e.intakeType === 'GCG Ad-Hoc').length;
 
   return [
     {
@@ -78,9 +78,9 @@ export async function getEngagementMetrics(): Promise<EngagementMetric[]> {
       icon: 'CheckCircle2'
     },
     {
-      label: 'Touch Points',
+      label: 'GCG Ad-Hoc',
       sublabel: '1YR',
-      value: touchPointsCount.toString(),
+      value: gcgAdHocCount.toString(),
       change: '+18%',
       isPositive: true,
       icon: 'MessageSquare'
@@ -97,7 +97,7 @@ export async function getDepartmentBreakdown(): Promise<DepartmentData[]> {
   await delay(SIMULATED_DELAY);
   // TODO: Replace with fetch('/api/engagements/departments')
 
-  // Count engagements by department (excluding Touch Points to match Projects metric)
+  // Count engagements by department (excluding GCG Ad-Hoc to match Projects metric)
   const departmentCounts: Record<string, number> = {
     'IAG': 0,
     'Broker-Dealer': 0,
@@ -105,7 +105,7 @@ export async function getDepartmentBreakdown(): Promise<DepartmentData[]> {
   };
 
   for (const engagement of engagements) {
-    if (engagement.intakeType !== 'Touch Points') {
+    if (engagement.intakeType !== 'GCG Ad-Hoc') {
       const dept = engagement.department;
       if (dept in departmentCounts) {
         departmentCounts[dept]++;

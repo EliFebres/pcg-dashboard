@@ -1,11 +1,13 @@
 // Types for Client Engagements Dashboard
 
+export type GCGAdHocChannel = 'In-Person' | 'Email' | 'Teams' | 'Team Distro';
+
 export interface DayData {
   date: Date;
   level: number;
   count: number;
   projectCount: number;
-  touchPointCount: number;
+  adHocCount: number;
 }
 
 export interface EngagementMetric {
@@ -35,9 +37,10 @@ export interface InternalClient {
 
 export interface Engagement {
   id: number;
-  externalClient: string | null; // Optional - Touch Points may not have an external client
+  externalClient: string | null; // Optional - GCG Ad-Hoc may not have an external client
   internalClient: InternalClient; // Contact/relationship owner/salesperson
-  intakeType: 'IRQ' | 'GRRF' | 'Touch Points';
+  intakeType: 'IRQ' | 'GRRF' | 'GCG Ad-Hoc';
+  adHocChannel?: GCGAdHocChannel; // Only applicable when intakeType is 'GCG Ad-Hoc'
   type: string; // Project Type
   teamMembers: string[];
   department: string;

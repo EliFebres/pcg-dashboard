@@ -31,7 +31,7 @@ interface MetricsResponse {
     count: number;
     change: number;  // Percentage change from previous period
   };
-  touchPoints: {
+  gcgAdHoc: {
     count: number;
     change: number;
   };
@@ -54,7 +54,7 @@ interface MetricsResponse {
 | `period` | string | No | Time period filter (e.g., `7d`, `30d`, `90d`, `1y`, `all`) |
 | `teamMember` | string | No | Filter by team member ID |
 | `department` | string | No | Filter by department (e.g., `IAG`, `Broker-Dealer`, `Institution`) |
-| `intakeType` | string | No | Filter by intake type (e.g., `IRQ`, `GRRF`, `Touch Points`) |
+| `intakeType` | string | No | Filter by intake type (e.g., `IRQ`, `GRRF`, `GCG Ad-Hoc`) |
 | `projectType` | string | No | Filter by project type (e.g., `Meeting`, `Follow-Up`, `Data Request`, `PCR`) |
 
 #### Example Request
@@ -80,7 +80,7 @@ interface ContributionDataResponse {
   days: Array<{
     date: string;            // ISO date string "2025-01-28"
     projectCount: number;
-    touchPointCount: number;
+    adHocCount: number;
     level: 0 | 1 | 2 | 3 | 4; // Activity level for color coding
   }>;
 }
@@ -163,8 +163,8 @@ interface Engagement {
   id: string;
   clientName: string;
   department: 'IAG' | 'Broker-Dealer' | 'Institution';
-  intakeType: 'IRQ' | 'GRRF' | 'Touch Points';
-  projectType: 'Meeting' | 'Follow-Up' | 'Data Request' | 'PCR';
+  intakeType: 'IRQ' | 'GRRF' | 'GCG Ad-Hoc';
+  projectType: 'Meeting' | 'Follow-Up' | 'Data Request' | 'PCR' | 'Other';
   status: 'In Progress' | 'Completed' | 'On Hold';
   teamMember: string;
   createdAt: string;  // ISO timestamp
@@ -298,7 +298,7 @@ const REFRESH_CONFIG = {
 
 The backend should handle these scenarios from historical data:
 
-1. **Missing touch points** - Touch points are new; historical records won't have them
+1. **Missing GCG Ad-Hoc** - Touch points are new; historical records won't have them
 2. **Field mapping** - Old Kanban fields may need mapping to new schema
 3. **Sparse data** - Some fields may be null/undefined
 4. **Validation** - One-time import script should validate and log issues

@@ -82,7 +82,9 @@ const ContributionGraph: React.FC<ContributionGraphProps> = ({ data }) => {
     }
   };
 
-  const flatData = data.flat();
+  // Only show the most recent 52 weeks (1 year) in the heatmap
+  const recentWeeks = data.slice(-52);
+  const flatData = recentWeeks.flat();
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
@@ -126,7 +128,7 @@ const ContributionGraph: React.FC<ContributionGraphProps> = ({ data }) => {
                 transform: 'scale(1)',
               }}
               className="hover:scale-110"
-              title={`${new Date(day.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}\n${day.projectCount} project${day.projectCount !== 1 ? 's' : ''}, ${day.touchPointCount} touch point${day.touchPointCount !== 1 ? 's' : ''}`}
+              title={`${new Date(day.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}\n${day.projectCount} project${day.projectCount !== 1 ? 's' : ''}, ${day.adHocCount} ad-hoc${day.adHocCount !== 1 ? 's' : ''}`}
             />
           ))}
         </div>
@@ -359,24 +361,24 @@ export default function EngagementsDashboard() {
     const clientProjectsChangeStr = clientProjectsChangePercent >= 0 ? `+${clientProjectsChangePercent}%` : `${clientProjectsChangePercent}%`;
 
     const inProgress = filteredEngagements.filter((e) => e.status === 'In Progress').length;
-    // Only count portfolios logged for GRRFs and IRQs that are not PCRs (Touch Points and PCRs don't have logged portfolios)
+    // Only count portfolios logged for GRRFs and IRQs that are not PCRs (GCG Ad-Hoc and PCRs don't have logged portfolios)
     const eligibleForPortfolio = filteredEngagements.filter((e) =>
       (e.intakeType === 'GRRF' || e.intakeType === 'IRQ') && e.type !== 'PCR'
     );
     const portfoliosLogged = eligibleForPortfolio.filter((e) => e.portfolioLogged).length;
-    const touchPoints = filteredEngagements.filter((e) => e.intakeType === 'Touch Points').length;
+    const gcgAdHoc = filteredEngagements.filter((e) => e.intakeType === 'GCG Ad-Hoc').length;
     const portfolioPercent = eligibleForPortfolio.length > 0 ? Math.round((portfoliosLogged / eligibleForPortfolio.length) * 100) : 0;
 
-    // Calculate previous period's touch points for comparison
-    const prevTouchPoints = engagements.filter((e) => {
+    // Calculate previous period's GCG Ad-Hoc for comparison
+    const prevGcgAdHoc = engagements.filter((e) => {
       const startDate = new Date(e.dateStarted);
-      return e.intakeType === 'Touch Points' &&
+      return e.intakeType === 'GCG Ad-Hoc' &&
         startDate >= periodDates.previousStart && startDate <= periodDates.previousEnd;
     }).length;
-    const touchPointsChangePercent = prevTouchPoints > 0
-      ? Math.round(((touchPoints - prevTouchPoints) / prevTouchPoints) * 100)
-      : (touchPoints > 0 ? 100 : 0);
-    const touchPointsChangeStr = touchPointsChangePercent >= 0 ? `+${touchPointsChangePercent}%` : `${touchPointsChangePercent}%`;
+    const gcgAdHocChangePercent = prevGcgAdHoc > 0
+      ? Math.round(((gcgAdHoc - prevGcgAdHoc) / prevGcgAdHoc) * 100)
+      : (gcgAdHoc > 0 ? 100 : 0);
+    const gcgAdHocChangeStr = gcgAdHocChangePercent >= 0 ? `+${gcgAdHocChangePercent}%` : `${gcgAdHocChangePercent}%`;
 
     // Generate sparkline data for In Progress trend based on period
     const getSparklineConfig = (periodValue: string): { points: number; label: string } => {
@@ -407,7 +409,7 @@ export default function EngagementsDashboard() {
 
     return [
       { label: 'Client Projects', sublabel: periodDates.label, value: clientProjects.toLocaleString(), change: clientProjectsChangeStr, isPositive: clientProjectsChangePercent >= 0, icon: 'FileText' },
-      { label: 'Touch Points', sublabel: periodDates.label, value: touchPoints.toLocaleString(), change: touchPointsChangeStr, isPositive: touchPointsChangePercent >= 0, icon: 'MessageSquare' },
+      { label: 'GCG Ad-Hoc', sublabel: periodDates.label, value: gcgAdHoc.toLocaleString(), change: gcgAdHocChangeStr, isPositive: gcgAdHocChangePercent >= 0, icon: 'MessageSquare' },
       { label: 'In Progress', sublabel: sparklineConfig.label, value: inProgress.toLocaleString(), change: inProgressChangeStr, isPositive: inProgressChange >= 0, icon: 'PlayCircle', sparklineData: inProgressSparkline },
       { label: 'Portfolios Logged', sublabel: 'of Client Projects', value: portfoliosLogged.toLocaleString(), change: `${portfolioPercent}%`, isPositive: true, icon: 'CheckCircle2', percent: portfolioPercent },
     ];
@@ -542,6 +544,7 @@ export default function EngagementsDashboard() {
       case 'Meeting': return 'bg-violet-500/15 text-violet-400';
       case 'Follow-Up': return 'bg-amber-500/15 text-amber-400';
       case 'PCR': return 'bg-rose-500/15 text-rose-400';
+      case 'Other': return 'bg-zinc-500/15 text-zinc-400';
       default: return 'bg-zinc-500/10 text-zinc-400';
     }
   };
@@ -550,7 +553,7 @@ export default function EngagementsDashboard() {
     switch (intakeType) {
       case 'IRQ': return 'bg-blue-500/15 text-blue-400 border border-blue-500/30';
       case 'GRRF': return 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30';
-      case 'Touch Points': return 'bg-pink-500/15 text-pink-400 border border-pink-500/30';
+      case 'GCG Ad-Hoc': return 'bg-pink-500/15 text-pink-400 border border-pink-500/30';
       default: return 'bg-zinc-500/10 text-zinc-400 border border-zinc-500/30';
     }
   };

@@ -1,6 +1,9 @@
 // Data and functions for Client Engagements Dashboard
 
-import type { Engagement, DayData } from '../types/engagements';
+import type { Engagement, DayData, GCGAdHocChannel } from '../types/engagements';
+
+// GCG Ad-Hoc interaction channels
+const adHocChannels: GCGAdHocChannel[] = ['In-Person', 'Email', 'Teams', 'Team Distro'];
 
 // Internal client (relationship owner/salesperson) roster mapped to GCG departments
 const internalClients = {
@@ -36,6 +39,7 @@ const teamMembers = ['Eli F.', 'Sarah K.', 'Mike R.', 'Lisa M.', 'James T.', 'Da
 const internalClientKeys = Object.keys(internalClients) as (keyof typeof internalClients)[];
 const departments: ('IAG' | 'Broker-Dealer' | 'Institution')[] = ['IAG', 'Broker-Dealer', 'Institution'];
 const projectTypes = ['Meeting', 'Follow-Up', 'Data Request', 'PCR'];
+const adHocProjectTypes = ['PCR', 'Follow-Up', 'Other']; // Project types specific to GCG Ad-Hoc
 
 // Seeded random for consistent data generation
 function seededRandom(seed: number): number {
@@ -43,13 +47,28 @@ function seededRandom(seed: number): number {
   return x - Math.floor(x);
 }
 
-// Generate full year of engagement data
-function generateYearOfEngagements(): Engagement[] {
+// Weighted department selection: IAG 55%, Broker-Dealer 33%, Institution 12%
+function getWeightedDepartment(seed: number): 'IAG' | 'Broker-Dealer' | 'Institution' {
+  const rand = seededRandom(seed);
+  if (rand < 0.55) return 'IAG';
+  if (rand < 0.88) return 'Broker-Dealer'; // 0.55 + 0.33 = 0.88
+  return 'Institution';
+}
+
+// Get internal client from a specific department
+function getInternalClientByDepartment(dept: 'IAG' | 'Broker-Dealer' | 'Institution', seed: number): typeof internalClients[keyof typeof internalClients] {
+  const clientsByDept = internalClientKeys.filter(key => internalClients[key].gcgDepartment === dept);
+  const selectedKey = clientsByDept[Math.floor(seededRandom(seed) * clientsByDept.length)];
+  return internalClients[selectedKey];
+}
+
+// Generate 2 years of engagement data
+function generateEngagements(): Engagement[] {
   const engagements: Engagement[] = [];
   let id = 1;
 
-  // Start from Feb 1, 2024 to Jan 31, 2025 (1 year)
-  const startDate = new Date('2024-02-01');
+  // Start from Feb 1, 2023 to Jan 31, 2025 (2 years)
+  const startDate = new Date('2023-02-01');
   const endDate = new Date('2025-01-31');
 
   // Cutoff date - anything finishing after this shows as blank/in-progress
@@ -81,10 +100,10 @@ function generateYearOfEngagements(): Engagement[] {
     const isSlowWeek = slowWeeks.includes(weekNum % 52);
     const weekSeed = weekNum * 100;
 
-    // Touch points: 2-3 per day normally, 0-1 during slow weeks
-    const baseTouchPoints = isSlowWeek ? 0.5 : 2.5;
-    const touchPointVariance = seededRandom(weekSeed + currentDate.getDate()) - 0.5;
-    const touchPointsToday = Math.max(0, Math.round(baseTouchPoints + touchPointVariance));
+    // GCG Ad-Hoc: 2-3 per day normally, 0-1 during slow weeks
+    const baseAdHoc = isSlowWeek ? 0.5 : 2.5;
+    const adHocVariance = seededRandom(weekSeed + currentDate.getDate()) - 0.5;
+    const adHocToday = Math.max(0, Math.round(baseAdHoc + adHocVariance));
 
     // Projects: ~4 per week = ~0.8 per day, less during slow weeks
     const baseProjects = isSlowWeek ? 0.2 : 0.8;
@@ -93,11 +112,11 @@ function generateYearOfEngagements(): Engagement[] {
 
     const dateStr = currentDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 
-    // Generate touch points for today
-    for (let i = 0; i < touchPointsToday; i++) {
+    // Generate GCG Ad-Hoc interactions for today
+    for (let i = 0; i < adHocToday; i++) {
       const seed = id * 17;
-      const internalClientKey = internalClientKeys[Math.floor(seededRandom(seed) * internalClientKeys.length)];
-      const internalClient = internalClients[internalClientKey];
+      const dept = getWeightedDepartment(seed);
+      const internalClient = getInternalClientByDepartment(dept, seed + 1);
       const teamCount = 1 + Math.floor(seededRandom(seed + 2) * 2);
       const selectedTeam: string[] = [];
       for (let t = 0; t < teamCount; t++) {
@@ -114,26 +133,30 @@ function generateYearOfEngagements(): Engagement[] {
       const isAfterCutoff = finishDate > cutoffDate;
       const finishStr = isAfterCutoff ? '—' : finishDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 
-      // PCR is more common for touch points (~60%)
-      const touchPointType = seededRandom(seed + 7) > 0.4 ? 'PCR' : 'Follow-Up';
+      // Randomly select project type for GCG Ad-Hoc (PCR ~50%, Follow-Up ~30%, Other ~20%)
+      const adHocType = adHocProjectTypes[Math.floor(seededRandom(seed + 7) * adHocProjectTypes.length)];
 
-      // PCR usually doesn't have an external client (only 15% do), Follow-Up usually does (70%)
-      const hasExternalClient = touchPointType === 'PCR'
+      // PCR/Other usually doesn't have an external client (only 15% do), Follow-Up usually does (70%)
+      const hasExternalClient = (adHocType === 'PCR' || adHocType === 'Other')
         ? seededRandom(seed + 1) > 0.85
         : seededRandom(seed + 1) > 0.3;
+
+      // Randomly assign a channel for the ad-hoc interaction
+      const adHocChannel = adHocChannels[Math.floor(seededRandom(seed + 11) * adHocChannels.length)];
 
       engagements.push({
         id: id++,
         externalClient: hasExternalClient ? externalClients[Math.floor(seededRandom(seed + 4) * externalClients.length)] : null,
         internalClient,
-        intakeType: 'Touch Points',
-        type: touchPointType,
+        intakeType: 'GCG Ad-Hoc',
+        adHocChannel,
+        type: adHocType,
         teamMembers: selectedTeam,
         department: internalClient.gcgDepartment,
         dateStarted: dateStr,
         dateFinished: finishStr,
         status: isAfterCutoff ? 'In Progress' : 'Completed',
-        portfolioLogged: false, // Touch points don't have logged portfolios
+        portfolioLogged: false, // GCG Ad-Hoc don't have logged portfolios
         hasNotes: seededRandom(seed + 6) > 0.6,
       });
     }
@@ -141,9 +164,8 @@ function generateYearOfEngagements(): Engagement[] {
     // Generate projects for today
     for (let i = 0; i < projectsToday; i++) {
       const seed = id * 23;
-      const internalClientKey = internalClientKeys[Math.floor(seededRandom(seed) * internalClientKeys.length)];
-      const internalClient = internalClients[internalClientKey];
-      const dept = departments[Math.floor(seededRandom(seed + 1) * departments.length)];
+      const dept = getWeightedDepartment(seed);
+      const internalClient = getInternalClientByDepartment(dept, seed + 1);
       const intakeType: 'IRQ' | 'GRRF' = seededRandom(seed + 2) > 0.5 ? 'IRQ' : 'GRRF';
       const projectType = projectTypes[Math.floor(seededRandom(seed + 3) * projectTypes.length)];
       const teamCount = 1 + Math.floor(seededRandom(seed + 4) * 3);
@@ -185,9 +207,8 @@ function generateYearOfEngagements(): Engagement[] {
   const recentDate = new Date('2025-01-27');
   for (let i = 0; i < 5; i++) {
     const seed = (id + i) * 31;
-    const internalClientKey = internalClientKeys[Math.floor(seededRandom(seed) * internalClientKeys.length)];
-    const internalClient = internalClients[internalClientKey];
-    const dept = departments[Math.floor(seededRandom(seed + 1) * departments.length)];
+    const dept = getWeightedDepartment(seed);
+    const internalClient = getInternalClientByDepartment(dept, seed + 1);
     const intakeType: 'IRQ' | 'GRRF' = seededRandom(seed + 2) > 0.5 ? 'IRQ' : 'GRRF';
     const status = i < 3 ? 'In Progress' : 'Pending';
     const teamCount = 1 + Math.floor(seededRandom(seed + 4) * 3);
@@ -220,7 +241,7 @@ function generateYearOfEngagements(): Engagement[] {
   return engagements;
 }
 
-export const engagements: Engagement[] = generateYearOfEngagements();
+export const engagements: Engagement[] = generateEngagements();
 
 // Parse date string like "Jan 20, 2025" to Date object
 function parseDateString(dateStr: string): Date | null {
@@ -238,29 +259,29 @@ function getDateKey(date: Date): string {
 // Can optionally pass filtered engagements to show filtered heatmap
 export function generateContributionData(filteredEngagements?: Engagement[]): DayData[][] {
   const weeks: DayData[][] = [];
-  const startDate = new Date('2024-02-01'); // Start 1 year before most recent data
+  const startDate = new Date('2023-02-01'); // Start 2 years before most recent data
   const dataSource = filteredEngagements ?? engagements;
 
   // Build a map of completed engagements by date
-  const completionsByDate: Record<string, { projects: number; touchPoints: number }> = {};
+  const completionsByDate: Record<string, { projects: number; adHoc: number }> = {};
 
   for (const engagement of dataSource) {
     const finishedDate = parseDateString(engagement.dateFinished);
     if (finishedDate) {
       const key = getDateKey(finishedDate);
       if (!completionsByDate[key]) {
-        completionsByDate[key] = { projects: 0, touchPoints: 0 };
+        completionsByDate[key] = { projects: 0, adHoc: 0 };
       }
-      if (engagement.intakeType === 'Touch Points') {
-        completionsByDate[key].touchPoints++;
+      if (engagement.intakeType === 'GCG Ad-Hoc') {
+        completionsByDate[key].adHoc++;
       } else {
         completionsByDate[key].projects++;
       }
     }
   }
 
-  // Generate 52 weeks of data (weekdays only)
-  for (let week = 0; week < 52; week++) {
+  // Generate 104 weeks of data (2 years, weekdays only)
+  for (let week = 0; week < 104; week++) {
     const days: DayData[] = [];
     for (let day = 0; day < 5; day++) {
       const currentDate = new Date(startDate);
@@ -273,8 +294,8 @@ export function generateContributionData(filteredEngagements?: Engagement[]): Da
       currentDate.setDate(startDate.getDate() + week * 7 + mondayOffset + day);
 
       const key = getDateKey(currentDate);
-      const completions = completionsByDate[key] || { projects: 0, touchPoints: 0 };
-      const totalCount = completions.projects + completions.touchPoints;
+      const completions = completionsByDate[key] || { projects: 0, adHoc: 0 };
+      const totalCount = completions.projects + completions.adHoc;
 
       // Determine activity level based on count
       let level: number;
@@ -289,7 +310,7 @@ export function generateContributionData(filteredEngagements?: Engagement[]): Da
         level,
         count: totalCount,
         projectCount: completions.projects,
-        touchPointCount: completions.touchPoints,
+        adHocCount: completions.adHoc,
       });
     }
     weeks.push(days);
