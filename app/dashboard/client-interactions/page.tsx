@@ -19,9 +19,9 @@ export default function EngagementsDashboard() {
 
   // Global filter state
   const [teamMemberFilter, setTeamMemberFilter] = useState('All Team Members');
-  const [departmentFilter, setDepartmentFilter] = useState('All Departments');
-  const [intakeTypeFilter, setIntakeTypeFilter] = useState('All Intake Types');
-  const [projectTypeFilter, setProjectTypeFilter] = useState('All Project Types');
+  const [departmentFilter, setDepartmentFilter] = useState<string[]>([]); // Multi-select
+  const [intakeTypeFilter, setIntakeTypeFilter] = useState<string[]>([]); // Multi-select
+  const [projectTypeFilter, setProjectTypeFilter] = useState<string[]>([]); // Multi-select
   const [period, setPeriod] = useState('1Y');
   const [isNewInteractionOpen, setIsNewInteractionOpen] = useState(false);
 
@@ -178,16 +178,16 @@ export default function EngagementsDashboard() {
           return false;
         }
       }
-      // Department filter
-      if (departmentFilter !== 'All Departments' && e.internalClient.gcgDepartment !== departmentFilter) {
+      // Department filter (multi-select: empty array = show all)
+      if (departmentFilter.length > 0 && !departmentFilter.includes(e.internalClient.gcgDepartment)) {
         return false;
       }
-      // Intake type filter
-      if (intakeTypeFilter !== 'All Intake Types' && e.intakeType !== intakeTypeFilter) {
+      // Intake type filter (multi-select: empty array = show all)
+      if (intakeTypeFilter.length > 0 && !intakeTypeFilter.includes(e.intakeType)) {
         return false;
       }
-      // Project type filter
-      if (projectTypeFilter !== 'All Project Types' && e.type !== projectTypeFilter) {
+      // Project type filter (multi-select: empty array = show all)
+      if (projectTypeFilter.length > 0 && !projectTypeFilter.includes(e.type)) {
         return false;
       }
       return true;
@@ -532,7 +532,7 @@ export default function EngagementsDashboard() {
             options: filterOptions.teamMembers,
             optionGroups: filterOptions.teamMemberGroups,
             value: teamMemberFilter,
-            onChange: (v: string) => handleFilterChange(setTeamMemberFilter, v),
+            onChange: (v: string | string[]) => handleFilterChange(setTeamMemberFilter, v as string),
           },
           {
             id: 'department',
@@ -540,7 +540,8 @@ export default function EngagementsDashboard() {
             label: 'Department',
             options: filterOptions.departments,
             value: departmentFilter,
-            onChange: (v: string) => handleFilterChange(setDepartmentFilter, v),
+            onChange: (v: string | string[]) => handleFilterChange(setDepartmentFilter, v as string[]),
+            multiSelect: true,
           },
           {
             id: 'intakeType',
@@ -548,7 +549,8 @@ export default function EngagementsDashboard() {
             label: 'Intake Type',
             options: filterOptions.intakeTypes,
             value: intakeTypeFilter,
-            onChange: (v: string) => handleFilterChange(setIntakeTypeFilter, v),
+            onChange: (v: string | string[]) => handleFilterChange(setIntakeTypeFilter, v as string[]),
+            multiSelect: true,
           },
           {
             id: 'projectType',
@@ -556,7 +558,8 @@ export default function EngagementsDashboard() {
             label: 'Project Type',
             options: filterOptions.projectTypes,
             value: projectTypeFilter,
-            onChange: (v: string) => handleFilterChange(setProjectTypeFilter, v),
+            onChange: (v: string | string[]) => handleFilterChange(setProjectTypeFilter, v as string[]),
+            multiSelect: true,
           },
         ]}
         period={period}

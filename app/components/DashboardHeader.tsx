@@ -14,8 +14,9 @@ export interface FilterDropdown {
   label: string;
   options: string[];
   optionGroups?: FilterOptionGroup[]; // Optional grouped options with category headers
-  value: string;
-  onChange: (value: string) => void;
+  value: string | string[];
+  onChange: (value: string | string[]) => void;
+  multiSelect?: boolean; // Enable multi-select mode
 }
 
 export interface PeriodOption {
@@ -65,7 +66,49 @@ function FilterDropdownButton({ filter }: { filter: FilterDropdown }) {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const isFiltered = filter.value !== filter.options[0]; // First option is "All"
+  // Multi-select helpers
+  const isMultiSelect = filter.multiSelect ?? false;
+  const selectedValues = isMultiSelect
+    ? (Array.isArray(filter.value) ? filter.value : [])
+    : [];
+  const allOption = filter.options[0]; // First option is "All"
+
+  // Check if filtered (for single-select: value !== first option, for multi-select: has selections)
+  const isFiltered = isMultiSelect
+    ? selectedValues.length > 0
+    : filter.value !== allOption;
+
+  // Display text for button
+  const getDisplayText = () => {
+    if (isMultiSelect) {
+      if (selectedValues.length === 0) return allOption;
+      if (selectedValues.length === 1) return selectedValues[0];
+      return `${selectedValues.length} selected`;
+    }
+    return filter.value as string;
+  };
+
+  // Handle option click for multi-select
+  const handleMultiSelectClick = (option: string) => {
+    if (option === allOption) {
+      // Clicking "All" clears selection
+      filter.onChange([]);
+      return;
+    }
+
+    const newValues = selectedValues.includes(option)
+      ? selectedValues.filter(v => v !== option)
+      : [...selectedValues, option];
+    filter.onChange(newValues);
+  };
+
+  // Check if option is selected (for multi-select)
+  const isOptionSelected = (option: string) => {
+    if (option === allOption) {
+      return selectedValues.length === 0;
+    }
+    return selectedValues.includes(option);
+  };
 
   return (
     <div className="relative" ref={dropdownRef}>
@@ -78,7 +121,7 @@ function FilterDropdownButton({ filter }: { filter: FilterDropdown }) {
         }`}
       >
         <IconComponent className={`w-4 h-4 ${isFiltered ? 'text-cyan-400' : 'text-zinc-500'}`} />
-        {filter.value}
+        {getDisplayText()}
         <ChevronDown className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''} ${isFiltered ? 'text-cyan-400' : 'text-zinc-500'}`} />
       </button>
 
@@ -90,7 +133,7 @@ function FilterDropdownButton({ filter }: { filter: FilterDropdown }) {
         }`}
       >
         {filter.optionGroups ? (
-          // Render grouped options with category headers
+          // Render grouped options with category headers (single-select only)
           <>
             {/* First option (e.g., "All Team Members") without indentation */}
             <button
@@ -134,8 +177,30 @@ function FilterDropdownButton({ filter }: { filter: FilterDropdown }) {
               </div>
             ))}
           </>
+        ) : isMultiSelect ? (
+          // Render multi-select options with checkboxes
+          filter.options.map((option) => (
+            <button
+              key={option}
+              onClick={() => handleMultiSelectClick(option)}
+              className={`w-full flex items-center gap-2 px-3 py-2 text-sm text-left transition-colors ${
+                isOptionSelected(option)
+                  ? 'bg-cyan-500/10 text-cyan-400'
+                  : 'text-zinc-300 hover:bg-white/[0.05]'
+              }`}
+            >
+              <div className={`w-4 h-4 border flex items-center justify-center transition-colors ${
+                isOptionSelected(option)
+                  ? 'bg-cyan-500 border-cyan-500'
+                  : 'border-zinc-600'
+              }`}>
+                {isOptionSelected(option) && <Check className="w-3 h-3 text-white" />}
+              </div>
+              {option}
+            </button>
+          ))
         ) : (
-          // Render flat options (default behavior)
+          // Render flat options (default single-select behavior)
           filter.options.map((option) => (
             <button
               key={option}
@@ -241,7 +306,12 @@ export default function DashboardHeader({
   const isHoveringRef = useRef(false);
 
   // Check if any filter is active (not on default "All" option)
-  const hasActiveFilters = filters.some(filter => filter.value !== filter.options[0]);
+  const hasActiveFilters = filters.some(filter => {
+    if (filter.multiSelect) {
+      return Array.isArray(filter.value) && filter.value.length > 0;
+    }
+    return filter.value !== filter.options[0];
+  });
 
   // Start or restart the collapse timeout (only if no active filters)
   const startCollapseTimeout = () => {
