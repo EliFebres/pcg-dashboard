@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { Building2, FileText, ArrowUpRight, ArrowDownRight, Download, User, Check, X, Loader2, ChevronUp, ChevronDown, ChevronsUpDown, Maximize2, Minimize2, Inbox, Briefcase } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell, LabelList, AreaChart, Area, PieChart, Pie, Tooltip } from 'recharts';
 import { getEngagementsDashboardData, getEngagements } from '@/app/lib/api/engagements';
@@ -155,6 +155,46 @@ const ContributionGraph: React.FC<ContributionGraphProps> = ({ data }) => {
   );
 };
 
+// Memoized Department Chart to prevent re-renders from unrelated state changes
+interface DepartmentChartProps {
+  data: DepartmentData[];
+}
+
+const DepartmentChart = React.memo<DepartmentChartProps>(({ data }) => {
+  return (
+    <>
+      <div className="flex-1 mb-3">
+        <ClientOnlyChart>
+          <ResponsiveContainer width="100%" height="100%" minWidth={100} minHeight={80}>
+            <BarChart data={data} layout="vertical" barSize={16}>
+              <XAxis type="number" domain={[0, 100]} hide />
+              <YAxis type="category" dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#a1a1aa', fontSize: 11 }} width={85} />
+              <Bar dataKey="value" radius={0} isAnimationActive={true} animationDuration={700}>
+                {data.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={entry.color} />
+                ))}
+                <LabelList dataKey="value" position="right" formatter={(value) => `${value}%`} style={{ fill: '#a1a1aa', fontSize: 11 }} />
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </ClientOnlyChart>
+      </div>
+      <div className="space-y-2 pt-2 border-t border-zinc-800/50 flex-shrink-0">
+        {data.map((dept) => (
+          <div key={dept.name} className="flex items-center justify-between text-xs">
+            <div className="flex items-center gap-2">
+              <div className="w-2.5 h-2.5" style={{ backgroundColor: dept.color }} />
+              <span className="text-zinc-400">{dept.name}</span>
+            </div>
+            <span className="text-zinc-200 font-medium font-mono">{dept.count}</span>
+          </div>
+        ))}
+      </div>
+    </>
+  );
+});
+DepartmentChart.displayName = 'DepartmentChart';
+
 export default function EngagementsDashboard() {
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(true);
@@ -170,6 +210,34 @@ export default function EngagementsDashboard() {
   const [projectTypeFilter, setProjectTypeFilter] = useState('All Project Types');
   const [period, setPeriod] = useState('1Y');
   const [isTableFullscreen, setIsTableFullscreen] = useState(false);
+
+  // Flip card state for GCG Ad-Hoc metric
+  const [isAdHocCardFlipped, setIsAdHocCardFlipped] = useState(false);
+  const flipTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const flipStartTimeRef = useRef<number>(0);
+
+  const handleAdHocCardEnter = useCallback(() => {
+    // Clear any pending unflip timeout
+    if (flipTimeoutRef.current) {
+      clearTimeout(flipTimeoutRef.current);
+      flipTimeoutRef.current = null;
+    }
+    // Record when flip started
+    flipStartTimeRef.current = Date.now();
+    setIsAdHocCardFlipped(true);
+  }, []);
+
+  const handleAdHocCardLeave = useCallback(() => {
+    const elapsed = Date.now() - flipStartTimeRef.current;
+    const minDuration = 1000; // 1 second minimum flip time
+    const remaining = Math.max(0, minDuration - elapsed);
+
+    // If already flipped for 1+ second, flip back immediately; otherwise wait for remaining time
+    flipTimeoutRef.current = setTimeout(() => {
+      setIsAdHocCardFlipped(false);
+      flipTimeoutRef.current = null;
+    }, remaining);
+  }, []);
 
   // Fetch all dashboard data on mount
   useEffect(() => {
@@ -366,8 +434,32 @@ export default function EngagementsDashboard() {
       (e.intakeType === 'GRRF' || e.intakeType === 'IRQ') && e.type !== 'PCR'
     );
     const portfoliosLogged = eligibleForPortfolio.filter((e) => e.portfolioLogged).length;
-    const gcgAdHoc = filteredEngagements.filter((e) => e.intakeType === 'GCG Ad-Hoc').length;
+    const gcgAdHocEngagements = filteredEngagements.filter((e) => e.intakeType === 'GCG Ad-Hoc');
+    const gcgAdHoc = gcgAdHocEngagements.length;
     const portfolioPercent = eligibleForPortfolio.length > 0 ? Math.round((portfoliosLogged / eligibleForPortfolio.length) * 100) : 0;
+
+    // Calculate channel breakdown for GCG Ad-Hoc
+    const channelCounts: Record<string, number> = {
+      'In-Person': 0,
+      'Email': 0,
+      'Teams': 0,
+    };
+    gcgAdHocEngagements.forEach((e) => {
+      if (e.adHocChannel && e.adHocChannel in channelCounts) {
+        channelCounts[e.adHocChannel]++;
+      }
+    });
+    const channelColors: Record<string, string> = {
+      'In-Person': '#a5f3fc', // light cyan (matches IAG)
+      'Email': '#22d3ee',     // cyan (matches Broker-Dealer)
+      'Teams': '#0e7490',     // dark cyan (matches Institution)
+    };
+    const channelBreakdown = Object.entries(channelCounts).map(([channel, count]) => ({
+      channel,
+      count,
+      percent: gcgAdHoc > 0 ? Math.round((count / gcgAdHoc) * 100) : 0,
+      color: channelColors[channel] || '#71717a',
+    }));
 
     // Calculate previous period's GCG Ad-Hoc for comparison
     const prevGcgAdHoc = engagements.filter((e) => {
@@ -409,7 +501,7 @@ export default function EngagementsDashboard() {
 
     return [
       { label: 'Client Projects', sublabel: periodDates.label, value: clientProjects.toLocaleString(), change: clientProjectsChangeStr, isPositive: clientProjectsChangePercent >= 0, icon: 'FileText' },
-      { label: 'GCG Ad-Hoc', sublabel: periodDates.label, value: gcgAdHoc.toLocaleString(), change: gcgAdHocChangeStr, isPositive: gcgAdHocChangePercent >= 0, icon: 'MessageSquare' },
+      { label: 'GCG Ad-Hoc', sublabel: periodDates.label, value: gcgAdHoc.toLocaleString(), change: gcgAdHocChangeStr, isPositive: gcgAdHocChangePercent >= 0, icon: 'MessageSquare', channelBreakdown },
       { label: 'In Progress', sublabel: sparklineConfig.label, value: inProgress.toLocaleString(), change: inProgressChangeStr, isPositive: inProgressChange >= 0, icon: 'PlayCircle', sparklineData: inProgressSparkline },
       { label: 'Portfolios Logged', sublabel: 'of Client Projects', value: portfoliosLogged.toLocaleString(), change: `${portfolioPercent}%`, isPositive: true, icon: 'CheckCircle2', percent: portfolioPercent },
     ];
@@ -628,155 +720,218 @@ export default function EngagementsDashboard() {
           <>
             {/* Metrics Row - Clean Cards (filtered) */}
             <div className="grid grid-cols-4 gap-4">
-              {filteredMetrics.map((metric, index) => (
-                <div
-                  key={index}
-                  className="relative overflow-visible bg-zinc-900/60 backdrop-blur-md border border-zinc-800/50 p-5 rounded-xl group hover:border-zinc-700/50 transition-all duration-300 hover:scale-[1.02] hover:-translate-y-1"
-                >
-                  <div className="absolute top-5 right-4 flex items-center gap-0.5">
-                    <div className="w-1 h-1 bg-white/80 rounded-full" />
-                    <div className="w-1 h-1 bg-white/80 rounded-full" />
-                    <div className="w-1 h-1 bg-white/80 rounded-full" />
-                  </div>
-                  <div className="absolute top-3.5 left-5 z-10">
-                    <p className="text-white text-[0.8rem]">{metric.label}</p>
-                  </div>
-                  <div className="relative z-10 pt-6">
-                    <p className="text-[3rem] font-bold text-white mb-2 tracking-tight leading-none">{metric.value}</p>
-                    <div className="flex items-center gap-2 ml-1">
-                      <span
-                        className={`flex items-center gap-1 text-[0.9rem] font-medium ${metric.isPositive ? 'text-[#39FF14]' : 'text-[#FF3131]'
-                          }`}
-                        style={{
-                          textShadow: metric.isPositive
-                            ? '0 0 4px rgba(57, 255, 20, 0.3)'
-                            : '0 0 4px rgba(255, 49, 49, 0.3)'
-                        }}
+              {filteredMetrics.map((metric, index) => {
+                const hasChannelBreakdown = metric.channelBreakdown && metric.channelBreakdown.length > 0;
+
+                return (
+                  <div
+                    key={index}
+                    className="relative h-[140px] group/card"
+                    style={{ perspective: '1000px' }}
+                    onMouseEnter={hasChannelBreakdown ? handleAdHocCardEnter : undefined}
+                    onMouseLeave={hasChannelBreakdown ? handleAdHocCardLeave : undefined}
+                  >
+                    <div
+                      className="relative w-full h-full transition-transform duration-500"
+                      style={{
+                        transformStyle: 'preserve-3d',
+                        transform: hasChannelBreakdown && isAdHocCardFlipped ? 'rotateX(180deg)' : 'rotateX(0deg)',
+                      }}
+                    >
+                      {/* Front Face */}
+                      <div
+                        className={`absolute inset-0 overflow-visible bg-zinc-900/60 backdrop-blur-md border border-zinc-800/50 p-5 rounded-xl hover:border-zinc-700/50 transition-all duration-300 ${!hasChannelBreakdown ? 'group hover:scale-[1.02] hover:-translate-y-1' : ''}`}
+                        style={{ backfaceVisibility: 'hidden' }}
                       >
-                        {metric.percent === undefined && !metric.sparklineData && !metric.pieData && !metric.stackedBarData && (metric.isPositive ? <ArrowUpRight className="w-3.5 h-3.5" /> : <ArrowDownRight className="w-3.5 h-3.5" />)}
-                        {metric.change}
-                      </span>
-                      <span className="text-xs text-zinc-500">{metric.sublabel}</span>
+                        <div className="absolute top-5 right-4 flex items-center gap-0.5">
+                          <div className="w-1 h-1 bg-white/80 rounded-full" />
+                          <div className="w-1 h-1 bg-white/80 rounded-full" />
+                          <div className="w-1 h-1 bg-white/80 rounded-full" />
+                        </div>
+                        <div className="absolute top-3.5 left-5 z-10">
+                          <p className="text-white text-[0.8rem]">{metric.label}</p>
+                        </div>
+                        <div className="relative z-10 pt-6">
+                          <p className="text-[3rem] font-bold text-white mb-2 tracking-tight leading-none">{metric.value}</p>
+                          <div className="flex items-center gap-2 ml-1">
+                            <span
+                              className={`flex items-center gap-1 text-[0.9rem] font-medium ${metric.isPositive ? 'text-[#39FF14]' : 'text-[#FF3131]'
+                                }`}
+                              style={{
+                                textShadow: metric.isPositive
+                                  ? '0 0 4px rgba(57, 255, 20, 0.3)'
+                                  : '0 0 4px rgba(255, 49, 49, 0.3)'
+                              }}
+                            >
+                              {metric.percent === undefined && !metric.sparklineData && !metric.pieData && !metric.stackedBarData && (metric.isPositive ? <ArrowUpRight className="w-3.5 h-3.5" /> : <ArrowDownRight className="w-3.5 h-3.5" />)}
+                              {metric.change}
+                            </span>
+                            <span className="text-xs text-zinc-500">{metric.sublabel}</span>
+                          </div>
+                        </div>
+                        <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+                        {/* Progress bar for metrics with percent - lower right quarter */}
+                        {metric.percent !== undefined && (
+                          <div className="absolute bottom-8 right-4 w-[45%]">
+                            <div className="h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+                              <div
+                                className="h-full rounded-full transition-all duration-700 ease-out"
+                                style={{
+                                  width: `${metric.percent}%`,
+                                  backgroundColor: '#39FF14',
+                                  boxShadow: '0 0 8px rgba(57, 255, 20, 0.5)'
+                                }}
+                              />
+                            </div>
+                          </div>
+                        )}
+                        {/* Sparkline for metrics with trend data - lower right quarter */}
+                        {metric.sparklineData && (
+                          <div className="absolute bottom-4 right-4 w-[45%] h-10">
+                            <ResponsiveContainer width="100%" height="100%">
+                              <AreaChart data={metric.sparklineData} margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
+                                <defs>
+                                  <linearGradient id={`sparklineGradient-${index}`} x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="0%" stopColor={metric.isPositive ? '#39FF14' : '#FF3131'} stopOpacity={0.3} />
+                                    <stop offset="100%" stopColor={metric.isPositive ? '#39FF14' : '#FF3131'} stopOpacity={0} />
+                                  </linearGradient>
+                                </defs>
+                                <Area
+                                  type="monotone"
+                                  dataKey="value"
+                                  stroke={metric.isPositive ? '#39FF14' : '#FF3131'}
+                                  strokeWidth={1.5}
+                                  fill={`url(#sparklineGradient-${index})`}
+                                  isAnimationActive={true}
+                                  animationDuration={700}
+                                />
+                              </AreaChart>
+                            </ResponsiveContainer>
+                          </div>
+                        )}
+                        {/* Mini donut chart for metrics with pie data - lower right quarter */}
+                        {metric.pieData && metric.pieData.length > 0 && (
+                          <div className="absolute bottom-2 right-2 w-16 h-16">
+                            <ResponsiveContainer width="100%" height="100%">
+                              <PieChart>
+                                <Pie
+                                  data={metric.pieData}
+                                  dataKey="value"
+                                  nameKey="name"
+                                  cx="50%"
+                                  cy="50%"
+                                  innerRadius={18}
+                                  outerRadius={28}
+                                  paddingAngle={2}
+                                  isAnimationActive={true}
+                                  animationDuration={700}
+                                >
+                                  {metric.pieData.map((entry, i) => (
+                                    <Cell key={`cell-${i}`} fill={entry.color} />
+                                  ))}
+                                </Pie>
+                                <Tooltip
+                                  content={({ active, payload }) => {
+                                    if (active && payload && payload.length) {
+                                      const data = payload[0].payload;
+                                      const total = metric.pieData!.reduce((sum, d) => sum + d.value, 0);
+                                      const percent = Math.round((data.value / total) * 100);
+                                      return (
+                                        <div className="bg-zinc-800 border border-zinc-700 px-2 py-1 rounded text-xs">
+                                          <span style={{ color: data.color }}>{data.name}</span>
+                                          <span className="text-zinc-300 ml-1">{percent}%</span>
+                                        </div>
+                                      );
+                                    }
+                                    return null;
+                                  }}
+                                />
+                              </PieChart>
+                            </ResponsiveContainer>
+                          </div>
+                        )}
+                        {/* Mini stacked bar chart for metrics with stacked bar data - lower right quarter */}
+                        {metric.stackedBarData && metric.stackedBarData.length > 0 && (
+                          <div className="absolute bottom-3 right-3 w-[50%] h-14 overflow-visible">
+                            <ResponsiveContainer width="100%" height="100%">
+                              <BarChart data={metric.stackedBarData} margin={{ top: 2, right: 2, bottom: 2, left: 2 }} barCategoryGap="20%">
+                                <XAxis dataKey="month" hide />
+                                <YAxis hide domain={[0, 'auto']} />
+                                <Tooltip
+                                  cursor={{ fill: 'rgba(255,255,255,0.05)' }}
+                                  wrapperStyle={{ zIndex: 1000 }}
+                                  content={({ active, payload, label }) => {
+                                    if (active && payload && payload.length) {
+                                      return (
+                                        <div className="bg-zinc-800 border border-zinc-700 px-2 py-1 rounded text-xs">
+                                          <p className="text-zinc-300 font-medium mb-1">{label}</p>
+                                          {payload.map((entry, i) => (
+                                            <div key={i} className="flex items-center gap-1">
+                                              <div className="w-2 h-2 rounded-sm" style={{ backgroundColor: entry.color }} />
+                                              <span className="text-zinc-400">{entry.name}:</span>
+                                              <span className="text-zinc-200">{entry.value}</span>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      );
+                                    }
+                                    return null;
+                                  }}
+                                />
+                                <Bar dataKey="IAG" stackId="a" fill="#a5f3fc" radius={[0, 0, 0, 0]} isAnimationActive={true} animationDuration={700} />
+                                <Bar dataKey="Broker-Dealer" stackId="a" fill="#22d3ee" radius={[0, 0, 0, 0]} isAnimationActive={true} animationDuration={700} />
+                                <Bar dataKey="Institution" stackId="a" fill="#0e7490" radius={[2, 2, 0, 0]} isAnimationActive={true} animationDuration={700} />
+                              </BarChart>
+                            </ResponsiveContainer>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Back Face - Channel Breakdown */}
+                      {hasChannelBreakdown && (
+                        <div
+                          className="absolute inset-0 overflow-hidden bg-zinc-900/60 backdrop-blur-md border border-zinc-800/50 p-4 rounded-xl"
+                          style={{
+                            backfaceVisibility: 'hidden',
+                            transform: 'rotateX(180deg)',
+                          }}
+                        >
+                          <div className="absolute top-4 right-4 flex items-center gap-0.5">
+                            <div className="w-1 h-1 bg-white/80 rounded-full" />
+                            <div className="w-1 h-1 bg-white/80 rounded-full" />
+                            <div className="w-1 h-1 bg-white/80 rounded-full" />
+                          </div>
+                          <div className="absolute top-3 left-4 z-10">
+                            <p className="text-white text-[0.75rem]">Channel Breakdown</p>
+                          </div>
+                          <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+                          <div className="relative z-10 pt-6 space-y-1.5">
+                            {metric.channelBreakdown!.map((channel, i) => (
+                              <div key={i} className="flex items-center gap-2">
+                                <div className="w-[70px] text-[11px] text-zinc-400 truncate">{channel.channel}</div>
+                                <div className="flex-1 h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+                                  <div
+                                    className="h-full rounded-full transition-all duration-500"
+                                    style={{
+                                      width: `${channel.percent}%`,
+                                      backgroundColor: channel.color,
+                                      boxShadow: `0 0 6px ${channel.color}40`
+                                    }}
+                                  />
+                                </div>
+                                <div className="w-14 text-right">
+                                  <span className="text-[11px] text-zinc-300">{channel.count}</span>
+                                  <span className="text-[10px] text-zinc-500 ml-0.5">({channel.percent}%)</span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
-                  <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
-                  {/* Progress bar for metrics with percent - lower right quarter */}
-                  {metric.percent !== undefined && (
-                    <div className="absolute bottom-8 right-4 w-[45%]">
-                      <div className="h-1.5 bg-zinc-800 rounded-full overflow-hidden">
-                        <div
-                          className="h-full rounded-full transition-all duration-700 ease-out"
-                          style={{
-                            width: `${metric.percent}%`,
-                            backgroundColor: '#39FF14',
-                            boxShadow: '0 0 8px rgba(57, 255, 20, 0.5)'
-                          }}
-                        />
-                      </div>
-                    </div>
-                  )}
-                  {/* Sparkline for metrics with trend data - lower right quarter */}
-                  {metric.sparklineData && (
-                    <div className="absolute bottom-4 right-4 w-[45%] h-10">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <AreaChart data={metric.sparklineData} margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
-                          <defs>
-                            <linearGradient id={`sparklineGradient-${index}`} x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="0%" stopColor={metric.isPositive ? '#39FF14' : '#FF3131'} stopOpacity={0.3} />
-                              <stop offset="100%" stopColor={metric.isPositive ? '#39FF14' : '#FF3131'} stopOpacity={0} />
-                            </linearGradient>
-                          </defs>
-                          <Area
-                            type="monotone"
-                            dataKey="value"
-                            stroke={metric.isPositive ? '#39FF14' : '#FF3131'}
-                            strokeWidth={1.5}
-                            fill={`url(#sparklineGradient-${index})`}
-                            isAnimationActive={true}
-                            animationDuration={700}
-                          />
-                        </AreaChart>
-                      </ResponsiveContainer>
-                    </div>
-                  )}
-                  {/* Mini donut chart for metrics with pie data - lower right quarter */}
-                  {metric.pieData && metric.pieData.length > 0 && (
-                    <div className="absolute bottom-2 right-2 w-16 h-16">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <PieChart>
-                          <Pie
-                            data={metric.pieData}
-                            dataKey="value"
-                            nameKey="name"
-                            cx="50%"
-                            cy="50%"
-                            innerRadius={18}
-                            outerRadius={28}
-                            paddingAngle={2}
-                            isAnimationActive={true}
-                            animationDuration={700}
-                          >
-                            {metric.pieData.map((entry, i) => (
-                              <Cell key={`cell-${i}`} fill={entry.color} />
-                            ))}
-                          </Pie>
-                          <Tooltip
-                            content={({ active, payload }) => {
-                              if (active && payload && payload.length) {
-                                const data = payload[0].payload;
-                                const total = metric.pieData!.reduce((sum, d) => sum + d.value, 0);
-                                const percent = Math.round((data.value / total) * 100);
-                                return (
-                                  <div className="bg-zinc-800 border border-zinc-700 px-2 py-1 rounded text-xs">
-                                    <span style={{ color: data.color }}>{data.name}</span>
-                                    <span className="text-zinc-300 ml-1">{percent}%</span>
-                                  </div>
-                                );
-                              }
-                              return null;
-                            }}
-                          />
-                        </PieChart>
-                      </ResponsiveContainer>
-                    </div>
-                  )}
-                  {/* Mini stacked bar chart for metrics with stacked bar data - lower right quarter */}
-                  {metric.stackedBarData && metric.stackedBarData.length > 0 && (
-                    <div className="absolute bottom-3 right-3 w-[50%] h-14 overflow-visible">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={metric.stackedBarData} margin={{ top: 2, right: 2, bottom: 2, left: 2 }} barCategoryGap="20%">
-                          <XAxis dataKey="month" hide />
-                          <YAxis hide domain={[0, 'auto']} />
-                          <Tooltip
-                            cursor={{ fill: 'rgba(255,255,255,0.05)' }}
-                            wrapperStyle={{ zIndex: 1000 }}
-                            content={({ active, payload, label }) => {
-                              if (active && payload && payload.length) {
-                                return (
-                                  <div className="bg-zinc-800 border border-zinc-700 px-2 py-1 rounded text-xs">
-                                    <p className="text-zinc-300 font-medium mb-1">{label}</p>
-                                    {payload.map((entry, i) => (
-                                      <div key={i} className="flex items-center gap-1">
-                                        <div className="w-2 h-2 rounded-sm" style={{ backgroundColor: entry.color }} />
-                                        <span className="text-zinc-400">{entry.name}:</span>
-                                        <span className="text-zinc-200">{entry.value}</span>
-                                      </div>
-                                    ))}
-                                  </div>
-                                );
-                              }
-                              return null;
-                            }}
-                          />
-                          <Bar dataKey="IAG" stackId="a" fill="#a5f3fc" radius={[0, 0, 0, 0]} isAnimationActive={true} animationDuration={700} />
-                          <Bar dataKey="Broker-Dealer" stackId="a" fill="#22d3ee" radius={[0, 0, 0, 0]} isAnimationActive={true} animationDuration={700} />
-                          <Bar dataKey="Institution" stackId="a" fill="#0e7490" radius={[2, 2, 0, 0]} isAnimationActive={true} animationDuration={700} />
-                        </BarChart>
-                      </ResponsiveContainer>
-                    </div>
-                  )}
-                </div>
-              ))}
+                );
+              })}
             </div>
 
             {/* Charts Row */}
@@ -817,33 +972,7 @@ export default function EngagementsDashboard() {
                       <Download className="w-3.5 h-3.5" />
                     </button>
                   </div>
-                  <div className="flex-1 mb-3">
-                    <ClientOnlyChart>
-                      <ResponsiveContainer width="100%" height="100%" minWidth={100} minHeight={80}>
-                        <BarChart data={filteredDepartmentBreakdown} layout="vertical" barSize={16}>
-                          <XAxis type="number" domain={[0, 100]} hide />
-                          <YAxis type="category" dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#a1a1aa', fontSize: 11 }} width={85} />
-                          <Bar dataKey="value" radius={0}>
-                            {filteredDepartmentBreakdown.map((entry, index) => (
-                              <Cell key={`cell-${index}`} fill={entry.color} />
-                            ))}
-                            <LabelList dataKey="value" position="right" formatter={(value) => `${value}%`} style={{ fill: '#a1a1aa', fontSize: 11 }} />
-                          </Bar>
-                        </BarChart>
-                      </ResponsiveContainer>
-                    </ClientOnlyChart>
-                  </div>
-                  <div className="space-y-2 pt-2 border-t border-zinc-800/50 flex-shrink-0">
-                    {filteredDepartmentBreakdown.map((dept) => (
-                      <div key={dept.name} className="flex items-center justify-between text-xs">
-                        <div className="flex items-center gap-2">
-                          <div className="w-2.5 h-2.5" style={{ backgroundColor: dept.color }} />
-                          <span className="text-zinc-400">{dept.name}</span>
-                        </div>
-                        <span className="text-zinc-200 font-medium font-mono">{dept.count}</span>
-                      </div>
-                    ))}
-                  </div>
+                  <DepartmentChart data={filteredDepartmentBreakdown} />
                 </div>
               </div>
             </div>

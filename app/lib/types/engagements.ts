@@ -1,6 +1,6 @@
 // Types for Client Engagements Dashboard
 
-export type GCGAdHocChannel = 'In-Person' | 'Email' | 'Teams' | 'Team Distro';
+export type GCGAdHocChannel = 'In-Person' | 'Email' | 'Teams';
 
 export interface DayData {
   date: Date;
@@ -8,6 +8,13 @@ export interface DayData {
   count: number;
   projectCount: number;
   adHocCount: number;
+}
+
+export interface ChannelBreakdown {
+  channel: string;
+  count: number;
+  percent: number;
+  color: string;
 }
 
 export interface EngagementMetric {
@@ -21,6 +28,7 @@ export interface EngagementMetric {
   sparklineData?: { value: number }[]; // Optional sparkline data for trend visualization
   pieData?: { name: string; value: number; color: string }[]; // Optional pie chart data for breakdown visualization
   stackedBarData?: { month: string; IAG: number; 'Broker-Dealer': number; Institution: number }[]; // Optional stacked bar data
+  channelBreakdown?: ChannelBreakdown[]; // Optional channel breakdown for GCG Ad-Hoc
 }
 
 export interface DepartmentData {

@@ -3,7 +3,7 @@
 import type { Engagement, DayData, GCGAdHocChannel } from '../types/engagements';
 
 // GCG Ad-Hoc interaction channels
-const adHocChannels: GCGAdHocChannel[] = ['In-Person', 'Email', 'Teams', 'Team Distro'];
+const adHocChannels: GCGAdHocChannel[] = ['In-Person', 'Email', 'Teams'];
 
 // Internal client (relationship owner/salesperson) roster mapped to GCG departments
 const internalClients = {
