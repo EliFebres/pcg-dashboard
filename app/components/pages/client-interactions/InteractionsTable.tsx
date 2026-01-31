@@ -1,8 +1,9 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { FileText, Download, Check, X, ChevronUp, ChevronDown, ChevronsUpDown, Maximize2, Minimize2, Plus } from 'lucide-react';
+import { FileText, Download, Check, X, ChevronUp, ChevronDown, ChevronsUpDown, Maximize2, Minimize2, Plus, DollarSign } from 'lucide-react';
 import NotesModal from './NotesModal';
+import NNAModal from './NNAModal';
 import type { Engagement } from '@/app/lib/types/engagements';
 
 // Sort configuration types
@@ -63,14 +64,16 @@ interface InteractionsTableProps {
   engagements: Engagement[];
   onStatusChange: (engagementId: number, newStatus: string) => void;
   onNotesChange: (engagementId: number, notes: string) => void;
+  onNNAChange: (engagementId: number, nna: number | undefined) => void;
 }
 
-const InteractionsTable: React.FC<InteractionsTableProps> = ({ engagements, onStatusChange, onNotesChange }) => {
+const InteractionsTable: React.FC<InteractionsTableProps> = ({ engagements, onStatusChange, onNotesChange, onNNAChange }) => {
   const [sortConfig, setSortConfig] = useState<SortConfig>({ column: 'dateStarted', direction: 'desc' });
   const [currentPage, setCurrentPage] = useState(1);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [openStatusDropdown, setOpenStatusDropdown] = useState<number | null>(null);
   const [notesModalEngagement, setNotesModalEngagement] = useState<Engagement | null>(null);
+  const [nnaModalEngagement, setNnaModalEngagement] = useState<Engagement | null>(null);
   const statusDropdownRef = useRef<HTMLDivElement>(null);
   const pageSize = 10;
 
@@ -293,9 +296,24 @@ const InteractionsTable: React.FC<InteractionsTableProps> = ({ engagements, onSt
         )}
       </td>
       <td className="px-4 py-3">
-        <span className={`text-sm font-mono ${engagement.nna ? 'text-emerald-400' : 'text-zinc-600'}`}>
-          {formatTableNNA(engagement.nna)}
-        </span>
+        <button
+          onClick={() => setNnaModalEngagement(engagement)}
+          className={`inline-flex items-center gap-1.5 px-2 py-1 text-sm font-mono transition-colors ${
+            engagement.nna
+              ? 'text-emerald-400 hover:bg-emerald-500/10'
+              : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-700/30'
+          }`}
+          title={engagement.nna ? 'Edit NNA' : 'Add NNA'}
+        >
+          {engagement.nna ? (
+            formatTableNNA(engagement.nna)
+          ) : (
+            <>
+              <Plus className="w-3 h-3" />
+              <span className="text-xs">Add</span>
+            </>
+          )}
+        </button>
       </td>
       <td className="px-4 py-3">
         <div className="relative" ref={openStatusDropdown === engagement.id ? statusDropdownRef : null}>
@@ -433,6 +451,17 @@ const InteractionsTable: React.FC<InteractionsTableProps> = ({ engagements, onSt
         internalClient={notesModalEngagement?.internalClient.name ?? ''}
         currentNotes={notesModalEngagement?.notes ?? ''}
         onSave={onNotesChange}
+      />
+
+      {/* NNA Modal */}
+      <NNAModal
+        isOpen={nnaModalEngagement !== null}
+        onClose={() => setNnaModalEngagement(null)}
+        engagementId={nnaModalEngagement?.id ?? 0}
+        externalClient={nnaModalEngagement?.externalClient ?? null}
+        internalClient={nnaModalEngagement?.internalClient.name ?? ''}
+        currentNNA={nnaModalEngagement?.nna}
+        onSave={onNNAChange}
       />
 
       {/* Main Table */}

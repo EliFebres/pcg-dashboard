@@ -507,6 +507,17 @@ export default function EngagementsDashboard() {
     // TODO: In production, PATCH to API and handle rollback on error
   };
 
+  // Handle NNA change with optimistic UI update
+  const handleNNAChange = (engagementId: number, nna: number | undefined) => {
+    setEngagements(prev => prev.map(eng => {
+      if (eng.id === engagementId) {
+        return { ...eng, nna };
+      }
+      return eng;
+    }));
+    // TODO: In production, PATCH to API and handle rollback on error
+  };
+
   return (
     <>
       {/* New Interaction Form */}
@@ -635,6 +646,7 @@ export default function EngagementsDashboard() {
               engagements={filteredEngagements}
               onStatusChange={handleStatusChange}
               onNotesChange={handleNotesChange}
+              onNNAChange={handleNNAChange}
             />
           </>
         )}
