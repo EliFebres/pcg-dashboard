@@ -393,16 +393,7 @@ const InteractionsTable: React.FC<InteractionsTableProps> = ({ engagements, onSt
 
   // Render pagination
   const renderPagination = (isFullscreenMode: boolean = false) => (
-    <div className={`relative z-10 px-4 py-3 flex items-center justify-between border-t border-zinc-800/50 flex-shrink-0 ${isFullscreenMode ? 'bg-zinc-900' : 'bg-zinc-900/80 backdrop-blur-sm'}`}>
-      <div className="flex items-center gap-3">
-        <p className="text-xs text-zinc-500">
-          Showing <span className="text-zinc-300 font-medium">{((currentPage - 1) * pageSize) + 1}–{Math.min(currentPage * pageSize, sortedEngagements.length)}</span> of <span className="text-zinc-300 font-medium">{sortedEngagements.length}</span> interactions
-        </p>
-        <button className="flex items-center gap-1.5 px-2 py-1 text-xs text-zinc-400 hover:text-cyan-400 transition-colors" title="Download table data">
-          <Download className="w-3.5 h-3.5" />
-          Export
-        </button>
-      </div>
+    <div className={`relative z-10 px-4 py-3 flex items-center justify-end border-t border-zinc-800/50 flex-shrink-0 ${isFullscreenMode ? 'bg-zinc-900' : 'bg-zinc-900/80 backdrop-blur-sm'}`}>
       <div className="flex items-center gap-1">
         <button
           onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
@@ -471,20 +462,29 @@ const InteractionsTable: React.FC<InteractionsTableProps> = ({ engagements, onSt
       />
 
       {/* Main Table */}
-      <div className="relative overflow-hidden bg-zinc-900/60 backdrop-blur-md border border-zinc-800/50 flex flex-col min-h-[380px]">
+      <div className="relative overflow-hidden bg-zinc-900/60 backdrop-blur-md border border-zinc-800/50 rounded-xl flex flex-col min-h-[380px]">
         <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] via-transparent to-transparent pointer-events-none" />
         <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
 
         {/* Table Header with Fullscreen Toggle */}
         <div className="relative z-10 px-4 py-2 flex items-center justify-between border-b border-zinc-800/50 flex-shrink-0">
           <h3 className="text-sm font-medium text-white">Interactions</h3>
-          <button
-            onClick={() => setIsFullscreen(true)}
-            className="p-1.5 text-zinc-400 hover:text-cyan-400 hover:bg-white/[0.05] transition-colors"
-            title="Expand table"
-          >
-            <Maximize2 className="w-4 h-4" />
-          </button>
+          <div className="flex items-center gap-4">
+            <p className="text-xs text-zinc-500">
+              Showing <span className="text-zinc-300 font-medium">{((currentPage - 1) * pageSize) + 1}–{Math.min(currentPage * pageSize, sortedEngagements.length)}</span> of <span className="text-zinc-300 font-medium">{sortedEngagements.length}</span>
+            </p>
+            <button className="flex items-center gap-1.5 px-2 py-1 text-xs text-zinc-400 hover:text-cyan-400 transition-colors" title="Download table data">
+              <Download className="w-3.5 h-3.5" />
+              Export
+            </button>
+            <button
+              onClick={() => setIsFullscreen(true)}
+              className="p-1.5 text-zinc-400 hover:text-cyan-400 hover:bg-white/[0.05] transition-colors"
+              title="Expand table"
+            >
+              <Maximize2 className="w-4 h-4" />
+            </button>
+          </div>
         </div>
 
         <div className="relative z-10 flex-1 overflow-auto min-h-0">
@@ -509,20 +509,29 @@ const InteractionsTable: React.FC<InteractionsTableProps> = ({ engagements, onSt
           />
 
           {/* Fullscreen table container */}
-          <div className="relative w-full h-full bg-zinc-900 border border-zinc-700/50 flex flex-col shadow-2xl">
+          <div className="relative w-full h-full bg-zinc-900 border border-zinc-700/50 rounded-xl flex flex-col shadow-2xl overflow-hidden">
             <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] via-transparent to-transparent pointer-events-none" />
             <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-cyan-500/30 to-transparent" />
 
             {/* Header with close button */}
             <div className="relative z-10 px-4 py-3 flex items-center justify-between border-b border-zinc-800/50 flex-shrink-0">
               <h3 className="text-sm font-medium text-white">Interactions</h3>
-              <button
-                onClick={() => setIsFullscreen(false)}
-                className="p-1.5 text-zinc-400 hover:text-cyan-400 hover:bg-white/[0.05] transition-colors"
-                title="Exit fullscreen"
-              >
-                <Minimize2 className="w-4 h-4" />
-              </button>
+              <div className="flex items-center gap-4">
+                <p className="text-xs text-zinc-500">
+                  Showing <span className="text-zinc-300 font-medium">{((currentPage - 1) * pageSize) + 1}–{Math.min(currentPage * pageSize, sortedEngagements.length)}</span> of <span className="text-zinc-300 font-medium">{sortedEngagements.length}</span>
+                </p>
+                <button className="flex items-center gap-1.5 px-2 py-1 text-xs text-zinc-400 hover:text-cyan-400 transition-colors" title="Download table data">
+                  <Download className="w-3.5 h-3.5" />
+                  Export
+                </button>
+                <button
+                  onClick={() => setIsFullscreen(false)}
+                  className="p-1.5 text-zinc-400 hover:text-cyan-400 hover:bg-white/[0.05] transition-colors"
+                  title="Exit fullscreen"
+                >
+                  <Minimize2 className="w-4 h-4" />
+                </button>
+              </div>
             </div>
 
             {/* Table content */}
