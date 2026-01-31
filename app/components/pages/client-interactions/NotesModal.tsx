@@ -79,7 +79,7 @@ const NotesModal: React.FC<NotesModalProps> = ({
   if (!shouldRender) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
       {/* Backdrop */}
       <div
         className={`absolute inset-0 bg-black/70 transition-opacity duration-200 ${
