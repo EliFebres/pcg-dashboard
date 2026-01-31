@@ -32,17 +32,18 @@ interface SortableHeaderProps {
   column: SortColumn;
   currentSort: SortConfig;
   onSort: (column: SortColumn) => void;
+  centered?: boolean;
 }
 
-const SortableHeader: React.FC<SortableHeaderProps> = ({ label, column, currentSort, onSort }) => {
+const SortableHeader: React.FC<SortableHeaderProps> = ({ label, column, currentSort, onSort, centered }) => {
   const isActive = currentSort.column === column;
 
   return (
     <th
       onClick={() => onSort(column)}
-      className="text-left text-xs font-medium text-zinc-400 uppercase tracking-wider px-4 py-3 cursor-pointer hover:text-zinc-200 transition-colors select-none group"
+      className={`${centered ? 'text-center' : 'text-left'} text-xs font-medium text-zinc-400 uppercase tracking-wider px-4 py-3 cursor-pointer hover:text-zinc-200 transition-colors select-none group`}
     >
-      <div className="flex items-center gap-1">
+      <div className={`flex items-center gap-1 ${centered ? 'justify-center' : ''}`}>
         {label}
         <span className="inline-flex">
           {isActive ? (
@@ -65,9 +66,10 @@ interface InteractionsTableProps {
   onStatusChange: (engagementId: number, newStatus: string) => void;
   onNotesChange: (engagementId: number, notes: string) => void;
   onNNAChange: (engagementId: number, nna: number | undefined) => void;
+  onRowClick: (engagement: Engagement) => void;
 }
 
-const InteractionsTable: React.FC<InteractionsTableProps> = ({ engagements, onStatusChange, onNotesChange, onNNAChange }) => {
+const InteractionsTable: React.FC<InteractionsTableProps> = ({ engagements, onStatusChange, onNotesChange, onNNAChange, onRowClick }) => {
   const [sortConfig, setSortConfig] = useState<SortConfig>({ column: 'dateStarted', direction: 'desc' });
   const [currentPage, setCurrentPage] = useState(1);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -231,7 +233,11 @@ const InteractionsTable: React.FC<InteractionsTableProps> = ({ engagements, onSt
 
   // Render table row
   const renderTableRow = (engagement: Engagement, keyPrefix: string = '') => (
-    <tr key={`${keyPrefix}${engagement.id}`} className="hover:bg-white/[0.02] transition-colors">
+    <tr
+      key={`${keyPrefix}${engagement.id}`}
+      className="hover:bg-white/[0.02] transition-colors cursor-pointer"
+      onClick={() => onRowClick(engagement)}
+    >
       <td className="px-4 py-3">
         <span className={`text-sm font-medium ${engagement.externalClient ? 'text-zinc-200' : 'text-zinc-600'}`}>
           {engagement.externalClient ?? '—'}
@@ -295,7 +301,7 @@ const InteractionsTable: React.FC<InteractionsTableProps> = ({ engagements, onSt
           </div>
         )}
       </td>
-      <td className="px-4 py-3">
+      <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
         <button
           onClick={() => setNnaModalEngagement(engagement)}
           className={`inline-flex items-center gap-1.5 px-2 py-1 text-sm font-mono transition-colors ${
@@ -315,7 +321,7 @@ const InteractionsTable: React.FC<InteractionsTableProps> = ({ engagements, onSt
           )}
         </button>
       </td>
-      <td className="px-4 py-3">
+      <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
         <div className="relative" ref={openStatusDropdown === engagement.id ? statusDropdownRef : null}>
           <button
             onClick={() => setOpenStatusDropdown(openStatusDropdown === engagement.id ? null : engagement.id)}
@@ -346,7 +352,7 @@ const InteractionsTable: React.FC<InteractionsTableProps> = ({ engagements, onSt
           )}
         </div>
       </td>
-      <td className="px-4 py-3 text-center">
+      <td className="px-4 py-3 text-center" onClick={(e) => e.stopPropagation()}>
         <button
           onClick={() => setNotesModalEngagement(engagement)}
           className={`p-1.5 transition-colors ${
@@ -378,7 +384,7 @@ const InteractionsTable: React.FC<InteractionsTableProps> = ({ engagements, onSt
         <SortableHeader label="Date Started" column="dateStarted" currentSort={sortConfig} onSort={handleSort} />
         <SortableHeader label="Date Finished" column="dateFinished" currentSort={sortConfig} onSort={handleSort} />
         <SortableHeader label="Portfolio Logged" column="portfolioLogged" currentSort={sortConfig} onSort={handleSort} />
-        <SortableHeader label="NNA" column="nna" currentSort={sortConfig} onSort={handleSort} />
+        <SortableHeader label="NNA" column="nna" currentSort={sortConfig} onSort={handleSort} centered />
         <SortableHeader label="Status" column="status" currentSort={sortConfig} onSort={handleSort} />
         <th className="text-center text-xs font-medium text-zinc-400 uppercase tracking-wider px-4 py-3">Notes</th>
       </tr>
@@ -532,7 +538,7 @@ const InteractionsTable: React.FC<InteractionsTableProps> = ({ engagements, onSt
                     <SortableHeader label="Date Started" column="dateStarted" currentSort={sortConfig} onSort={handleSort} />
                     <SortableHeader label="Date Finished" column="dateFinished" currentSort={sortConfig} onSort={handleSort} />
                     <SortableHeader label="Portfolio Logged" column="portfolioLogged" currentSort={sortConfig} onSort={handleSort} />
-                    <SortableHeader label="NNA" column="nna" currentSort={sortConfig} onSort={handleSort} />
+                    <SortableHeader label="NNA" column="nna" currentSort={sortConfig} onSort={handleSort} centered />
                     <SortableHeader label="Status" column="status" currentSort={sortConfig} onSort={handleSort} />
                     <th className="text-center text-xs font-medium text-zinc-400 uppercase tracking-wider px-4 py-3">Notes</th>
                   </tr>

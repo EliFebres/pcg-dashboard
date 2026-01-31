@@ -6,7 +6,7 @@ import MetricCards from '@/app/components/pages/client-interactions/MetricCards'
 import ContributionGraph from '@/app/components/pages/client-interactions/ContributionGraph';
 import DepartmentChart from '@/app/components/pages/client-interactions/DepartmentChart';
 import InteractionsTable from '@/app/components/pages/client-interactions/InteractionsTable';
-import NewInteractionForm, { InteractionFormData } from '@/app/components/pages/client-interactions/NewInteractionForm';
+import NewInteractionForm, { InteractionFormData, EditingEngagement } from '@/app/components/pages/client-interactions/NewInteractionForm';
 import { getEngagementsDashboardData, getEngagements } from '@/app/lib/api/engagements';
 import { generateContributionData, teamMemberOffices } from '@/app/lib/data/engagements';
 import type { EngagementMetric, DepartmentData, Engagement } from '@/app/lib/types/engagements';
@@ -24,6 +24,7 @@ export default function EngagementsDashboard() {
   const [projectTypeFilter, setProjectTypeFilter] = useState<string[]>([]); // Multi-select
   const [period, setPeriod] = useState('1Y');
   const [isNewInteractionOpen, setIsNewInteractionOpen] = useState(false);
+  const [editingEngagement, setEditingEngagement] = useState<EditingEngagement | null>(null);
 
   // Flip card state for metric cards (supports multiple flip cards)
   const [flippedCard, setFlippedCard] = useState<string | null>(null);
@@ -518,13 +519,88 @@ export default function EngagementsDashboard() {
     // TODO: In production, PATCH to API and handle rollback on error
   };
 
+  // Handle row click to open edit form
+  const handleRowClick = (engagement: Engagement) => {
+    // Parse the date string to YYYY-MM-DD format for the date input
+    const parseDate = (dateStr: string): string => {
+      if (dateStr === '—') return new Date().toISOString().split('T')[0];
+      const date = new Date(dateStr);
+      return date.toISOString().split('T')[0];
+    };
+
+    setEditingEngagement({
+      id: engagement.id,
+      data: {
+        externalClient: engagement.externalClient,
+        internalClient: engagement.internalClient.name,
+        intakeType: engagement.intakeType,
+        adHocChannel: engagement.adHocChannel,
+        projectType: engagement.type,
+        teamMembers: engagement.teamMembers,
+        dateStarted: parseDate(engagement.dateStarted),
+        dateFinished: engagement.dateFinished && engagement.dateFinished !== '—'
+          ? parseDate(engagement.dateFinished)
+          : undefined,
+        status: engagement.status,
+        notes: engagement.notes || '',
+        portfolioLogged: engagement.portfolioLogged,
+        nna: engagement.nna || null,
+      },
+    });
+    setIsNewInteractionOpen(true);
+  };
+
+  // Handle update interaction with optimistic UI update
+  const handleUpdateInteraction = (engagementId: number, data: InteractionFormData) => {
+    // Format date for display
+    const formatDate = (dateStr: string) => {
+      const date = new Date(dateStr);
+      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    };
+
+    setEngagements(prev => prev.map(eng => {
+      if (eng.id === engagementId) {
+        return {
+          ...eng,
+          externalClient: data.externalClient,
+          internalClient: {
+            name: data.internalClient,
+            gcgDepartment: getClientDepartment(data.internalClient),
+          },
+          intakeType: data.intakeType as 'IRQ' | 'GRRF' | 'GCG Ad-Hoc',
+          adHocChannel: data.adHocChannel,
+          type: data.projectType,
+          teamMembers: data.teamMembers,
+          department: getClientDepartment(data.internalClient),
+          dateStarted: formatDate(data.dateStarted),
+          notes: data.notes.trim() || undefined,
+          portfolioLogged: data.portfolioLogged,
+          nna: data.nna || undefined,
+        };
+      }
+      return eng;
+    }));
+
+    setEditingEngagement(null);
+    // TODO: In production, PATCH to API and handle rollback on error
+    console.log('Interaction updated:', engagementId, data);
+  };
+
+  // Close form and clear editing state
+  const handleCloseForm = () => {
+    setIsNewInteractionOpen(false);
+    setEditingEngagement(null);
+  };
+
   return (
     <>
       {/* New Interaction Form */}
       <NewInteractionForm
         isOpen={isNewInteractionOpen}
-        onClose={() => setIsNewInteractionOpen(false)}
+        onClose={handleCloseForm}
         onSubmit={handleNewInteraction}
+        onUpdate={handleUpdateInteraction}
+        editingEngagement={editingEngagement}
       />
 
       {/* Top Bar with Filters */}
@@ -647,6 +723,7 @@ export default function EngagementsDashboard() {
               onStatusChange={handleStatusChange}
               onNotesChange={handleNotesChange}
               onNNAChange={handleNNAChange}
+              onRowClick={handleRowClick}
             />
           </>
         )}

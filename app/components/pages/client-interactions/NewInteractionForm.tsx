@@ -1,13 +1,8 @@
 'use client';
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { X, ChevronDown, Check } from 'lucide-react';
-
-interface NewInteractionFormProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onSubmit: (data: InteractionFormData) => void;
-}
+import { X, ChevronDown, Check, DollarSign, Briefcase } from 'lucide-react';
+import NNAModal from './NNAModal';
 
 export interface InteractionFormData {
   externalClient: string | null;
@@ -17,9 +12,24 @@ export interface InteractionFormData {
   projectType: string;
   teamMembers: string[];
   dateStarted: string;
+  dateFinished?: string;
+  status?: string;
   notes: string;
   portfolioLogged: boolean;
   nna: number | null;
+}
+
+export interface EditingEngagement {
+  id: number;
+  data: InteractionFormData;
+}
+
+interface NewInteractionFormProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSubmit: (data: InteractionFormData) => void;
+  onUpdate?: (id: number, data: InteractionFormData) => void;
+  editingEngagement?: EditingEngagement | null;
 }
 
 // Internal clients grouped by department
@@ -44,8 +54,54 @@ const projectTypesByIntake = {
   'GCG Ad-Hoc': ['Data Request', 'PCR', 'Other'],
 };
 
-export default function NewInteractionForm({ isOpen, onClose, onSubmit }: NewInteractionFormProps) {
-  const [formData, setFormData] = useState<InteractionFormData>({
+// Parse NNA input string to number (handles commas, M, B, K suffixes)
+const parseNNAInput = (input: string): number | undefined => {
+  if (!input.trim()) return undefined;
+
+  // Remove commas and spaces
+  let cleaned = input.replace(/,/g, '').replace(/\s/g, '').toUpperCase();
+
+  // Remove leading $ if present
+  if (cleaned.startsWith('$')) {
+    cleaned = cleaned.substring(1);
+  }
+
+  // Handle M (millions), B (billions), and K (thousands) suffixes
+  let multiplier = 1;
+  if (cleaned.endsWith('M')) {
+    multiplier = 1_000_000;
+    cleaned = cleaned.slice(0, -1);
+  } else if (cleaned.endsWith('B')) {
+    multiplier = 1_000_000_000;
+    cleaned = cleaned.slice(0, -1);
+  } else if (cleaned.endsWith('K')) {
+    multiplier = 1_000;
+    cleaned = cleaned.slice(0, -1);
+  }
+
+  const num = parseFloat(cleaned);
+  if (isNaN(num)) return undefined;
+
+  return Math.round(num * multiplier);
+};
+
+// Format NNA for display
+const formatNNADisplay = (value: number | null): string => {
+  if (!value || value === 0) return '—';
+  if (value >= 1_000_000_000) {
+    return `$${(value / 1_000_000_000).toFixed(1)}B`;
+  } else if (value >= 1_000_000) {
+    return `$${(value / 1_000_000).toFixed(1)}M`;
+  } else if (value >= 1_000) {
+    return `$${(value / 1_000).toFixed(0)}K`;
+  }
+  return `$${value.toLocaleString()}`;
+};
+
+export default function NewInteractionForm({ isOpen, onClose, onSubmit, onUpdate, editingEngagement }: NewInteractionFormProps) {
+  const isEditMode = !!editingEngagement;
+
+  const getDefaultFormData = (): InteractionFormData => ({
     externalClient: '',
     internalClient: '',
     intakeType: '',
@@ -57,9 +113,12 @@ export default function NewInteractionForm({ isOpen, onClose, onSubmit }: NewInt
     nna: null,
   });
 
+  const [formData, setFormData] = useState<InteractionFormData>(getDefaultFormData());
+
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [internalClientSearch, setInternalClientSearch] = useState('');
   const [showInternalClientDropdown, setShowInternalClientDropdown] = useState(false);
+  const [isNNAModalOpen, setIsNNAModalOpen] = useState(false);
   const internalClientRef = useRef<HTMLDivElement>(null);
 
   // Close dropdown when clicking outside
@@ -73,25 +132,21 @@ export default function NewInteractionForm({ isOpen, onClose, onSubmit }: NewInt
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Reset form when opened
+  // Reset form when opened (or populate with editing data)
   useEffect(() => {
     if (isOpen) {
-      setFormData({
-        externalClient: '',
-        internalClient: '',
-        intakeType: '',
-        projectType: '',
-        teamMembers: [],
-        dateStarted: new Date().toISOString().split('T')[0],
-        notes: '',
-        portfolioLogged: false,
-        nna: null,
-      });
+      if (editingEngagement) {
+        // Pre-fill with existing data for editing
+        setFormData(editingEngagement.data);
+      } else {
+        // Reset to defaults for new interaction
+        setFormData(getDefaultFormData());
+      }
       setErrors({});
       setInternalClientSearch('');
       setShowInternalClientDropdown(false);
     }
-  }, [isOpen]);
+  }, [isOpen, editingEngagement]);
 
   // Filter internal clients based on search
   const filteredInternalClients = useMemo(() => {
@@ -159,11 +214,21 @@ export default function NewInteractionForm({ isOpen, onClose, onSubmit }: NewInt
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (validateForm()) {
-      onSubmit({
+      const submissionData = {
         ...formData,
         externalClient: formData.externalClient?.trim() || null,
-        nna: null, // NNA is added later, not at interaction creation
-      });
+      };
+
+      if (isEditMode && editingEngagement && onUpdate) {
+        // Update existing interaction
+        onUpdate(editingEngagement.id, submissionData);
+      } else {
+        // Create new interaction
+        onSubmit({
+          ...submissionData,
+          nna: null, // NNA is added later, not at interaction creation
+        });
+      }
       onClose();
     }
   };
@@ -226,8 +291,12 @@ export default function NewInteractionForm({ isOpen, onClose, onSubmit }: NewInt
           {/* Header */}
           <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-800">
             <div>
-              <h2 className="text-lg font-semibold text-white">New Interaction</h2>
-              <p className="text-sm text-zinc-500">Create a new client interaction record</p>
+              <h2 className="text-lg font-semibold text-white">
+                {isEditMode ? 'Edit Interaction' : 'New Interaction'}
+              </h2>
+              <p className="text-sm text-zinc-500">
+                {isEditMode ? 'Update the client interaction record' : 'Create a new client interaction record'}
+              </p>
             </div>
             <button
               onClick={onClose}
@@ -399,7 +468,7 @@ export default function NewInteractionForm({ isOpen, onClose, onSubmit }: NewInt
                 {errors.teamMembers && <p className="mt-1 text-xs text-red-400">{errors.teamMembers}</p>}
               </div>
 
-              {/* Row 4: Date Started + Client Portfolio */}
+              {/* Row 4: Date Started + Date Finished */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-zinc-300 mb-1.5">
@@ -416,19 +485,52 @@ export default function NewInteractionForm({ isOpen, onClose, onSubmit }: NewInt
 
                 <div>
                   <label className="block text-sm font-medium text-zinc-300 mb-1.5">
+                    Date Finished <span className="text-zinc-500 font-normal text-xs">(Optional)</span>
+                  </label>
+                  <input
+                    type="date"
+                    value={formData.dateFinished || ''}
+                    onChange={(e) => setFormData(prev => ({ ...prev, dateFinished: e.target.value || undefined }))}
+                    className="w-full h-[38px] px-3 bg-zinc-800/50 border border-zinc-700 rounded-lg text-white focus:outline-none focus:border-cyan-500/50 transition-colors"
+                  />
+                </div>
+              </div>
+
+              {/* Row 5: NNA + Client Portfolio */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-zinc-300 mb-1.5">
+                    Net New Assets <span className="text-zinc-500 font-normal text-xs">(Optional)</span>
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setIsNNAModalOpen(true)}
+                    className={`w-full h-[38px] px-3 bg-zinc-800/50 border rounded-lg text-sm text-left transition-colors flex items-center gap-2 ${
+                      formData.nna
+                        ? 'border-emerald-500/50 text-emerald-400 hover:border-emerald-500/70'
+                        : 'border-zinc-700 text-zinc-400 hover:border-cyan-500/50'
+                    }`}
+                  >
+                    <DollarSign className="w-4 h-4" />
+                    {formData.nna ? formatNNADisplay(formData.nna) : '+ Add NNA'}
+                  </button>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-zinc-300 mb-1.5">
                     Client Portfolio <span className="text-zinc-500 font-normal text-xs">(Optional)</span>
                   </label>
                   <button
                     type="button"
-                    className="w-full h-[38px] px-3 bg-zinc-800/50 border border-zinc-700 rounded-lg text-sm text-white text-left hover:border-cyan-500/50 focus:outline-none focus:border-cyan-500/50 transition-colors"
+                    className="w-full h-[38px] px-3 bg-zinc-800/50 border border-zinc-700 rounded-lg text-sm text-zinc-400 text-left hover:border-cyan-500/50 focus:outline-none focus:border-cyan-500/50 transition-colors flex items-center gap-2"
                   >
+                    <Briefcase className="w-4 h-4" />
                     + Add Portfolio
                   </button>
                 </div>
               </div>
 
-
-              {/* Row 5: Notes */}
+              {/* Row 6: Notes */}
               <div>
                 <label className="block text-sm font-medium text-zinc-300 mb-1.5">
                   Notes <span className="text-zinc-500 font-normal text-xs">(Optional)</span>
@@ -459,13 +561,26 @@ export default function NewInteractionForm({ isOpen, onClose, onSubmit }: NewInt
                 onClick={handleSubmit}
                 className="px-6 py-2 bg-gradient-to-r from-blue-600 to-cyan-500 text-white text-sm font-medium rounded-lg hover:from-blue-500 hover:to-cyan-400 transition-all"
               >
-                Create Interaction
+                {isEditMode ? 'Save Changes' : 'Create Interaction'}
               </button>
             </div>
           </div>
         </div>
         </div>
       </div>
+
+      {/* NNA Modal */}
+      <NNAModal
+        isOpen={isNNAModalOpen}
+        onClose={() => setIsNNAModalOpen(false)}
+        engagementId={editingEngagement?.id || 0}
+        externalClient={formData.externalClient}
+        internalClient={formData.internalClient}
+        currentNNA={formData.nna ?? undefined}
+        onSave={(_, nna) => {
+          setFormData(prev => ({ ...prev, nna: nna ?? null }));
+        }}
+      />
     </>
   );
 }
