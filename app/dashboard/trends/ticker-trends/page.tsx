@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Building2, MoreHorizontal, Download, Flame, FileText, ExternalLink, User, Loader2, ChevronDown } from 'lucide-react';
+import { Building2, MoreHorizontal, Download, Flame, FileText, ExternalLink, Loader2, ChevronDown } from 'lucide-react';
 import {
   getHotTickers,
   getTickerTrendsFilterOptions,
@@ -15,21 +15,19 @@ import {
 } from '@/app/lib/api/ticker-trends';
 import type { HotTicker } from '@/app/lib/types/trends';
 import DashboardHeader from '@/app/components/DashboardHeader';
-import TickerNotesModal from '@/app/components/pages/shared/TickerNotesModal';
+import NotesModal from '@/app/components/pages/shared/NotesModal';
 import LinkModal from '@/app/components/pages/shared/LinkModal';
 
 export default function TickerTrendsDashboard() {
   const [searchQuery, setSearchQuery] = useState('');
 
   // Filter state
-  const [teamMemberFilter, setTeamMemberFilter] = useState('All Team Members');
   const [departmentFilter, setDepartmentFilter] = useState('All Departments');
   const [period, setPeriod] = useState('1Y');
 
   // Data state
   const [hotTickers, setHotTickers] = useState<HotTicker[]>([]);
   const [filterOptions, setFilterOptions] = useState<FilterOptions>({
-    teamMembers: ['All Team Members'],
     departments: ['All Departments'],
     periods: ['1Y'],
   });
@@ -67,7 +65,6 @@ export default function TickerTrendsDashboard() {
     setError(null);
     try {
       const response = await getHotTickers({
-        teamMember: teamMemberFilter,
         department: departmentFilter,
         period,
       });
@@ -78,7 +75,7 @@ export default function TickerTrendsDashboard() {
     } finally {
       setIsLoading(false);
     }
-  }, [teamMemberFilter, departmentFilter, period]);
+  }, [departmentFilter, period]);
 
   // Fetch data on mount and when filters change
   useEffect(() => {
@@ -201,14 +198,6 @@ export default function TickerTrendsDashboard() {
         searchValue={searchQuery}
         onSearchChange={setSearchQuery}
         filters={[
-          {
-            id: 'teamMember',
-            icon: User,
-            label: 'Team Member',
-            options: filterOptions.teamMembers,
-            value: teamMemberFilter,
-            onChange: (v: string | string[]) => setTeamMemberFilter(v as string),
-          },
           {
             id: 'department',
             icon: Building2,
@@ -418,13 +407,24 @@ export default function TickerTrendsDashboard() {
       </div>
 
       {/* Notes Modal */}
-      <TickerNotesModal
+      <NotesModal
         isOpen={notesModalTicker !== null}
         onClose={() => setNotesModalTicker(null)}
-        ticker={notesModalTicker?.ticker ?? ''}
-        tickerName={notesModalTicker?.name ?? ''}
+        title="Ticker Notes"
+        subtitle={
+          <>
+            <span className="text-cyan-400 font-medium">{notesModalTicker?.ticker}</span>
+            <span className="text-zinc-500 mx-1">·</span>
+            {notesModalTicker?.name}
+          </>
+        }
         currentNotes={notesModalTicker?.notes ?? ''}
-        onSave={handleNotesChange}
+        onSave={(notes) => {
+          if (notesModalTicker) {
+            handleNotesChange(notesModalTicker.ticker, notes);
+          }
+        }}
+        placeholder="Add notes about this ticker comparison..."
       />
 
       {/* Talking Points Modal */}

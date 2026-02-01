@@ -1,26 +1,26 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, ReactNode } from 'react';
 import { X, Save } from 'lucide-react';
 
 interface NotesModalProps {
   isOpen: boolean;
   onClose: () => void;
-  engagementId: number;
-  externalClient: string | null;
-  internalClient: string;
+  title: string;
+  subtitle: ReactNode;
   currentNotes: string;
-  onSave: (engagementId: number, notes: string) => void;
+  onSave: (notes: string) => void;
+  placeholder?: string;
 }
 
 const NotesModal: React.FC<NotesModalProps> = ({
   isOpen,
   onClose,
-  engagementId,
-  externalClient,
-  internalClient,
+  title,
+  subtitle,
   currentNotes,
   onSave,
+  placeholder = 'Add notes...',
 }) => {
   const [notes, setNotes] = useState(currentNotes);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -51,12 +51,11 @@ const NotesModal: React.FC<NotesModalProps> = ({
   }, [isOpen, onClose]);
 
   const handleSave = () => {
-    onSave(engagementId, notes);
+    onSave(notes);
     onClose();
   };
 
   const hasChanges = notes !== currentNotes;
-  const clientDisplay = externalClient || internalClient;
 
   if (!isOpen) return null;
 
@@ -77,8 +76,8 @@ const NotesModal: React.FC<NotesModalProps> = ({
         {/* Header */}
         <div className="relative z-10 px-5 py-4 border-b border-zinc-800/50 flex items-center justify-between">
           <div>
-            <h2 className="text-base font-medium text-white">Notes</h2>
-            <p className="text-xs text-zinc-400 mt-0.5">{clientDisplay}</p>
+            <h2 className="text-base font-medium text-white">{title}</h2>
+            <p className="text-xs text-zinc-400 mt-0.5">{subtitle}</p>
           </div>
           <button
             onClick={onClose}
@@ -94,7 +93,7 @@ const NotesModal: React.FC<NotesModalProps> = ({
             ref={textareaRef}
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
-            placeholder="Add notes about this interaction..."
+            placeholder={placeholder}
             className="w-full h-48 px-3 py-2.5 bg-zinc-800/50 border border-zinc-700/50 text-sm text-white placeholder-zinc-500 resize-none focus:outline-none focus:ring-1 focus:ring-cyan-500/50 focus:border-cyan-500/50 transition-colors"
           />
         </div>

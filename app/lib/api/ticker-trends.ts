@@ -18,7 +18,6 @@ const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 // =============================================================================
 
 export interface HotTickersFilters {
-  teamMember?: string;
   department?: string;
   period?: string;
 }
@@ -30,7 +29,6 @@ export interface HotTickersResponse {
 }
 
 export interface FilterOptions {
-  teamMembers: string[];
   departments: string[];
   periods: string[];
 }
@@ -215,7 +213,6 @@ export async function getHotTickers(filters?: HotTickersFilters): Promise<HotTic
 
   // In production, this would be:
   // const params = new URLSearchParams();
-  // if (filters?.teamMember) params.set('teamMember', filters.teamMember);
   // if (filters?.department) params.set('department', filters.department);
   // if (filters?.period) params.set('period', filters.period);
   // const response = await fetch(`${API_BASE_URL}/ticker-trends/hot-tickers?${params}`);
@@ -237,7 +234,6 @@ export async function getTickerTrendsFilterOptions(): Promise<FilterOptions> {
   if (SIMULATED_DELAY) await delay(SIMULATED_DELAY);
 
   return {
-    teamMembers: ['All Team Members', 'Eli F.'],
     departments: ['All Departments', 'IAG', 'Broker-Dealer', 'Institution'],
     periods: ['1M', '3M', '6M', '1Y', 'YTD', 'All'],
   };

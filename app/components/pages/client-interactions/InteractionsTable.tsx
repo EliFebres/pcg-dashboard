@@ -439,11 +439,15 @@ const InteractionsTable: React.FC<InteractionsTableProps> = ({ engagements, onSt
       <NotesModal
         isOpen={notesModalEngagement !== null}
         onClose={() => setNotesModalEngagement(null)}
-        engagementId={notesModalEngagement?.id ?? 0}
-        externalClient={notesModalEngagement?.externalClient ?? null}
-        internalClient={notesModalEngagement?.internalClient.name ?? ''}
+        title="Notes"
+        subtitle={notesModalEngagement?.externalClient || notesModalEngagement?.internalClient.name || ''}
         currentNotes={notesModalEngagement?.notes ?? ''}
-        onSave={onNotesChange}
+        onSave={(notes) => {
+          if (notesModalEngagement) {
+            onNotesChange(notesModalEngagement.id, notes);
+          }
+        }}
+        placeholder="Add notes about this interaction..."
       />
 
       {/* NNA Modal */}
