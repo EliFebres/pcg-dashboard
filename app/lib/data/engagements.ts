@@ -1,6 +1,58 @@
 // Data and functions for Client Engagements Dashboard
 
-import type { Engagement, DayData, GCGAdHocChannel } from '../types/engagements';
+import type { Engagement, DayData, GCGAdHocChannel, PortfolioHolding, AssetClass } from '../types/engagements';
+
+// Sample tickers for portfolio generation
+const sampleTickers = [
+  'DFAC', 'DFAS', 'DFAT', 'DFAX', 'DFCF', 'DFEM', 'DFEV', 'DFIC', 'DFIP', 'DFIS',
+  'DFIV', 'DFLV', 'DFND', 'DFNM', 'DFSD', 'DFSV', 'DFUV', 'DFVX', 'DISV', 'DSTX',
+  'VTI', 'VOO', 'VEA', 'VWO', 'BND', 'BNDX', 'VNQ', 'VIG', 'VXUS', 'VGT',
+  'AGG', 'LQD', 'HYG', 'TIP', 'MUB', 'SHY', 'IEF', 'TLT', 'EMB', 'VCIT',
+];
+
+const assetClasses: AssetClass[] = ['Equity', 'Fixed Income', 'Alternatives'];
+
+// Generate a random portfolio with 3-8 holdings
+function generatePortfolio(seed: number): PortfolioHolding[] {
+  const numHoldings = 3 + Math.floor(seededRandom(seed) * 6); // 3-8 holdings
+  const holdings: PortfolioHolding[] = [];
+  const usedTickers = new Set<string>();
+
+  // Generate random weights that will be normalized
+  const rawWeights: number[] = [];
+  for (let i = 0; i < numHoldings; i++) {
+    rawWeights.push(5 + seededRandom(seed + i + 100) * 30); // 5-35 raw weight
+  }
+  const totalWeight = rawWeights.reduce((a, b) => a + b, 0);
+
+  for (let i = 0; i < numHoldings; i++) {
+    let ticker: string;
+    let attempts = 0;
+    do {
+      ticker = sampleTickers[Math.floor(seededRandom(seed + i * 7 + attempts) * sampleTickers.length)];
+      attempts++;
+    } while (usedTickers.has(ticker) && attempts < 100);
+    usedTickers.add(ticker);
+
+    // Determine asset class based on ticker prefix
+    let assetClass: AssetClass;
+    if (ticker.startsWith('DF') || ['VTI', 'VOO', 'VEA', 'VWO', 'VIG', 'VXUS', 'VGT', 'VNQ'].includes(ticker)) {
+      assetClass = 'Equity';
+    } else if (['AGG', 'LQD', 'HYG', 'TIP', 'MUB', 'SHY', 'IEF', 'TLT', 'EMB', 'VCIT', 'BND', 'BNDX'].includes(ticker)) {
+      assetClass = 'Fixed Income';
+    } else {
+      assetClass = assetClasses[Math.floor(seededRandom(seed + i * 11) * assetClasses.length)];
+    }
+
+    holdings.push({
+      identifier: ticker,
+      assetClass,
+      weight: rawWeights[i] / totalWeight, // Normalized weight
+    });
+  }
+
+  return holdings;
+}
 
 // GCG Ad-Hoc interaction channels
 const adHocChannels: GCGAdHocChannel[] = ['In-Person', 'Email', 'Teams'];
@@ -74,7 +126,7 @@ const teamMembers = Object.keys(teamMemberOffices);
 const internalClientKeys = Object.keys(internalClients) as (keyof typeof internalClients)[];
 const departments: ('IAG' | 'Broker-Dealer' | 'Institution')[] = ['IAG', 'Broker-Dealer', 'Institution'];
 const projectTypes = ['Meeting', 'Follow-Up', 'Data Request', 'PCR'];
-const adHocProjectTypes = ['PCR', 'Follow-Up', 'Other']; // Project types specific to GCG Ad-Hoc
+const adHocProjectTypes = ['PCR', 'Follow-Up', 'Data Request', 'Other']; // Project types specific to GCG Ad-Hoc
 
 // Seeded random for consistent data generation
 function seededRandom(seed: number): number {
@@ -255,6 +307,10 @@ function generateEngagements(): Engagement[] {
       const hasNNA = !isAfterCutoff && seededRandom(seed + 11) < 0.10;
       const nnaValue = hasNNA ? generateNNA(dept, seed + 12) : undefined;
 
+      // Determine if portfolio is logged (PCRs don't have logged portfolios, in-progress items don't either)
+      const hasPortfolio = isAfterCutoff || projectType === 'PCR' ? false : seededRandom(seed + 7) > 0.15;
+      const portfolio = hasPortfolio ? generatePortfolio(seed + 20) : undefined;
+
       engagements.push({
         id: id++,
         externalClient: externalClients[Math.floor(seededRandom(seed + 6) * externalClients.length)],
@@ -266,7 +322,8 @@ function generateEngagements(): Engagement[] {
         dateStarted: dateStr,
         dateFinished: finishStr,
         status: isAfterCutoff ? 'In Progress' : 'Completed',
-        portfolioLogged: isAfterCutoff || projectType === 'PCR' ? false : seededRandom(seed + 7) > 0.15, // PCRs don't have logged portfolios
+        portfolioLogged: hasPortfolio,
+        portfolio,
         nna: nnaValue,
         notes: seededRandom(seed + 8) > 0.5 ? sampleNotes[Math.floor(seededRandom(seed + 13) * sampleNotes.length)] : undefined,
       });

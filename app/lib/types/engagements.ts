@@ -61,6 +61,14 @@ export interface InternalClient {
   gcgDepartment: 'IAG' | 'Broker-Dealer' | 'Institution';
 }
 
+export type AssetClass = 'Equity' | 'Fixed Income' | 'Alternatives';
+
+export interface PortfolioHolding {
+  identifier: string; // Ticker, ISIN, or CUSIP
+  assetClass: AssetClass;
+  weight: number; // Normalized weight (0-1, sums to 1)
+}
+
 export interface Engagement {
   id: number;
   externalClient: string | null; // Optional - GCG Ad-Hoc may not have an external client
@@ -74,6 +82,7 @@ export interface Engagement {
   dateFinished: string;
   status: string;
   portfolioLogged: boolean;
+  portfolio?: PortfolioHolding[]; // Optional client portfolio holdings
   nna?: number; // Net New Assets - dollar amount of AUM moved into funds (optional)
   notes?: string; // Optional notes field
 }

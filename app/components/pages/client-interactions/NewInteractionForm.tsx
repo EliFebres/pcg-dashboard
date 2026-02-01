@@ -3,6 +3,8 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { X, ChevronDown, Check, DollarSign, Briefcase } from 'lucide-react';
 import NNAModal from './NNAModal';
+import PortfolioModal from './PortfolioModal';
+import { PortfolioHolding } from '@/app/lib/types/engagements';
 
 export interface InteractionFormData {
   externalClient: string | null;
@@ -16,12 +18,14 @@ export interface InteractionFormData {
   status?: string;
   notes: string;
   portfolioLogged: boolean;
+  portfolio?: PortfolioHolding[];
   nna: number | null;
 }
 
 export interface EditingEngagement {
   id: number;
   data: InteractionFormData;
+  originalDateStarted: string; // Preserve exact original string to avoid roundtrip changes
 }
 
 interface NewInteractionFormProps {
@@ -51,7 +55,7 @@ const teamMembers = [
 const projectTypesByIntake = {
   'IRQ': ['Meeting', 'Follow-Up', 'Data Request', 'PCR'],
   'GRRF': ['Meeting', 'Follow-Up', 'Data Request', 'PCR'],
-  'GCG Ad-Hoc': ['Data Request', 'PCR', 'Other'],
+  'GCG Ad-Hoc': ['PCR', 'Follow-Up', 'Data Request', 'Other'],
 };
 
 // Parse NNA input string to number (handles commas, M, B, K suffixes)
@@ -110,6 +114,7 @@ export default function NewInteractionForm({ isOpen, onClose, onSubmit, onUpdate
     dateStarted: new Date().toISOString().split('T')[0],
     notes: '',
     portfolioLogged: false,
+    portfolio: undefined,
     nna: null,
   });
 
@@ -119,6 +124,7 @@ export default function NewInteractionForm({ isOpen, onClose, onSubmit, onUpdate
   const [internalClientSearch, setInternalClientSearch] = useState('');
   const [showInternalClientDropdown, setShowInternalClientDropdown] = useState(false);
   const [isNNAModalOpen, setIsNNAModalOpen] = useState(false);
+  const [isPortfolioModalOpen, setIsPortfolioModalOpen] = useState(false);
   const internalClientRef = useRef<HTMLDivElement>(null);
 
   // Close dropdown when clicking outside
@@ -522,10 +528,17 @@ export default function NewInteractionForm({ isOpen, onClose, onSubmit, onUpdate
                   </label>
                   <button
                     type="button"
-                    className="w-full h-[38px] px-3 bg-zinc-800/50 border border-zinc-700 rounded-lg text-sm text-zinc-400 text-left hover:border-cyan-500/50 focus:outline-none focus:border-cyan-500/50 transition-colors flex items-center gap-2"
+                    onClick={() => setIsPortfolioModalOpen(true)}
+                    className={`w-full h-[38px] px-3 bg-zinc-800/50 border rounded-lg text-sm text-left transition-colors flex items-center gap-2 ${
+                      formData.portfolio && formData.portfolio.length > 0
+                        ? 'border-cyan-500/50 text-cyan-400 hover:border-cyan-500/70'
+                        : 'border-zinc-700 text-zinc-400 hover:border-cyan-500/50'
+                    }`}
                   >
                     <Briefcase className="w-4 h-4" />
-                    + Add Portfolio
+                    {formData.portfolio && formData.portfolio.length > 0
+                      ? `${formData.portfolio.length} holding${formData.portfolio.length > 1 ? 's' : ''}`
+                      : '+ Add Portfolio'}
                   </button>
                 </div>
               </div>
@@ -579,6 +592,20 @@ export default function NewInteractionForm({ isOpen, onClose, onSubmit, onUpdate
         currentNNA={formData.nna ?? undefined}
         onSave={(_, nna) => {
           setFormData(prev => ({ ...prev, nna: nna ?? null }));
+        }}
+      />
+
+      {/* Portfolio Modal */}
+      <PortfolioModal
+        isOpen={isPortfolioModalOpen}
+        onClose={() => setIsPortfolioModalOpen(false)}
+        currentPortfolio={formData.portfolio}
+        onSave={(portfolio) => {
+          setFormData(prev => ({
+            ...prev,
+            portfolio,
+            portfolioLogged: portfolio !== undefined && portfolio.length > 0,
+          }));
         }}
       />
     </>

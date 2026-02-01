@@ -521,11 +521,14 @@ export default function EngagementsDashboard() {
 
   // Handle row click to open edit form
   const handleRowClick = (engagement: Engagement) => {
-    // Parse the date string to YYYY-MM-DD format for the date input
+    // Parse the date string to YYYY-MM-DD format for the date input (local timezone)
     const parseDate = (dateStr: string): string => {
-      if (dateStr === '—') return new Date().toISOString().split('T')[0];
+      if (dateStr === '—') {
+        const now = new Date();
+        return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+      }
       const date = new Date(dateStr);
-      return date.toISOString().split('T')[0];
+      return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
     };
 
     setEditingEngagement({
@@ -544,8 +547,10 @@ export default function EngagementsDashboard() {
         status: engagement.status,
         notes: engagement.notes || '',
         portfolioLogged: engagement.portfolioLogged,
+        portfolio: engagement.portfolio,
         nna: engagement.nna || null,
       },
+      originalDateStarted: engagement.dateStarted, // Preserve exact original
     });
     setIsNewInteractionOpen(true);
   };
@@ -557,6 +562,10 @@ export default function EngagementsDashboard() {
       const date = new Date(dateStr);
       return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
     };
+
+    // Check if dateStarted was actually changed by comparing with original
+    const originalDateStarted = editingEngagement?.originalDateStarted;
+    const dateStartedChanged = originalDateStarted && editingEngagement?.data.dateStarted !== data.dateStarted;
 
     setEngagements(prev => prev.map(eng => {
       if (eng.id === engagementId) {
@@ -572,10 +581,14 @@ export default function EngagementsDashboard() {
           type: data.projectType,
           teamMembers: data.teamMembers,
           department: getClientDepartment(data.internalClient),
-          dateStarted: formatDate(data.dateStarted),
-          notes: data.notes.trim() || undefined,
+          // Only format dateStarted if user actually changed it, otherwise preserve original
+          dateStarted: dateStartedChanged ? formatDate(data.dateStarted) : (originalDateStarted || eng.dateStarted),
+          dateFinished: data.dateFinished ? formatDate(data.dateFinished) : '—',
+          status: data.status || eng.status,
+          notes: data.notes || undefined,
           portfolioLogged: data.portfolioLogged,
-          nna: data.nna || undefined,
+          portfolio: data.portfolio,
+          nna: data.nna ?? undefined,
         };
       }
       return eng;
