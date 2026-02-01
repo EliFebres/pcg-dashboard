@@ -551,6 +551,7 @@ export default function EngagementsDashboard() {
         nna: engagement.nna || null,
       },
       originalDateStarted: engagement.dateStarted, // Preserve exact original
+      originalDateFinished: engagement.dateFinished, // Preserve exact original
     });
     setIsNewInteractionOpen(true);
   };
@@ -563,9 +564,12 @@ export default function EngagementsDashboard() {
       return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
     };
 
-    // Check if dateStarted was actually changed by comparing with original
+    // Check if dates were actually changed by comparing with original
     const originalDateStarted = editingEngagement?.originalDateStarted;
     const dateStartedChanged = originalDateStarted && editingEngagement?.data.dateStarted !== data.dateStarted;
+
+    const originalDateFinished = editingEngagement?.originalDateFinished;
+    const dateFinishedChanged = editingEngagement?.data.dateFinished !== data.dateFinished;
 
     setEngagements(prev => prev.map(eng => {
       if (eng.id === engagementId) {
@@ -581,9 +585,11 @@ export default function EngagementsDashboard() {
           type: data.projectType,
           teamMembers: data.teamMembers,
           department: getClientDepartment(data.internalClient),
-          // Only format dateStarted if user actually changed it, otherwise preserve original
+          // Only format dates if user actually changed them, otherwise preserve original
           dateStarted: dateStartedChanged ? formatDate(data.dateStarted) : (originalDateStarted || eng.dateStarted),
-          dateFinished: data.dateFinished ? formatDate(data.dateFinished) : '—',
+          dateFinished: dateFinishedChanged
+            ? (data.dateFinished ? formatDate(data.dateFinished) : '—')
+            : (originalDateFinished || eng.dateFinished),
           status: data.status || eng.status,
           notes: data.notes || undefined,
           portfolioLogged: data.portfolioLogged,

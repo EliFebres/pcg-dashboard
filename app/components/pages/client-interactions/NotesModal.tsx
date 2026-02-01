@@ -23,25 +23,7 @@ const NotesModal: React.FC<NotesModalProps> = ({
   onSave,
 }) => {
   const [notes, setNotes] = useState(currentNotes);
-  const [isVisible, setIsVisible] = useState(false);
-  const [shouldRender, setShouldRender] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-
-  // Handle animation states
-  useEffect(() => {
-    if (isOpen) {
-      setShouldRender(true);
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          setIsVisible(true);
-        });
-      });
-    } else {
-      setIsVisible(false);
-      const timer = setTimeout(() => setShouldRender(false), 220);
-      return () => clearTimeout(timer);
-    }
-  }, [isOpen]);
 
   // Reset notes when modal opens with new data
   useEffect(() => {
@@ -52,10 +34,10 @@ const NotesModal: React.FC<NotesModalProps> = ({
 
   // Focus textarea when modal opens
   useEffect(() => {
-    if (isVisible && textareaRef.current) {
+    if (isOpen && textareaRef.current) {
       textareaRef.current.focus();
     }
-  }, [isVisible]);
+  }, [isOpen]);
 
   // Handle escape key
   useEffect(() => {
@@ -76,24 +58,18 @@ const NotesModal: React.FC<NotesModalProps> = ({
   const hasChanges = notes !== currentNotes;
   const clientDisplay = externalClient || internalClient;
 
-  if (!shouldRender) return null;
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
       {/* Backdrop */}
       <div
-        className={`absolute inset-0 bg-black/70 transition-opacity duration-200 ${
-          isVisible ? 'opacity-100' : 'opacity-0'
-        }`}
+        className="absolute inset-0 bg-black/70"
         onClick={onClose}
       />
 
       {/* Modal */}
-      <div
-        className={`relative w-full max-w-lg bg-zinc-900 border border-zinc-700/50 shadow-2xl transition-all duration-200 ${
-          isVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
-        }`}
-      >
+      <div className="relative w-full max-w-lg bg-zinc-900 border border-zinc-700/50 shadow-2xl">
         {/* Gradient border effect */}
         <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] via-transparent to-transparent pointer-events-none" />
         <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-cyan-500/30 to-transparent" />

@@ -26,6 +26,7 @@ export interface EditingEngagement {
   id: number;
   data: InteractionFormData;
   originalDateStarted: string; // Preserve exact original string to avoid roundtrip changes
+  originalDateFinished?: string; // Preserve exact original string to avoid roundtrip changes
 }
 
 interface NewInteractionFormProps {
@@ -248,36 +249,13 @@ export default function NewInteractionForm({ isOpen, onClose, onSubmit, onUpdate
     }));
   };
 
-  // Animation state for smooth exit
-  const [isVisible, setIsVisible] = useState(false);
-  const [shouldRender, setShouldRender] = useState(false);
-
-  useEffect(() => {
-    if (isOpen) {
-      setShouldRender(true);
-      // Small delay to ensure DOM is ready before animating in
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          setIsVisible(true);
-        });
-      });
-    } else {
-      setIsVisible(false);
-      // Wait for exit animation to complete before unmounting
-      const timer = setTimeout(() => setShouldRender(false), 330);
-      return () => clearTimeout(timer);
-    }
-  }, [isOpen]);
-
-  if (!shouldRender) return null;
+  if (!isOpen) return null;
 
   return (
     <>
       {/* Backdrop */}
       <div
-        className={`fixed inset-0 z-[100] transition-all duration-[330ms] ${
-          isVisible ? 'bg-black/60 backdrop-blur-sm' : 'bg-black/0 backdrop-blur-none'
-        }`}
+        className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm"
         onClick={onClose}
       />
 
@@ -286,12 +264,7 @@ export default function NewInteractionForm({ isOpen, onClose, onSubmit, onUpdate
         className="fixed inset-0 z-[100] flex items-center justify-center p-8 pointer-events-none"
       >
         <div
-          className={`w-full max-w-2xl max-h-[90vh] bg-zinc-900 border border-zinc-800 rounded-xl shadow-2xl pointer-events-auto transform transition-all duration-[330ms] overflow-hidden ${
-            isVisible
-              ? 'scale-100 opacity-100 translate-y-0'
-              : 'scale-95 opacity-0 translate-y-4'
-          }`}
-          style={{ transitionTimingFunction: 'cubic-bezier(0.16, 1, 0.3, 1)' }}
+          className="w-full max-w-2xl max-h-[90vh] bg-zinc-900 border border-zinc-800 rounded-xl shadow-2xl pointer-events-auto overflow-hidden"
         >
         <div className="flex flex-col max-h-[90vh]">
           {/* Header */}
