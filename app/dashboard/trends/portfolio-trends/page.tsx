@@ -122,7 +122,7 @@ export default function PortfolioTrendsDashboard() {
               label: 'Team Member',
               options: filterOptions.teamMembers,
               value: teamMemberFilter,
-              onChange: setTeamMemberFilter,
+              onChange: (v: string | string[]) => setTeamMemberFilter(v as string),
             },
             {
               id: 'department',
@@ -130,7 +130,7 @@ export default function PortfolioTrendsDashboard() {
               label: 'Department',
               options: filterOptions.departments,
               value: departmentFilter,
-              onChange: setDepartmentFilter,
+              onChange: (v: string | string[]) => setDepartmentFilter(v as string),
             },
           ]}
           period={period}

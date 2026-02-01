@@ -230,7 +230,7 @@ const NNAModal: React.FC<NNAModalProps> = ({
             </button>
             <button
               onClick={handleSave}
-              disabled={!hasChanges || (nnaValue && !parsedPreview)}
+              disabled={!hasChanges || (!!nnaValue && !parsedPreview)}
               className={`flex items-center gap-2 px-4 py-2 text-sm font-medium transition-all ${
                 hasChanges && (!nnaValue || parsedPreview)
                   ? 'bg-gradient-to-r from-emerald-600 to-cyan-500 text-white hover:from-emerald-500 hover:to-cyan-400'
