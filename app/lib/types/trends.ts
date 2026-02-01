@@ -37,6 +37,10 @@ export interface HotTicker {
     competitor: string;
     dfa: string;
   };
+  flows: {
+    competitor: string;
+    dfa: string;
+  };
   notes: string;
   talkingPointsUrl: string;
   pcrUrl: string;

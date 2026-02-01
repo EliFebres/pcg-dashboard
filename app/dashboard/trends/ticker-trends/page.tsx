@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Building2, MoreHorizontal, Download, Flame, FileText, ExternalLink, Loader2, ChevronDown } from 'lucide-react';
+import { Building2, MoreHorizontal, Download, Flame, FileText, ExternalLink, Loader2, ChevronDown, ArrowUp, ArrowDown } from 'lucide-react';
 import {
   getHotTickers,
   getTickerTrendsFilterOptions,
@@ -265,6 +265,7 @@ export default function TickerTrendsDashboard() {
                       <th className="text-left text-xs font-medium text-zinc-400 uppercase tracking-wider px-4 py-3">DFA Alternative</th>
                       <th className="text-left text-xs font-medium text-zinc-400 uppercase tracking-wider px-4 py-3">1YR Return Δ</th>
                       <th className="text-left text-xs font-medium text-zinc-400 uppercase tracking-wider px-4 py-3">AUM</th>
+                      <th className="text-left text-xs font-medium text-zinc-400 uppercase tracking-wider px-4 py-3">Flows</th>
                       <th className="text-left text-xs font-medium text-zinc-400 uppercase tracking-wider px-4 py-3">Expense Ratio</th>
                       <th className="text-center text-xs font-medium text-zinc-400 uppercase tracking-wider px-4 py-3">Notes</th>
                       <th className="text-center text-xs font-medium text-zinc-400 uppercase tracking-wider px-4 py-3">Talking Pts</th>
@@ -343,6 +344,27 @@ export default function TickerTrendsDashboard() {
                             <span className="text-cyan-400">${ticker.aum.competitor}</span>
                             <span className="text-zinc-500"> vs </span>
                             <span className="text-amber-400">${ticker.aum.dfa}</span>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="text-sm text-zinc-300">
+                            <span className="inline-flex items-center text-cyan-400">
+                              {ticker.flows.competitor.startsWith('+') ? (
+                                <ArrowUp className="w-3 h-3 text-emerald-400 mr-0.5" />
+                              ) : (
+                                <ArrowDown className="w-3 h-3 text-red-400 mr-0.5" />
+                              )}
+                              {ticker.flows.competitor}
+                            </span>
+                            <span className="text-zinc-500"> vs </span>
+                            <span className="inline-flex items-center text-amber-400">
+                              {ticker.flows.dfa.startsWith('+') ? (
+                                <ArrowUp className="w-3 h-3 text-emerald-400 mr-0.5" />
+                              ) : (
+                                <ArrowDown className="w-3 h-3 text-red-400 mr-0.5" />
+                              )}
+                              {ticker.flows.dfa}
+                            </span>
                           </div>
                         </td>
                         <td className="px-4 py-3">
