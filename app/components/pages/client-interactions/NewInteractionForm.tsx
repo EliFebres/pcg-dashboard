@@ -2,8 +2,8 @@
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { X, ChevronDown, Check, DollarSign, Briefcase } from 'lucide-react';
-import NNAModal from './NNAModal';
-import PortfolioModal from './PortfolioModal';
+import NNAModal from '../shared/NNAModal';
+import PortfolioModal from '../shared/PortfolioModal';
 import { PortfolioHolding } from '@/app/lib/types/engagements';
 
 export interface InteractionFormData {

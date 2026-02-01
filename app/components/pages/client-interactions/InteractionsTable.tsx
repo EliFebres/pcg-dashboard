@@ -2,8 +2,8 @@
 
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { FileText, Download, Check, X, ChevronUp, ChevronDown, ChevronsUpDown, Maximize2, Minimize2, Plus, DollarSign } from 'lucide-react';
-import NotesModal from './NotesModal';
-import NNAModal from './NNAModal';
+import NotesModal from '../shared/NotesModal';
+import NNAModal from '../shared/NNAModal';
 import type { Engagement } from '@/app/lib/types/engagements';
 
 // Sort configuration types

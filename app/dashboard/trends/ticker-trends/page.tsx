@@ -1,47 +1,10 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
-import { Building2, MoreHorizontal, Download, Flame, Award, FileText, ExternalLink, FileDown, User } from 'lucide-react';
-import { XAxis, YAxis, ResponsiveContainer, Tooltip, ComposedChart, Line } from 'recharts';
-import {
-  loggedPortfolios,
-  hotTickers as staticHotTickers,
-  extractFilterOptions,
-  filterPortfolios,
-  computePopularDFATickers,
-  computeTickerTrendsOverTime,
-} from '@/app/lib/data/tickerTrends';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Building2, MoreHorizontal, Download, Flame, FileText, ExternalLink, FileDown, User, Loader2 } from 'lucide-react';
+import { getHotTickers, getTickerTrendsFilterOptions, type HotTickersResponse, type FilterOptions } from '@/app/lib/api/ticker-trends';
+import type { HotTicker } from '@/app/lib/types/trends';
 import DashboardHeader from '@/app/components/DashboardHeader';
-import ClientOnlyChart from '@/app/components/ClientOnlyChart';
-
-interface TooltipPayloadItem {
-  color: string;
-  name: string;
-  value: number;
-}
-
-interface CustomTooltipProps {
-  active?: boolean;
-  payload?: TooltipPayloadItem[];
-  label?: string;
-}
-
-// Custom tooltip component for charts
-function CustomTooltip({ active, payload, label }: CustomTooltipProps) {
-  if (active && payload && payload.length) {
-    return (
-      <div className="bg-zinc-800/90 backdrop-blur-sm border border-zinc-700/50 px-3 py-2 shadow-lg">
-        <p className="text-zinc-400 text-xs mb-1">{label}</p>
-        {payload.map((entry, index) => (
-          <p key={index} className="text-sm" style={{ color: entry.color }}>
-            {entry.name}: {entry.value}
-          </p>
-        ))}
-      </div>
-    );
-  }
-  return null;
-}
 
 export default function TickerTrendsDashboard() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -51,87 +14,131 @@ export default function TickerTrendsDashboard() {
   const [departmentFilter, setDepartmentFilter] = useState('All Departments');
   const [period, setPeriod] = useState('1Y');
 
-  // Extract filter options from portfolio data
-  const filterOptions = useMemo(() => extractFilterOptions(loggedPortfolios), []);
+  // Data state
+  const [hotTickers, setHotTickers] = useState<HotTicker[]>([]);
+  const [filterOptions, setFilterOptions] = useState<FilterOptions>({
+    teamMembers: ['All Team Members'],
+    departments: ['All Departments'],
+    periods: ['1Y'],
+  });
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Apply filters to get filtered portfolios
-  const filteredPortfolios = useMemo(() => {
-    return filterPortfolios(loggedPortfolios, teamMemberFilter, departmentFilter, period);
+  // Fetch filter options on mount
+  useEffect(() => {
+    getTickerTrendsFilterOptions().then(setFilterOptions);
+  }, []);
+
+  // Fetch hot tickers data
+  const fetchHotTickers = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const response = await getHotTickers({
+        teamMember: teamMemberFilter,
+        department: departmentFilter,
+        period,
+      });
+      setHotTickers(response.tickers);
+    } catch (err) {
+      setError('Failed to load hot tickers data');
+      console.error(err);
+    } finally {
+      setIsLoading(false);
+    }
   }, [teamMemberFilter, departmentFilter, period]);
 
-  // Compute ticker data from filtered portfolios
-  const popularDFATickers = useMemo(() => computePopularDFATickers(filteredPortfolios), [filteredPortfolios]);
-  const tickerTrends = useMemo(() => computeTickerTrendsOverTime(filteredPortfolios), [filteredPortfolios]);
+  // Fetch data on mount and when filters change
+  useEffect(() => {
+    fetchHotTickers();
+  }, [fetchHotTickers]);
 
-  // Use static hot tickers for now (would be computed from all data sources in production)
-  const hotTickers = staticHotTickers;
-
-  // Get top 3 DFA tickers for the trend chart
-  const topTrendTickers = useMemo(() => {
-    return popularDFATickers.slice(0, 3).map(t => t.ticker);
-  }, [popularDFATickers]);
+  // Filter tickers by search query (client-side for instant feedback)
+  const filteredTickers = searchQuery
+    ? hotTickers.filter(
+        (t) =>
+          t.ticker.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          t.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          t.dfaCompetitor.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          t.dfaName.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    : hotTickers;
 
   return (
     <>
-        {/* Top Bar with Filters */}
-        <DashboardHeader
-          title="Ticker Trends"
-          subtitle="Popular tickers and DFA comparisons"
-          searchPlaceholder="Search tickers, funds..."
-          searchValue={searchQuery}
-          onSearchChange={setSearchQuery}
-          filters={[
-            {
-              id: 'teamMember',
-              icon: User,
-              label: 'Team Member',
-              options: filterOptions.teamMembers,
-              value: teamMemberFilter,
-              onChange: (v: string | string[]) => setTeamMemberFilter(v as string),
-            },
-            {
-              id: 'department',
-              icon: Building2,
-              label: 'Department',
-              options: filterOptions.departments,
-              value: departmentFilter,
-              onChange: (v: string | string[]) => setDepartmentFilter(v as string),
-            },
-          ]}
-          period={period}
-          onPeriodChange={setPeriod}
-          periodOptions={filterOptions.periods}
-          className="sticky top-0 z-10"
-        />
+      {/* Top Bar with Filters */}
+      <DashboardHeader
+        title="Ticker Trends"
+        subtitle="Popular tickers and DFA comparisons"
+        searchPlaceholder="Search tickers, funds..."
+        searchValue={searchQuery}
+        onSearchChange={setSearchQuery}
+        filters={[
+          {
+            id: 'teamMember',
+            icon: User,
+            label: 'Team Member',
+            options: filterOptions.teamMembers,
+            value: teamMemberFilter,
+            onChange: (v: string | string[]) => setTeamMemberFilter(v as string),
+          },
+          {
+            id: 'department',
+            icon: Building2,
+            label: 'Department',
+            options: filterOptions.departments,
+            value: departmentFilter,
+            onChange: (v: string | string[]) => setDepartmentFilter(v as string),
+          },
+        ]}
+        period={period}
+        onPeriodChange={setPeriod}
+        periodOptions={filterOptions.periods}
+        className="sticky top-0 z-10"
+      />
 
-        <div className="p-6 space-y-6">
-          {/* ==================== TICKER ANALYTICS ==================== */}
-          <div>
-            <div className="flex items-center gap-2 mb-4">
-              <Flame className="w-5 h-5 text-cyan-400" />
-              <h3 className="text-lg font-semibold text-white">Ticker Analytics</h3>
-              <span className="text-xs text-zinc-500 ml-2">Popular tickers and DFA comparisons</span>
+      <div className="p-6 space-y-6">
+        {/* ==================== TOP 10 HOT TICKERS ==================== */}
+        <div>
+          <div className="flex items-center gap-2 mb-4">
+            <Flame className="w-5 h-5 text-cyan-400" />
+            <h3 className="text-lg font-semibold text-white">Top 10 Hot Tickers & DFA Competitors</h3>
+            <span className="text-xs text-zinc-500 ml-2">Most requested non-DFA tickers with comparable DFA funds</span>
+          </div>
+
+          {/* Hot Tickers Table */}
+          <div className="relative overflow-hidden bg-zinc-900/60 backdrop-blur-md border border-zinc-800/50">
+            <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] via-transparent to-transparent pointer-events-none" />
+            <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+
+            <div className="relative z-10 p-4 border-b border-zinc-800/50">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h4 className="text-sm font-medium text-white">Hot Tickers & DFA Competitors</h4>
+                  <p className="text-xs text-zinc-500">Most requested non-DFA tickers with comparable DFA funds</p>
+                </div>
+                <button className="flex items-center gap-1.5 px-2 py-1 text-xs text-zinc-400 hover:text-cyan-400 transition-colors">
+                  <Download className="w-3.5 h-3.5" />
+                  Export
+                </button>
+              </div>
             </div>
 
-            {/* Hot Tickers Table */}
-            <div className="relative overflow-hidden bg-zinc-900/60 backdrop-blur-md border border-zinc-800/50 mb-4">
-              <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] via-transparent to-transparent pointer-events-none" />
-              <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
-
-              <div className="relative z-10 p-4 border-b border-zinc-800/50">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h4 className="text-sm font-medium text-white">Hot Tickers & DFA Competitors</h4>
-                    <p className="text-xs text-zinc-500">Most requested non-DFA tickers with comparable DFA funds</p>
-                  </div>
-                  <button className="flex items-center gap-1.5 px-2 py-1 text-xs text-zinc-400 hover:text-cyan-400 transition-colors">
-                    <Download className="w-3.5 h-3.5" />
-                    Export
-                  </button>
+            <div className="relative z-10 overflow-x-auto">
+              {isLoading ? (
+                <div className="flex items-center justify-center py-16">
+                  <Loader2 className="w-6 h-6 text-cyan-400 animate-spin" />
+                  <span className="ml-2 text-sm text-zinc-400">Loading hot tickers...</span>
                 </div>
-              </div>
-
-              <div className="relative z-10 overflow-x-auto">
+              ) : error ? (
+                <div className="flex items-center justify-center py-16">
+                  <span className="text-sm text-red-400">{error}</span>
+                </div>
+              ) : filteredTickers.length === 0 ? (
+                <div className="flex items-center justify-center py-16">
+                  <span className="text-sm text-zinc-500">No tickers found</span>
+                </div>
+              ) : (
                 <table className="w-full">
                   <thead>
                     <tr className="bg-zinc-800/30">
@@ -150,19 +157,21 @@ export default function TickerTrendsDashboard() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-zinc-800/50">
-                    {hotTickers.map((ticker) => (
+                    {filteredTickers.map((ticker) => (
                       <tr key={ticker.rank} className="hover:bg-white/[0.02] transition-colors">
                         <td className="px-4 py-3">
                           <span className="text-sm font-medium text-zinc-500">{ticker.rank}</span>
                         </td>
                         <td className="px-4 py-3">
-                          <span className={`text-xs font-medium px-2 py-1 ${
-                            ticker.type === 'Replacement'
-                              ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
-                              : ticker.type === 'Challenging'
-                                ? 'bg-red-500/15 text-red-400 border border-red-500/30'
-                                : 'bg-amber-500/15 text-amber-400 border border-amber-500/30'
-                          }`}>
+                          <span
+                            className={`text-xs font-medium px-2 py-1 ${
+                              ticker.type === 'Replacement'
+                                ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
+                                : ticker.type === 'Challenging'
+                                  ? 'bg-red-500/15 text-red-400 border border-red-500/30'
+                                  : 'bg-amber-500/15 text-amber-400 border border-amber-500/30'
+                            }`}
+                          >
                             {ticker.type}
                           </span>
                         </td>
@@ -187,9 +196,11 @@ export default function TickerTrendsDashboard() {
                           </div>
                         </td>
                         <td className="px-4 py-3">
-                          <span className={`text-sm font-medium font-mono ${
-                            ticker.returnComparison.delta.startsWith('+') ? 'text-emerald-400' : 'text-red-400'
-                          }`}>
+                          <span
+                            className={`text-sm font-medium font-mono ${
+                              ticker.returnComparison.delta.startsWith('+') ? 'text-emerald-400' : 'text-red-400'
+                            }`}
+                          >
                             {ticker.returnComparison.delta}
                           </span>
                           <p className="text-xs text-zinc-500">
@@ -229,7 +240,10 @@ export default function TickerTrendsDashboard() {
                           )}
                         </td>
                         <td className="px-4 py-3 text-center">
-                          <button className="p-1.5 bg-zinc-700/50 hover:bg-zinc-600/50 text-zinc-300 hover:text-white transition-colors" title="Generate Product Comparison PCR">
+                          <button
+                            className="p-1.5 bg-zinc-700/50 hover:bg-zinc-600/50 text-zinc-300 hover:text-white transition-colors"
+                            title="Generate Product Comparison PCR"
+                          >
                             <FileDown className="w-4 h-4" />
                           </button>
                         </td>
@@ -242,121 +256,11 @@ export default function TickerTrendsDashboard() {
                     ))}
                   </tbody>
                 </table>
-              </div>
-            </div>
-
-            {/* Bottom Row: Popular DFA Tickers + Trend Chart */}
-            <div className="grid grid-cols-2 gap-4">
-              {/* Most Popular DFA Tickers */}
-              <div className="relative overflow-hidden bg-zinc-900/60 backdrop-blur-md border border-zinc-800/50">
-                <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] via-transparent to-transparent pointer-events-none" />
-                <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
-
-                <div className="relative z-10 p-4 border-b border-zinc-800/50">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h4 className="text-sm font-medium text-white">Most Popular DFA Tickers</h4>
-                      <p className="text-xs text-zinc-500">By number of client models</p>
-                    </div>
-                    <Award className="w-4 h-4 text-zinc-500" />
-                  </div>
-                </div>
-
-                <div className="relative z-10">
-                  <table className="w-full">
-                    <thead>
-                      <tr className="bg-zinc-800/30">
-                        <th className="text-left text-xs font-medium text-zinc-400 uppercase tracking-wider px-4 py-2">#</th>
-                        <th className="text-left text-xs font-medium text-zinc-400 uppercase tracking-wider px-4 py-2">Ticker</th>
-                        <th className="text-left text-xs font-medium text-zinc-400 uppercase tracking-wider px-4 py-2">Models</th>
-                        <th className="text-left text-xs font-medium text-zinc-400 uppercase tracking-wider px-4 py-2">% of Total</th>
-                        <th className="text-left text-xs font-medium text-zinc-400 uppercase tracking-wider px-4 py-2">Trend</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-zinc-800/50">
-                      {popularDFATickers.slice(0, 8).map((ticker) => (
-                        <tr key={ticker.rank} className="hover:bg-white/[0.02] transition-colors">
-                          <td className="px-4 py-2">
-                            <span className="text-xs font-medium text-zinc-500">{ticker.rank}</span>
-                          </td>
-                          <td className="px-4 py-2">
-                            <div>
-                              <span className="text-sm font-bold text-amber-400">{ticker.ticker}</span>
-                              <p className="text-xs text-zinc-500">{ticker.name}</p>
-                            </div>
-                          </td>
-                          <td className="px-4 py-2">
-                            <span className="text-sm font-medium text-zinc-200 font-mono">{ticker.count}</span>
-                          </td>
-                          <td className="px-4 py-2">
-                            <span className="text-sm text-zinc-400">{ticker.pctOfTotal}%</span>
-                          </td>
-                          <td className="px-4 py-2">
-                            <span className={`text-xs font-medium ${ticker.trend.startsWith('+') ? 'text-emerald-400' : 'text-red-400'}`}>
-                              {ticker.trend}
-                            </span>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-
-              {/* Ticker Adoption Trend */}
-              <div className="relative overflow-hidden bg-zinc-900/60 backdrop-blur-md border border-zinc-800/50 p-5 flex flex-col">
-                <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] via-transparent to-transparent pointer-events-none" />
-                <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
-
-                <div className="relative z-10 flex flex-col flex-1">
-                  <div className="flex items-center justify-between mb-2">
-                    <div>
-                      <h4 className="text-sm font-medium text-white">Ticker Adoption Trend</h4>
-                      <p className="text-xs text-zinc-500">Top 3 DFA tickers over time</p>
-                    </div>
-                    <button className="p-1.5 bg-zinc-800/50 backdrop-blur-sm text-zinc-400 hover:text-cyan-400 transition-colors" title="Download chart data">
-                      <Download className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                  <div className="flex-1 min-h-0" style={{ minHeight: '200px' }}>
-                    <ClientOnlyChart>
-                      <ResponsiveContainer width="100%" height="100%" minWidth={200} minHeight={200}>
-                        <ComposedChart data={tickerTrends}>
-                          <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fill: '#71717a', fontSize: 11 }} dy={10} />
-                          <YAxis axisLine={false} tickLine={false} tick={{ fill: '#71717a', fontSize: 11 }} dx={-10} domain={[0, 'auto']} />
-                          <Tooltip content={<CustomTooltip />} />
-                          {topTrendTickers[0] && <Line type="monotone" dataKey={topTrendTickers[0]} stroke="#22d3ee" strokeWidth={2} dot={{ fill: '#22d3ee', strokeWidth: 0, r: 3 }} />}
-                          {topTrendTickers[1] && <Line type="monotone" dataKey={topTrendTickers[1]} stroke="#fbbf24" strokeWidth={2} dot={{ fill: '#fbbf24', strokeWidth: 0, r: 3 }} />}
-                          {topTrendTickers[2] && <Line type="monotone" dataKey={topTrendTickers[2]} stroke="#fb923c" strokeWidth={2} dot={{ fill: '#fb923c', strokeWidth: 0, r: 3 }} />}
-                        </ComposedChart>
-                      </ResponsiveContainer>
-                    </ClientOnlyChart>
-                  </div>
-                  <div className="flex items-center justify-center gap-6 mt-2">
-                    {topTrendTickers[0] && (
-                      <div className="flex items-center gap-2">
-                        <div className="w-3 h-0.5 bg-cyan-400" />
-                        <span className="text-xs text-zinc-400">{topTrendTickers[0]}</span>
-                      </div>
-                    )}
-                    {topTrendTickers[1] && (
-                      <div className="flex items-center gap-2">
-                        <div className="w-3 h-0.5 bg-amber-400" />
-                        <span className="text-xs text-zinc-400">{topTrendTickers[1]}</span>
-                      </div>
-                    )}
-                    {topTrendTickers[2] && (
-                      <div className="flex items-center gap-2">
-                        <div className="w-3 h-0.5 bg-orange-400" />
-                        <span className="text-xs text-zinc-400">{topTrendTickers[2]}</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
+              )}
             </div>
           </div>
         </div>
+      </div>
     </>
   );
 }

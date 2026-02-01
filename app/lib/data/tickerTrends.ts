@@ -11,8 +11,14 @@ import type {
 } from '../types/trends';
 import { isDFATicker } from './portfolioTrends';
 
-// Re-export portfolio data and filter functions needed by Ticker Trends
-export { loggedPortfolios, extractFilterOptions, filterPortfolios } from './portfolioTrends';
+// Static filter options for Ticker Trends (no portfolio dependency)
+export function extractFilterOptions() {
+  return {
+    teamMembers: ['All Team Members', 'Eli F.'],
+    departments: ['All Departments', 'IAG', 'Broker-Dealer', 'Institution'],
+    periods: ['1M', '3M', '6M', '1Y', 'YTD', 'All'],
+  };
+}
 
 // ==================== HOT TICKERS DATA ====================
 
