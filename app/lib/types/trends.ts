@@ -37,7 +37,7 @@ export interface HotTicker {
     competitor: string;
     dfa: string;
   };
-  hasNotes: boolean;
+  notes: string;
   hasTalkingPoints: boolean;
 }
 

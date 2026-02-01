@@ -35,7 +35,7 @@ export const hotTickers: HotTicker[] = [
     returnComparison: { competitor: 12.4, dfa: 9.8, delta: '-2.6%' },
     expenseRatio: { competitor: 0.06, dfa: 0.27 },
     aum: { competitor: '82B', dfa: '14B' },
-    hasNotes: true,
+    notes: 'IJR tracks S&P 600 with profitability screens.',
     hasTalkingPoints: true
   },
   {
@@ -50,7 +50,7 @@ export const hotTickers: HotTicker[] = [
     returnComparison: { competitor: 24.8, dfa: 25.1, delta: '+0.3%' },
     expenseRatio: { competitor: 0.03, dfa: 0.12 },
     aum: { competitor: '428B', dfa: '32B' },
-    hasNotes: true,
+    notes: 'DFUS provides broader market exposure with factor tilts.',
     hasTalkingPoints: true
   },
   {
@@ -65,7 +65,7 @@ export const hotTickers: HotTicker[] = [
     returnComparison: { competitor: 24.2, dfa: 25.1, delta: '+0.9%' },
     expenseRatio: { competitor: 0.03, dfa: 0.12 },
     aum: { competitor: '389B', dfa: '32B' },
-    hasNotes: false,
+    notes: '',
     hasTalkingPoints: true
   },
   {
@@ -80,7 +80,7 @@ export const hotTickers: HotTicker[] = [
     returnComparison: { competitor: 8.2, dfa: 9.1, delta: '+0.9%' },
     expenseRatio: { competitor: 0.08, dfa: 0.18 },
     aum: { competitor: '67B', dfa: '12B' },
-    hasNotes: true,
+    notes: 'Can complement DFAI for broader international coverage.',
     hasTalkingPoints: false
   },
   {
@@ -95,7 +95,7 @@ export const hotTickers: HotTicker[] = [
     returnComparison: { competitor: 1.2, dfa: 1.8, delta: '+0.6%' },
     expenseRatio: { competitor: 0.03, dfa: 0.15 },
     aum: { competitor: '108B', dfa: '8B' },
-    hasNotes: false,
+    notes: '',
     hasTalkingPoints: true
   },
   {
@@ -110,7 +110,7 @@ export const hotTickers: HotTicker[] = [
     returnComparison: { competitor: 9.8, dfa: 9.1, delta: '-0.7%' },
     expenseRatio: { competitor: 0.06, dfa: 0.18 },
     aum: { competitor: '142B', dfa: '12B' },
-    hasNotes: false,
+    notes: '',
     hasTalkingPoints: false
   },
 ];

@@ -52,7 +52,7 @@ const mockHotTickers: HotTicker[] = [
     returnComparison: { competitor: 12.4, dfa: 9.8, delta: '-2.6%' },
     expenseRatio: { competitor: 0.06, dfa: 0.27 },
     aum: { competitor: '82B', dfa: '14B' },
-    hasNotes: true,
+    notes: 'IJR tracks S&P 600 which has profitability screens. DFAS has deeper small-cap exposure with value/profitability tilts. Key differentiator is factor exposure, not just market cap.',
     hasTalkingPoints: true,
   },
   {
@@ -67,7 +67,7 @@ const mockHotTickers: HotTicker[] = [
     returnComparison: { competitor: 24.8, dfa: 25.1, delta: '+0.3%' },
     expenseRatio: { competitor: 0.03, dfa: 0.12 },
     aum: { competitor: '428B', dfa: '32B' },
-    hasNotes: true,
+    notes: 'DFUS provides broader market exposure with systematic factor tilts. Similar large-cap core exposure but with DFA\'s research-driven approach.',
     hasTalkingPoints: true,
   },
   {
@@ -82,7 +82,7 @@ const mockHotTickers: HotTicker[] = [
     returnComparison: { competitor: 24.2, dfa: 25.1, delta: '+0.9%' },
     expenseRatio: { competitor: 0.03, dfa: 0.12 },
     aum: { competitor: '389B', dfa: '32B' },
-    hasNotes: false,
+    notes: '',
     hasTalkingPoints: true,
   },
   {
@@ -97,7 +97,7 @@ const mockHotTickers: HotTicker[] = [
     returnComparison: { competitor: 8.2, dfa: 9.1, delta: '+0.9%' },
     expenseRatio: { competitor: 0.08, dfa: 0.18 },
     aum: { competitor: '67B', dfa: '12B' },
-    hasNotes: true,
+    notes: 'Can be used alongside DFAI for broader international coverage. DFAI provides factor tilts while VXUS offers pure market-cap weighting.',
     hasTalkingPoints: false,
   },
   {
@@ -112,7 +112,7 @@ const mockHotTickers: HotTicker[] = [
     returnComparison: { competitor: 1.2, dfa: 1.8, delta: '+0.6%' },
     expenseRatio: { competitor: 0.03, dfa: 0.15 },
     aum: { competitor: '108B', dfa: '8B' },
-    hasNotes: false,
+    notes: '',
     hasTalkingPoints: true,
   },
   {
@@ -127,7 +127,7 @@ const mockHotTickers: HotTicker[] = [
     returnComparison: { competitor: 9.8, dfa: 9.1, delta: '-0.7%' },
     expenseRatio: { competitor: 0.06, dfa: 0.18 },
     aum: { competitor: '142B', dfa: '12B' },
-    hasNotes: false,
+    notes: '',
     hasTalkingPoints: false,
   },
   {
@@ -142,7 +142,7 @@ const mockHotTickers: HotTicker[] = [
     returnComparison: { competitor: 15.2, dfa: 12.8, delta: '-2.4%' },
     expenseRatio: { competitor: 0.06, dfa: 0.22 },
     aum: { competitor: '56B', dfa: '9B' },
-    hasNotes: true,
+    notes: 'SCHD focuses on dividend growth quality. DFLV uses value/profitability factors. Different approaches - dividend yield vs systematic value exposure.',
     hasTalkingPoints: true,
   },
   {
@@ -157,7 +157,7 @@ const mockHotTickers: HotTicker[] = [
     returnComparison: { competitor: 6.4, dfa: 7.2, delta: '+0.8%' },
     expenseRatio: { competitor: 0.08, dfa: 0.21 },
     aum: { competitor: '82B', dfa: '6B' },
-    hasNotes: false,
+    notes: '',
     hasTalkingPoints: true,
   },
   {
@@ -171,8 +171,8 @@ const mockHotTickers: HotTicker[] = [
     dfaName: 'Core Fixed Income',
     returnComparison: { competitor: 1.0, dfa: 1.8, delta: '+0.8%' },
     expenseRatio: { competitor: 0.03, dfa: 0.15 },
-    aum: { competitor: '98B', dfa: '8B' },
-    hasNotes: false,
+    aum: { competitor: '98B', dfa: '6B' },
+    notes: '',
     hasTalkingPoints: false,
   },
   {
@@ -187,7 +187,7 @@ const mockHotTickers: HotTicker[] = [
     returnComparison: { competitor: 32.1, dfa: 25.1, delta: '-7.0%' },
     expenseRatio: { competitor: 0.20, dfa: 0.12 },
     aum: { competitor: '245B', dfa: '32B' },
-    hasNotes: true,
+    notes: 'QQQ is Nasdaq-100 concentrated in tech. No direct DFA equivalent. DFUS is diversified core. Different risk profiles - sector bet vs broad market.',
     hasTalkingPoints: true,
   },
 ];
@@ -230,5 +230,66 @@ export async function getTickerTrendsFilterOptions(): Promise<FilterOptions> {
     teamMembers: ['All Team Members', 'Eli F.'],
     departments: ['All Departments', 'IAG', 'Broker-Dealer', 'Institution'],
     periods: ['1M', '3M', '6M', '1Y', 'YTD', 'All'],
+  };
+}
+
+// =============================================================================
+// Update Functions
+// =============================================================================
+
+export type TickerType = 'Replacement' | 'Challenging' | 'Complement';
+
+export const TICKER_TYPE_OPTIONS: TickerType[] = ['Replacement', 'Challenging', 'Complement'];
+
+/**
+ * Update the type classification for a hot ticker
+ * Returns the updated ticker on success
+ */
+export async function updateHotTickerType(
+  ticker: string,
+  newType: TickerType
+): Promise<{ success: boolean; ticker: string; type: TickerType }> {
+  if (SIMULATED_DELAY) await delay(SIMULATED_DELAY);
+
+  // In production, this would be:
+  // const response = await fetch(`${API_BASE_URL}/ticker-trends/hot-tickers/${ticker}/type`, {
+  //   method: 'PATCH',
+  //   headers: { 'Content-Type': 'application/json' },
+  //   body: JSON.stringify({ type: newType }),
+  // });
+  // return response.json();
+
+  // Mock implementation - just return success
+  // In production, this would persist to the database
+  return {
+    success: true,
+    ticker,
+    type: newType,
+  };
+}
+
+/**
+ * Update the notes for a hot ticker
+ * Returns the updated ticker on success
+ */
+export async function updateHotTickerNotes(
+  ticker: string,
+  notes: string
+): Promise<{ success: boolean; ticker: string; notes: string }> {
+  if (SIMULATED_DELAY) await delay(SIMULATED_DELAY);
+
+  // In production, this would be:
+  // const response = await fetch(`${API_BASE_URL}/ticker-trends/hot-tickers/${ticker}/notes`, {
+  //   method: 'PATCH',
+  //   headers: { 'Content-Type': 'application/json' },
+  //   body: JSON.stringify({ notes }),
+  // });
+  // return response.json();
+
+  // Mock implementation - just return success
+  return {
+    success: true,
+    ticker,
+    notes,
   };
 }

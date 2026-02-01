@@ -362,11 +362,7 @@ const InteractionsTable: React.FC<InteractionsTableProps> = ({ engagements, onSt
           }`}
           title={engagement.notes ? 'View/edit notes' : 'Add notes'}
         >
-          {engagement.notes ? (
-            <FileText className="w-4 h-4" />
-          ) : (
-            <Plus className="w-4 h-4" />
-          )}
+          <FileText className="w-4 h-4" />
         </button>
       </td>
     </tr>

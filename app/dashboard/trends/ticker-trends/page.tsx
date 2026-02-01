@@ -1,10 +1,19 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
-import { Building2, MoreHorizontal, Download, Flame, FileText, ExternalLink, FileDown, User, Loader2 } from 'lucide-react';
-import { getHotTickers, getTickerTrendsFilterOptions, type HotTickersResponse, type FilterOptions } from '@/app/lib/api/ticker-trends';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { Building2, MoreHorizontal, Download, Flame, FileText, ExternalLink, FileDown, User, Loader2, ChevronDown } from 'lucide-react';
+import {
+  getHotTickers,
+  getTickerTrendsFilterOptions,
+  updateHotTickerType,
+  updateHotTickerNotes,
+  TICKER_TYPE_OPTIONS,
+  type FilterOptions,
+  type TickerType,
+} from '@/app/lib/api/ticker-trends';
 import type { HotTicker } from '@/app/lib/types/trends';
 import DashboardHeader from '@/app/components/DashboardHeader';
+import TickerNotesModal from '@/app/components/pages/shared/TickerNotesModal';
 
 export default function TickerTrendsDashboard() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -23,6 +32,24 @@ export default function TickerTrendsDashboard() {
   });
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Dropdown state
+  const [openTypeDropdown, setOpenTypeDropdown] = useState<string | null>(null);
+  const typeDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Notes modal state
+  const [notesModalTicker, setNotesModalTicker] = useState<HotTicker | null>(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (typeDropdownRef.current && !typeDropdownRef.current.contains(event.target as Node)) {
+        setOpenTypeDropdown(null);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   // Fetch filter options on mount
   useEffect(() => {
@@ -63,6 +90,61 @@ export default function TickerTrendsDashboard() {
           t.dfaName.toLowerCase().includes(searchQuery.toLowerCase())
       )
     : hotTickers;
+
+  // Optimistic update for ticker type
+  const handleTypeChange = useCallback(async (ticker: string, newType: TickerType) => {
+    // Store previous state for rollback
+    const previousTickers = hotTickers;
+
+    // Optimistically update the UI
+    setHotTickers((prev) =>
+      prev.map((t) => (t.ticker === ticker ? { ...t, type: newType } : t))
+    );
+    setOpenTypeDropdown(null);
+
+    try {
+      // Send update to API
+      await updateHotTickerType(ticker, newType);
+    } catch (err) {
+      // Rollback on error
+      console.error('Failed to update ticker type:', err);
+      setHotTickers(previousTickers);
+    }
+  }, [hotTickers]);
+
+  // Optimistic update for ticker notes
+  const handleNotesChange = useCallback(async (ticker: string, notes: string) => {
+    // Store previous state for rollback
+    const previousTickers = hotTickers;
+
+    // Optimistically update the UI
+    setHotTickers((prev) =>
+      prev.map((t) => (t.ticker === ticker ? { ...t, notes } : t))
+    );
+
+    try {
+      // Send update to API
+      await updateHotTickerNotes(ticker, notes);
+    } catch (err) {
+      // Rollback on error
+      console.error('Failed to update ticker notes:', err);
+      setHotTickers(previousTickers);
+    }
+  }, [hotTickers]);
+
+  // Get style for type badge
+  const getTypeStyle = (type: string): string => {
+    switch (type) {
+      case 'Replacement':
+        return 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30';
+      case 'Challenging':
+        return 'bg-red-500/15 text-red-400 border border-red-500/30';
+      case 'Complement':
+        return 'bg-amber-500/15 text-amber-400 border border-amber-500/30';
+      default:
+        return 'bg-zinc-500/15 text-zinc-400 border border-zinc-500/30';
+    }
+  };
 
   return (
     <>
@@ -163,17 +245,32 @@ export default function TickerTrendsDashboard() {
                           <span className="text-sm font-medium text-zinc-500">{ticker.rank}</span>
                         </td>
                         <td className="px-4 py-3">
-                          <span
-                            className={`text-xs font-medium px-2 py-1 ${
-                              ticker.type === 'Replacement'
-                                ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
-                                : ticker.type === 'Challenging'
-                                  ? 'bg-red-500/15 text-red-400 border border-red-500/30'
-                                  : 'bg-amber-500/15 text-amber-400 border border-amber-500/30'
-                            }`}
-                          >
-                            {ticker.type}
-                          </span>
+                          <div className="relative" ref={openTypeDropdown === ticker.ticker ? typeDropdownRef : null}>
+                            <button
+                              onClick={() => setOpenTypeDropdown(openTypeDropdown === ticker.ticker ? null : ticker.ticker)}
+                              className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-1 cursor-pointer hover:ring-1 hover:ring-white/20 transition-all ${getTypeStyle(ticker.type)}`}
+                            >
+                              {ticker.type}
+                              <ChevronDown className={`w-3 h-3 transition-transform ${openTypeDropdown === ticker.ticker ? 'rotate-180' : ''}`} />
+                            </button>
+                            {openTypeDropdown === ticker.ticker && (
+                              <div className="absolute top-full left-0 mt-1 bg-zinc-800 border border-zinc-700 shadow-xl z-50 min-w-[130px] overflow-hidden">
+                                {TICKER_TYPE_OPTIONS.map((type) => (
+                                  <button
+                                    key={type}
+                                    onClick={() => handleTypeChange(ticker.ticker, type)}
+                                    className={`w-full px-3 py-2 text-left text-xs transition-colors ${
+                                      ticker.type === type
+                                        ? 'bg-cyan-500/20 text-cyan-400'
+                                        : 'text-zinc-300 hover:bg-zinc-700/50'
+                                    }`}
+                                  >
+                                    {type}
+                                  </button>
+                                ))}
+                              </div>
+                            )}
+                          </div>
                         </td>
                         <td className="px-4 py-3">
                           <div>
@@ -222,13 +319,17 @@ export default function TickerTrendsDashboard() {
                           </div>
                         </td>
                         <td className="px-4 py-3 text-center">
-                          {ticker.hasNotes ? (
-                            <button className="p-1.5 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 transition-colors" title="View notes">
-                              <FileText className="w-4 h-4" />
-                            </button>
-                          ) : (
-                            <span className="text-zinc-600 text-xs">—</span>
-                          )}
+                          <button
+                            onClick={() => setNotesModalTicker(ticker)}
+                            className={`p-1.5 transition-colors ${
+                              ticker.notes
+                                ? 'bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400'
+                                : 'bg-zinc-800/50 hover:bg-zinc-700/50 text-zinc-500 hover:text-zinc-300'
+                            }`}
+                            title={ticker.notes ? 'View/edit notes' : 'Add notes'}
+                          >
+                            <FileText className="w-4 h-4" />
+                          </button>
                         </td>
                         <td className="px-4 py-3 text-center">
                           {ticker.hasTalkingPoints ? (
@@ -261,6 +362,16 @@ export default function TickerTrendsDashboard() {
           </div>
         </div>
       </div>
+
+      {/* Notes Modal */}
+      <TickerNotesModal
+        isOpen={notesModalTicker !== null}
+        onClose={() => setNotesModalTicker(null)}
+        ticker={notesModalTicker?.ticker ?? ''}
+        tickerName={notesModalTicker?.name ?? ''}
+        currentNotes={notesModalTicker?.notes ?? ''}
+        onSave={handleNotesChange}
+      />
     </>
   );
 }
