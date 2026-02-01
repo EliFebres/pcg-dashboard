@@ -39,6 +39,7 @@ export interface HotTicker {
   };
   notes: string;
   talkingPointsUrl: string;
+  pcrUrl: string;
 }
 
 export interface PopularDFATicker {

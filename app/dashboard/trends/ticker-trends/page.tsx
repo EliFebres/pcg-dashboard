@@ -1,13 +1,14 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Building2, MoreHorizontal, Download, Flame, FileText, ExternalLink, FileDown, User, Loader2, ChevronDown } from 'lucide-react';
+import { Building2, MoreHorizontal, Download, Flame, FileText, ExternalLink, User, Loader2, ChevronDown } from 'lucide-react';
 import {
   getHotTickers,
   getTickerTrendsFilterOptions,
   updateHotTickerType,
   updateHotTickerNotes,
   updateHotTickerTalkingPoints,
+  updateHotTickerPCR,
   TICKER_TYPE_OPTIONS,
   type FilterOptions,
   type TickerType,
@@ -15,7 +16,7 @@ import {
 import type { HotTicker } from '@/app/lib/types/trends';
 import DashboardHeader from '@/app/components/DashboardHeader';
 import TickerNotesModal from '@/app/components/pages/shared/TickerNotesModal';
-import TalkingPointsModal from '@/app/components/pages/shared/TalkingPointsModal';
+import LinkModal from '@/app/components/pages/shared/LinkModal';
 
 export default function TickerTrendsDashboard() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -42,6 +43,7 @@ export default function TickerTrendsDashboard() {
   // Modal state
   const [notesModalTicker, setNotesModalTicker] = useState<HotTicker | null>(null);
   const [talkingPointsModalTicker, setTalkingPointsModalTicker] = useState<HotTicker | null>(null);
+  const [pcrModalTicker, setPcrModalTicker] = useState<HotTicker | null>(null);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -155,6 +157,26 @@ export default function TickerTrendsDashboard() {
     }
   }, [hotTickers]);
 
+  // Optimistic update for PCR URL
+  const handlePCRChange = useCallback(async (ticker: string, pcrUrl: string) => {
+    // Store previous state for rollback
+    const previousTickers = hotTickers;
+
+    // Optimistically update the UI
+    setHotTickers((prev) =>
+      prev.map((t) => (t.ticker === ticker ? { ...t, pcrUrl } : t))
+    );
+
+    try {
+      // Send update to API
+      await updateHotTickerPCR(ticker, pcrUrl);
+    } catch (err) {
+      // Rollback on error
+      console.error('Failed to update PCR:', err);
+      setHotTickers(previousTickers);
+    }
+  }, [hotTickers]);
+
   // Get style for type badge
   const getTypeStyle = (type: string): string => {
     switch (type) {
@@ -257,7 +279,7 @@ export default function TickerTrendsDashboard() {
                       <th className="text-left text-xs font-medium text-zinc-400 uppercase tracking-wider px-4 py-3">Expense Ratio</th>
                       <th className="text-center text-xs font-medium text-zinc-400 uppercase tracking-wider px-4 py-3">Notes</th>
                       <th className="text-center text-xs font-medium text-zinc-400 uppercase tracking-wider px-4 py-3">Talking Pts</th>
-                      <th className="text-center text-xs font-medium text-zinc-400 uppercase tracking-wider px-4 py-3">Make PCR</th>
+                      <th className="text-center text-xs font-medium text-zinc-400 uppercase tracking-wider px-4 py-3">PCR</th>
                       <th className="px-4 py-3"></th>
                     </tr>
                   </thead>
@@ -369,10 +391,15 @@ export default function TickerTrendsDashboard() {
                         </td>
                         <td className="px-4 py-3 text-center">
                           <button
-                            className="p-1.5 bg-zinc-700/50 hover:bg-zinc-600/50 text-zinc-300 hover:text-white transition-colors"
-                            title="Generate Product Comparison PCR"
+                            onClick={() => setPcrModalTicker(ticker)}
+                            className={`p-1.5 transition-colors ${
+                              ticker.pcrUrl
+                                ? 'bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400'
+                                : 'bg-zinc-800/50 hover:bg-zinc-700/50 text-zinc-500 hover:text-zinc-300'
+                            }`}
+                            title={ticker.pcrUrl ? 'View/edit PCR link' : 'Add PCR link'}
                           >
-                            <FileDown className="w-4 h-4" />
+                            <ExternalLink className="w-4 h-4" />
                           </button>
                         </td>
                         <td className="px-4 py-3">
@@ -401,13 +428,29 @@ export default function TickerTrendsDashboard() {
       />
 
       {/* Talking Points Modal */}
-      <TalkingPointsModal
+      <LinkModal
         isOpen={talkingPointsModalTicker !== null}
         onClose={() => setTalkingPointsModalTicker(null)}
+        title="Talking Points Link"
+        label="Internal Link URL"
         ticker={talkingPointsModalTicker?.ticker ?? ''}
         tickerName={talkingPointsModalTicker?.name ?? ''}
         currentUrl={talkingPointsModalTicker?.talkingPointsUrl ?? ''}
         onSave={handleTalkingPointsChange}
+        placeholder="https://internal.site/talking-points/..."
+      />
+
+      {/* PCR Modal */}
+      <LinkModal
+        isOpen={pcrModalTicker !== null}
+        onClose={() => setPcrModalTicker(null)}
+        title="Product Comparison Report"
+        label="PCR Document Link"
+        ticker={pcrModalTicker?.ticker ?? ''}
+        tickerName={pcrModalTicker?.name ?? ''}
+        currentUrl={pcrModalTicker?.pcrUrl ?? ''}
+        onSave={handlePCRChange}
+        placeholder="https://internal.site/pcr/..."
       />
     </>
   );

@@ -3,22 +3,28 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Link, ExternalLink, Trash2 } from 'lucide-react';
 
-interface TalkingPointsModalProps {
+interface LinkModalProps {
   isOpen: boolean;
   onClose: () => void;
+  title: string;
+  label: string;
   ticker: string;
   tickerName: string;
   currentUrl: string;
   onSave: (ticker: string, url: string) => void;
+  placeholder?: string;
 }
 
-const TalkingPointsModal: React.FC<TalkingPointsModalProps> = ({
+const LinkModal: React.FC<LinkModalProps> = ({
   isOpen,
   onClose,
+  title,
+  label,
   ticker,
   tickerName,
   currentUrl,
   onSave,
+  placeholder = 'https://...',
 }) => {
   const [url, setUrl] = useState(currentUrl);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -81,7 +87,7 @@ const TalkingPointsModal: React.FC<TalkingPointsModalProps> = ({
         {/* Header */}
         <div className="relative z-10 px-5 py-4 border-b border-zinc-800/50 flex items-center justify-between">
           <div>
-            <h2 className="text-base font-medium text-white">Talking Points Link</h2>
+            <h2 className="text-base font-medium text-white">{title}</h2>
             <p className="text-xs text-zinc-400 mt-0.5">
               <span className="text-cyan-400 font-medium">{ticker}</span>
               <span className="text-zinc-500 mx-1">·</span>
@@ -101,7 +107,7 @@ const TalkingPointsModal: React.FC<TalkingPointsModalProps> = ({
           <div className="space-y-4">
             <div>
               <label className="block text-xs font-medium text-zinc-400 mb-2">
-                Internal Link URL
+                {label}
               </label>
               <div className="relative">
                 <Link className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
@@ -110,7 +116,7 @@ const TalkingPointsModal: React.FC<TalkingPointsModalProps> = ({
                   type="text"
                   value={url}
                   onChange={(e) => setUrl(e.target.value)}
-                  placeholder="https://internal.site/talking-points/..."
+                  placeholder={placeholder}
                   className="w-full pl-10 pr-3 py-2.5 bg-zinc-800/50 border border-zinc-700/50 text-sm text-white placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-cyan-500/50 focus:border-cyan-500/50 transition-colors"
                 />
               </div>
@@ -178,4 +184,4 @@ const TalkingPointsModal: React.FC<TalkingPointsModalProps> = ({
   );
 };
 
-export default TalkingPointsModal;
+export default LinkModal;

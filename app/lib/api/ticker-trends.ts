@@ -54,6 +54,7 @@ const mockHotTickers: HotTicker[] = [
     aum: { competitor: '82B', dfa: '14B' },
     notes: 'IJR tracks S&P 600 which has profitability screens. DFAS has deeper small-cap exposure with value/profitability tilts. Key differentiator is factor exposure, not just market cap.',
     talkingPointsUrl: 'https://internal.dfa.com/talking-points/ijr-vs-dfas',
+    pcrUrl: 'https://internal.dfa.com/pcr/ijr-vs-dfas',
   },
   {
     rank: 2,
@@ -69,6 +70,7 @@ const mockHotTickers: HotTicker[] = [
     aum: { competitor: '428B', dfa: '32B' },
     notes: 'DFUS provides broader market exposure with systematic factor tilts. Similar large-cap core exposure but with DFA\'s research-driven approach.',
     talkingPointsUrl: 'https://internal.dfa.com/talking-points/voo-vs-dfus',
+    pcrUrl: 'https://internal.dfa.com/pcr/voo-vs-dfus',
   },
   {
     rank: 3,
@@ -84,6 +86,7 @@ const mockHotTickers: HotTicker[] = [
     aum: { competitor: '389B', dfa: '32B' },
     notes: '',
     talkingPointsUrl: 'https://internal.dfa.com/talking-points/vti-vs-dfus',
+    pcrUrl: '',
   },
   {
     rank: 4,
@@ -99,6 +102,7 @@ const mockHotTickers: HotTicker[] = [
     aum: { competitor: '67B', dfa: '12B' },
     notes: 'Can be used alongside DFAI for broader international coverage. DFAI provides factor tilts while VXUS offers pure market-cap weighting.',
     talkingPointsUrl: '',
+    pcrUrl: '',
   },
   {
     rank: 5,
@@ -114,6 +118,7 @@ const mockHotTickers: HotTicker[] = [
     aum: { competitor: '108B', dfa: '8B' },
     notes: '',
     talkingPointsUrl: 'https://internal.dfa.com/talking-points/bnd-vs-dfcf',
+    pcrUrl: 'https://internal.dfa.com/pcr/bnd-vs-dfcf',
   },
   {
     rank: 6,
@@ -129,6 +134,7 @@ const mockHotTickers: HotTicker[] = [
     aum: { competitor: '142B', dfa: '12B' },
     notes: '',
     talkingPointsUrl: '',
+    pcrUrl: '',
   },
   {
     rank: 7,
@@ -144,6 +150,7 @@ const mockHotTickers: HotTicker[] = [
     aum: { competitor: '56B', dfa: '9B' },
     notes: 'SCHD focuses on dividend growth quality. DFLV uses value/profitability factors. Different approaches - dividend yield vs systematic value exposure.',
     talkingPointsUrl: 'https://internal.dfa.com/talking-points/schd-vs-dflv',
+    pcrUrl: 'https://internal.dfa.com/pcr/schd-vs-dflv',
   },
   {
     rank: 8,
@@ -159,6 +166,7 @@ const mockHotTickers: HotTicker[] = [
     aum: { competitor: '82B', dfa: '6B' },
     notes: '',
     talkingPointsUrl: 'https://internal.dfa.com/talking-points/vwo-vs-dfae',
+    pcrUrl: '',
   },
   {
     rank: 9,
@@ -174,6 +182,7 @@ const mockHotTickers: HotTicker[] = [
     aum: { competitor: '98B', dfa: '6B' },
     notes: '',
     talkingPointsUrl: '',
+    pcrUrl: '',
   },
   {
     rank: 10,
@@ -189,6 +198,7 @@ const mockHotTickers: HotTicker[] = [
     aum: { competitor: '245B', dfa: '32B' },
     notes: 'QQQ is Nasdaq-100 concentrated in tech. No direct DFA equivalent. DFUS is diversified core. Different risk profiles - sector bet vs broad market.',
     talkingPointsUrl: 'https://internal.dfa.com/talking-points/qqq-vs-dfus',
+    pcrUrl: 'https://internal.dfa.com/pcr/qqq-vs-dfus',
   },
 ];
 
@@ -317,5 +327,31 @@ export async function updateHotTickerTalkingPoints(
     success: true,
     ticker,
     talkingPointsUrl,
+  };
+}
+
+/**
+ * Update the PCR URL for a hot ticker
+ * Returns the updated ticker on success
+ */
+export async function updateHotTickerPCR(
+  ticker: string,
+  pcrUrl: string
+): Promise<{ success: boolean; ticker: string; pcrUrl: string }> {
+  if (SIMULATED_DELAY) await delay(SIMULATED_DELAY);
+
+  // In production, this would be:
+  // const response = await fetch(`${API_BASE_URL}/ticker-trends/hot-tickers/${ticker}/pcr`, {
+  //   method: 'PATCH',
+  //   headers: { 'Content-Type': 'application/json' },
+  //   body: JSON.stringify({ pcrUrl }),
+  // });
+  // return response.json();
+
+  // Mock implementation - just return success
+  return {
+    success: true,
+    ticker,
+    pcrUrl,
   };
 }
