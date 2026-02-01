@@ -53,7 +53,7 @@ const mockHotTickers: HotTicker[] = [
     expenseRatio: { competitor: 0.06, dfa: 0.27 },
     aum: { competitor: '82B', dfa: '14B' },
     notes: 'IJR tracks S&P 600 which has profitability screens. DFAS has deeper small-cap exposure with value/profitability tilts. Key differentiator is factor exposure, not just market cap.',
-    hasTalkingPoints: true,
+    talkingPointsUrl: 'https://internal.dfa.com/talking-points/ijr-vs-dfas',
   },
   {
     rank: 2,
@@ -68,7 +68,7 @@ const mockHotTickers: HotTicker[] = [
     expenseRatio: { competitor: 0.03, dfa: 0.12 },
     aum: { competitor: '428B', dfa: '32B' },
     notes: 'DFUS provides broader market exposure with systematic factor tilts. Similar large-cap core exposure but with DFA\'s research-driven approach.',
-    hasTalkingPoints: true,
+    talkingPointsUrl: 'https://internal.dfa.com/talking-points/voo-vs-dfus',
   },
   {
     rank: 3,
@@ -83,7 +83,7 @@ const mockHotTickers: HotTicker[] = [
     expenseRatio: { competitor: 0.03, dfa: 0.12 },
     aum: { competitor: '389B', dfa: '32B' },
     notes: '',
-    hasTalkingPoints: true,
+    talkingPointsUrl: 'https://internal.dfa.com/talking-points/vti-vs-dfus',
   },
   {
     rank: 4,
@@ -98,7 +98,7 @@ const mockHotTickers: HotTicker[] = [
     expenseRatio: { competitor: 0.08, dfa: 0.18 },
     aum: { competitor: '67B', dfa: '12B' },
     notes: 'Can be used alongside DFAI for broader international coverage. DFAI provides factor tilts while VXUS offers pure market-cap weighting.',
-    hasTalkingPoints: false,
+    talkingPointsUrl: '',
   },
   {
     rank: 5,
@@ -113,7 +113,7 @@ const mockHotTickers: HotTicker[] = [
     expenseRatio: { competitor: 0.03, dfa: 0.15 },
     aum: { competitor: '108B', dfa: '8B' },
     notes: '',
-    hasTalkingPoints: true,
+    talkingPointsUrl: 'https://internal.dfa.com/talking-points/bnd-vs-dfcf',
   },
   {
     rank: 6,
@@ -128,7 +128,7 @@ const mockHotTickers: HotTicker[] = [
     expenseRatio: { competitor: 0.06, dfa: 0.18 },
     aum: { competitor: '142B', dfa: '12B' },
     notes: '',
-    hasTalkingPoints: false,
+    talkingPointsUrl: '',
   },
   {
     rank: 7,
@@ -143,7 +143,7 @@ const mockHotTickers: HotTicker[] = [
     expenseRatio: { competitor: 0.06, dfa: 0.22 },
     aum: { competitor: '56B', dfa: '9B' },
     notes: 'SCHD focuses on dividend growth quality. DFLV uses value/profitability factors. Different approaches - dividend yield vs systematic value exposure.',
-    hasTalkingPoints: true,
+    talkingPointsUrl: 'https://internal.dfa.com/talking-points/schd-vs-dflv',
   },
   {
     rank: 8,
@@ -158,7 +158,7 @@ const mockHotTickers: HotTicker[] = [
     expenseRatio: { competitor: 0.08, dfa: 0.21 },
     aum: { competitor: '82B', dfa: '6B' },
     notes: '',
-    hasTalkingPoints: true,
+    talkingPointsUrl: 'https://internal.dfa.com/talking-points/vwo-vs-dfae',
   },
   {
     rank: 9,
@@ -173,7 +173,7 @@ const mockHotTickers: HotTicker[] = [
     expenseRatio: { competitor: 0.03, dfa: 0.15 },
     aum: { competitor: '98B', dfa: '6B' },
     notes: '',
-    hasTalkingPoints: false,
+    talkingPointsUrl: '',
   },
   {
     rank: 10,
@@ -188,7 +188,7 @@ const mockHotTickers: HotTicker[] = [
     expenseRatio: { competitor: 0.20, dfa: 0.12 },
     aum: { competitor: '245B', dfa: '32B' },
     notes: 'QQQ is Nasdaq-100 concentrated in tech. No direct DFA equivalent. DFUS is diversified core. Different risk profiles - sector bet vs broad market.',
-    hasTalkingPoints: true,
+    talkingPointsUrl: 'https://internal.dfa.com/talking-points/qqq-vs-dfus',
   },
 ];
 
@@ -291,5 +291,31 @@ export async function updateHotTickerNotes(
     success: true,
     ticker,
     notes,
+  };
+}
+
+/**
+ * Update the talking points URL for a hot ticker
+ * Returns the updated ticker on success
+ */
+export async function updateHotTickerTalkingPoints(
+  ticker: string,
+  talkingPointsUrl: string
+): Promise<{ success: boolean; ticker: string; talkingPointsUrl: string }> {
+  if (SIMULATED_DELAY) await delay(SIMULATED_DELAY);
+
+  // In production, this would be:
+  // const response = await fetch(`${API_BASE_URL}/ticker-trends/hot-tickers/${ticker}/talking-points`, {
+  //   method: 'PATCH',
+  //   headers: { 'Content-Type': 'application/json' },
+  //   body: JSON.stringify({ talkingPointsUrl }),
+  // });
+  // return response.json();
+
+  // Mock implementation - just return success
+  return {
+    success: true,
+    ticker,
+    talkingPointsUrl,
   };
 }

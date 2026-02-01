@@ -7,6 +7,7 @@ import {
   getTickerTrendsFilterOptions,
   updateHotTickerType,
   updateHotTickerNotes,
+  updateHotTickerTalkingPoints,
   TICKER_TYPE_OPTIONS,
   type FilterOptions,
   type TickerType,
@@ -14,6 +15,7 @@ import {
 import type { HotTicker } from '@/app/lib/types/trends';
 import DashboardHeader from '@/app/components/DashboardHeader';
 import TickerNotesModal from '@/app/components/pages/shared/TickerNotesModal';
+import TalkingPointsModal from '@/app/components/pages/shared/TalkingPointsModal';
 
 export default function TickerTrendsDashboard() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -37,8 +39,9 @@ export default function TickerTrendsDashboard() {
   const [openTypeDropdown, setOpenTypeDropdown] = useState<string | null>(null);
   const typeDropdownRef = useRef<HTMLDivElement>(null);
 
-  // Notes modal state
+  // Modal state
   const [notesModalTicker, setNotesModalTicker] = useState<HotTicker | null>(null);
+  const [talkingPointsModalTicker, setTalkingPointsModalTicker] = useState<HotTicker | null>(null);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -128,6 +131,26 @@ export default function TickerTrendsDashboard() {
     } catch (err) {
       // Rollback on error
       console.error('Failed to update ticker notes:', err);
+      setHotTickers(previousTickers);
+    }
+  }, [hotTickers]);
+
+  // Optimistic update for talking points URL
+  const handleTalkingPointsChange = useCallback(async (ticker: string, talkingPointsUrl: string) => {
+    // Store previous state for rollback
+    const previousTickers = hotTickers;
+
+    // Optimistically update the UI
+    setHotTickers((prev) =>
+      prev.map((t) => (t.ticker === ticker ? { ...t, talkingPointsUrl } : t))
+    );
+
+    try {
+      // Send update to API
+      await updateHotTickerTalkingPoints(ticker, talkingPointsUrl);
+    } catch (err) {
+      // Rollback on error
+      console.error('Failed to update talking points:', err);
       setHotTickers(previousTickers);
     }
   }, [hotTickers]);
@@ -332,13 +355,17 @@ export default function TickerTrendsDashboard() {
                           </button>
                         </td>
                         <td className="px-4 py-3 text-center">
-                          {ticker.hasTalkingPoints ? (
-                            <button className="p-1.5 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 transition-colors" title="View talking points">
-                              <ExternalLink className="w-4 h-4" />
-                            </button>
-                          ) : (
-                            <span className="text-zinc-600 text-xs">—</span>
-                          )}
+                          <button
+                            onClick={() => setTalkingPointsModalTicker(ticker)}
+                            className={`p-1.5 transition-colors ${
+                              ticker.talkingPointsUrl
+                                ? 'bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400'
+                                : 'bg-zinc-800/50 hover:bg-zinc-700/50 text-zinc-500 hover:text-zinc-300'
+                            }`}
+                            title={ticker.talkingPointsUrl ? 'View/edit talking points link' : 'Add talking points link'}
+                          >
+                            <ExternalLink className="w-4 h-4" />
+                          </button>
                         </td>
                         <td className="px-4 py-3 text-center">
                           <button
@@ -371,6 +398,16 @@ export default function TickerTrendsDashboard() {
         tickerName={notesModalTicker?.name ?? ''}
         currentNotes={notesModalTicker?.notes ?? ''}
         onSave={handleNotesChange}
+      />
+
+      {/* Talking Points Modal */}
+      <TalkingPointsModal
+        isOpen={talkingPointsModalTicker !== null}
+        onClose={() => setTalkingPointsModalTicker(null)}
+        ticker={talkingPointsModalTicker?.ticker ?? ''}
+        tickerName={talkingPointsModalTicker?.name ?? ''}
+        currentUrl={talkingPointsModalTicker?.talkingPointsUrl ?? ''}
+        onSave={handleTalkingPointsChange}
       />
     </>
   );

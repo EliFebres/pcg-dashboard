@@ -36,7 +36,7 @@ export const hotTickers: HotTicker[] = [
     expenseRatio: { competitor: 0.06, dfa: 0.27 },
     aum: { competitor: '82B', dfa: '14B' },
     notes: 'IJR tracks S&P 600 with profitability screens.',
-    hasTalkingPoints: true
+    talkingPointsUrl: 'https://internal.dfa.com/talking-points/ijr-vs-dfas',
   },
   {
     rank: 2,
@@ -51,7 +51,7 @@ export const hotTickers: HotTicker[] = [
     expenseRatio: { competitor: 0.03, dfa: 0.12 },
     aum: { competitor: '428B', dfa: '32B' },
     notes: 'DFUS provides broader market exposure with factor tilts.',
-    hasTalkingPoints: true
+    talkingPointsUrl: 'https://internal.dfa.com/talking-points/voo-vs-dfus',
   },
   {
     rank: 3,
@@ -66,7 +66,7 @@ export const hotTickers: HotTicker[] = [
     expenseRatio: { competitor: 0.03, dfa: 0.12 },
     aum: { competitor: '389B', dfa: '32B' },
     notes: '',
-    hasTalkingPoints: true
+    talkingPointsUrl: 'https://internal.dfa.com/talking-points/vti-vs-dfus',
   },
   {
     rank: 4,
@@ -81,7 +81,7 @@ export const hotTickers: HotTicker[] = [
     expenseRatio: { competitor: 0.08, dfa: 0.18 },
     aum: { competitor: '67B', dfa: '12B' },
     notes: 'Can complement DFAI for broader international coverage.',
-    hasTalkingPoints: false
+    talkingPointsUrl: '',
   },
   {
     rank: 5,
@@ -96,7 +96,7 @@ export const hotTickers: HotTicker[] = [
     expenseRatio: { competitor: 0.03, dfa: 0.15 },
     aum: { competitor: '108B', dfa: '8B' },
     notes: '',
-    hasTalkingPoints: true
+    talkingPointsUrl: 'https://internal.dfa.com/talking-points/bnd-vs-dfcf',
   },
   {
     rank: 6,
@@ -111,7 +111,7 @@ export const hotTickers: HotTicker[] = [
     expenseRatio: { competitor: 0.06, dfa: 0.18 },
     aum: { competitor: '142B', dfa: '12B' },
     notes: '',
-    hasTalkingPoints: false
+    talkingPointsUrl: '',
   },
 ];
 

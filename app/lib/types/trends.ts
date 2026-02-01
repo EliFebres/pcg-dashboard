@@ -38,7 +38,7 @@ export interface HotTicker {
     dfa: string;
   };
   notes: string;
-  hasTalkingPoints: boolean;
+  talkingPointsUrl: string;
 }
 
 export interface PopularDFATicker {
