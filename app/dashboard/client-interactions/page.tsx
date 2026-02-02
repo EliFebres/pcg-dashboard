@@ -472,6 +472,7 @@ export default function EngagementsDashboard() {
       portfolioLogged: data.portfolioLogged,
       nna: data.nna || undefined,
       notes: data.notes.trim() || undefined,
+      tickersMentioned: data.tickersMentioned && data.tickersMentioned.length > 0 ? data.tickersMentioned : undefined,
     };
 
     // Optimistically add to state (prepend so it appears first)
@@ -549,6 +550,7 @@ export default function EngagementsDashboard() {
         portfolioLogged: engagement.portfolioLogged,
         portfolio: engagement.portfolio,
         nna: engagement.nna || null,
+        tickersMentioned: engagement.tickersMentioned || [],
       },
       originalDateStarted: engagement.dateStarted, // Preserve exact original
       originalDateFinished: engagement.dateFinished, // Preserve exact original
@@ -595,6 +597,7 @@ export default function EngagementsDashboard() {
           portfolioLogged: data.portfolioLogged,
           portfolio: data.portfolio,
           nna: data.nna ?? undefined,
+          tickersMentioned: data.tickersMentioned && data.tickersMentioned.length > 0 ? data.tickersMentioned : undefined,
         };
       }
       return eng;

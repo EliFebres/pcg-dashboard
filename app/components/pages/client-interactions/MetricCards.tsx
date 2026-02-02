@@ -38,7 +38,7 @@ export default function MetricCards({ metrics, flippedCard, onCardEnter, onCardL
             >
               {/* Front Face */}
               <div
-                className={`absolute inset-0 overflow-visible bg-zinc-900/60 backdrop-blur-md border border-zinc-800/50 p-5 rounded-xl hover:border-zinc-700/50 transition-all duration-300 ${!isFlippable ? 'group hover:scale-[1.02] hover:-translate-y-1' : ''}`}
+                className="absolute inset-0 overflow-visible bg-zinc-900/60 backdrop-blur-md border border-zinc-800/50 p-5 rounded-xl hover:border-zinc-700/50 transition-all duration-300"
                 style={{ backfaceVisibility: 'hidden' }}
               >
                 <div className="absolute top-5 right-4 flex items-center gap-0.5">
