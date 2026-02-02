@@ -1,6 +1,7 @@
 # Client Interactions API Specification
 
 This document describes the API endpoints for the Client Interactions dashboard.
+Use this alongside `client-interactions.ts` to build the FastAPI backend.
 
 ## Base URL
 
@@ -23,59 +24,109 @@ The Client Interactions API provides endpoints for managing client engagement da
 3. **Efficient Pagination**: Large datasets are paginated to ensure fast initial load
 4. **Optimized Updates**: Dedicated endpoints for common updates (status, NNA, notes) to minimize payload size
 
+### Naming Convention
+
+**IMPORTANT**: The API uses `snake_case` for all JSON keys in requests and responses.
+The frontend automatically converts between `snake_case` (API) and `camelCase` (TypeScript) using the `toCamelCase()` helper.
+
+Example:
+- API sends: `{ "external_client": "Acme", "internal_client": { "gcg_department": "IAG" } }`
+- Frontend receives: `{ "externalClient": "Acme", "internalClient": { "gcgDepartment": "IAG" } }`
+
+---
+
+## Endpoints Summary
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/dashboard` | Fetch all dashboard data (initial load) |
+| GET | `/engagements` | Paginated engagements with filtering |
+| GET | `/metrics` | Dashboard metrics only |
+| GET | `/departments` | Department breakdown chart data |
+| GET | `/contribution` | Contribution heatmap data |
+| POST | `/engagements` | Create new engagement |
+| PATCH | `/engagements/:id` | Update engagement (partial) |
+| PATCH | `/engagements/:id/status` | Update status only |
+| PATCH | `/engagements/:id/nna` | Update NNA only |
+| PATCH | `/engagements/:id/notes` | Update notes only |
+| DELETE | `/engagements/:id` | Delete engagement |
+| GET | `/engagements/export` | Export to CSV |
+
 ---
 
 ## Endpoints
 
-### GET /dashboard
+### POST /dashboard
 
 Fetch all dashboard data in a single optimized call. This is the primary endpoint for initial page load.
 
-**Query Parameters:**
+**Why POST?** The request body contains complex filter arrays that are easier to handle as JSON body than URL parameters.
 
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `teamMember` | string | Filter by team member or office location |
-| `departments` | string[] | Multi-select department filter |
-| `intakeTypes` | string[] | Multi-select intake type filter |
-| `projectTypes` | string[] | Multi-select project type filter |
-| `period` | string | Time period: `1W`, `1M`, `3M`, `6M`, `YTD`, `1Y`, `ALL` |
-| `page` | number | Page number for engagements (default: 1) |
-| `pageSize` | number | Engagements per page (default: 50) |
+**Request Body:**
 
-**Response:**
+```json
+{
+  "period": "1Y",
+  "team_member": "Eli F.",
+  "departments": ["IAG", "Broker-Dealer"],
+  "intake_types": ["IRQ", "GRRF"],
+  "project_types": ["Meeting", "Data Request"],
+  "search": "Vanguard",
+  "status": "In Progress",
+  "page": 1,
+  "page_size": 50,
+  "sort_column": "date_started",
+  "sort_direction": "desc"
+}
+```
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `period` | string | No | Time period: `1W`, `1M`, `3M`, `6M`, `YTD`, `1Y`, `ALL`. Default: `1Y` |
+| `team_member` | string | No | Filter by team member name or office (`Austin Office`, `Charlotte Office`) |
+| `departments` | string[] | No | Multi-select: `IAG`, `Broker-Dealer`, `Institution` |
+| `intake_types` | string[] | No | Multi-select: `IRQ`, `GRRF`, `GCG Ad-Hoc` |
+| `project_types` | string[] | No | Multi-select: `Meeting`, `Follow-Up`, `Data Request`, `PCR`, `Other` |
+| `search` | string | No | Text search across client names, types, departments |
+| `status` | string | No | Filter by status: `In Progress`, `Pending`, `Completed` |
+| `page` | number | No | Page number for engagements (default: 1) |
+| `page_size` | number | No | Engagements per page (default: 50) |
+| `sort_column` | string | No | Column to sort by (e.g., `date_started`, `external_client`) |
+| `sort_direction` | string | No | `asc` or `desc` (default: `desc`) |
+
+**Response (200 OK):**
 
 ```json
 {
   "metrics": {
-    "clientProjects": {
+    "client_projects": {
       "count": 245,
-      "changePercent": 12,
-      "periodLabel": "YoY",
-      "intakeSourceBreakdown": {
-        "irqCount": 156,
-        "irqPercent": 64,
-        "grffCount": 89,
-        "grffPercent": 36,
-        "portfoliosLogged": 198,
-        "portfoliosTotal": 245,
-        "portfoliosPercent": 81
+      "change_percent": 12,
+      "period_label": "YoY",
+      "intake_source_breakdown": {
+        "irq_count": 156,
+        "irq_percent": 64,
+        "grff_count": 89,
+        "grff_percent": 36,
+        "portfolios_logged": 198,
+        "portfolios_total": 245,
+        "portfolios_percent": 81
       }
     },
-    "gcgAdHoc": {
+    "gcg_ad_hoc": {
       "count": 87,
-      "changePercent": 18,
-      "periodLabel": "YoY",
-      "intakeBreakdown": [
+      "change_percent": 18,
+      "period_label": "YoY",
+      "intake_breakdown": [
         { "intake": "In-Person", "count": 32, "percent": 37, "color": "#a5f3fc" },
         { "intake": "Email", "count": 41, "percent": 47, "color": "#22d3ee" },
         { "intake": "Teams", "count": 14, "percent": 16, "color": "#0e7490" }
       ]
     },
-    "inProgress": {
+    "in_progress": {
       "count": 23,
       "change": 2,
-      "sparklineData": [
+      "sparkline_data": [
         { "value": 18 }, { "value": 19 }, { "value": 21 },
         { "value": 20 }, { "value": 22 }, { "value": 21 },
         { "value": 21 }, { "value": 23 }
@@ -83,8 +134,8 @@ Fetch all dashboard data in a single optimized call. This is the primary endpoin
     },
     "nna": {
       "total": 2450000000,
-      "projectCount": 45,
-      "changePercent": 8,
+      "project_count": 45,
+      "change_percent": 8,
       "tiers": [
         { "label": "<$50M", "count": 28, "color": "#0e7490" },
         { "label": "$50-200M", "count": 12, "color": "#22d3ee" },
@@ -100,32 +151,51 @@ Fetch all dashboard data in a single optimized call. This is the primary endpoin
     ],
     "total": 245
   },
-  "contributionData": {
+  "contribution_data": {
     "weeks": [
       [
-        { "date": "2024-02-01", "level": 2, "count": 3, "projectCount": 2, "adHocCount": 1 },
-        ...
-      ],
-      ...
+        { "date": "2024-02-01", "level": 2, "count": 3, "project_count": 2, "ad_hoc_count": 1 },
+        { "date": "2024-02-02", "level": 0, "count": 0, "project_count": 0, "ad_hoc_count": 0 }
+      ]
     ],
-    "totalDays": 365,
-    "maxCount": 8
+    "total_days": 365,
+    "max_count": 8
   },
   "engagements": {
-    "engagements": [...],
+    "engagements": [
+      {
+        "id": 1234,
+        "external_client": "Vanguard Advisors",
+        "internal_client": {
+          "name": "Jennifer Martinez",
+          "gcg_department": "IAG"
+        },
+        "intake_type": "IRQ",
+        "ad_hoc_channel": null,
+        "type": "Meeting",
+        "team_members": ["Eli F.", "Sarah K."],
+        "department": "IAG",
+        "date_started": "Jan 15, 2025",
+        "date_finished": "Jan 20, 2025",
+        "status": "Completed",
+        "portfolio_logged": true,
+        "nna": 25000000,
+        "notes": "Client requested additional sector breakdowns."
+      }
+    ],
     "total": 332,
     "page": 1,
-    "pageSize": 50,
-    "hasMore": true
+    "page_size": 50,
+    "has_more": true
   },
-  "filterOptions": {
-    "teamMembers": ["All Team Members", "Austin Office", "Charlotte Office"],
-    "teamMemberGroups": [
+  "filter_options": {
+    "team_members": ["All Team Members", "Austin Office", "Charlotte Office"],
+    "team_member_groups": [
       { "label": "Office", "options": ["Austin Office", "Charlotte Office"] }
     ],
     "departments": ["Broker-Dealer", "IAG", "Institution"],
-    "intakeTypes": ["GCG Ad-Hoc", "GRRF", "IRQ"],
-    "projectTypes": ["Data Request", "Follow-Up", "Meeting", "Other", "PCR"],
+    "intake_types": ["GCG Ad-Hoc", "GRRF", "IRQ"],
+    "project_types": ["Data Request", "Follow-Up", "Meeting", "Other", "PCR"],
     "statuses": ["Completed", "In Progress", "On Hold"]
   }
 }
@@ -142,46 +212,51 @@ Fetch paginated engagements with filtering and sorting.
 | Parameter | Type | Description |
 |-----------|------|-------------|
 | `search` | string | Search across external client, internal client, intake type, project type |
-| `teamMember` | string | Filter by team member or office |
-| `departments` | string[] | Multi-select department filter |
-| `intakeTypes` | string[] | Multi-select intake type filter |
-| `projectTypes` | string[] | Multi-select project type filter |
+| `team_member` | string | Filter by team member or office |
+| `departments` | string[] | Multi-select department filter (repeat param for multiple) |
+| `intake_types` | string[] | Multi-select intake type filter (repeat param for multiple) |
+| `project_types` | string[] | Multi-select project type filter (repeat param for multiple) |
 | `period` | string | Time period filter |
 | `status` | string | Filter by status |
 | `page` | number | Page number (default: 1) |
-| `pageSize` | number | Results per page (default: 50) |
-| `sortColumn` | string | Column to sort by |
-| `sortDirection` | string | `asc` or `desc` |
+| `page_size` | number | Results per page (default: 50) |
+| `sort_column` | string | Column to sort by |
+| `sort_direction` | string | `asc` or `desc` |
 
-**Response:**
+**Example Request:**
+```
+GET /engagements?page=1&page_size=50&period=1Y&departments=IAG&departments=Broker-Dealer&sort_column=date_started&sort_direction=desc
+```
+
+**Response (200 OK):**
 
 ```json
 {
   "engagements": [
     {
       "id": 1234,
-      "externalClient": "Vanguard Advisors",
-      "internalClient": {
+      "external_client": "Vanguard Advisors",
+      "internal_client": {
         "name": "Jennifer Martinez",
-        "gcgDepartment": "IAG"
+        "gcg_department": "IAG"
       },
-      "intakeType": "IRQ",
-      "adHocChannel": null,
+      "intake_type": "IRQ",
+      "ad_hoc_channel": null,
       "type": "Meeting",
-      "teamMembers": ["Eli F.", "Sarah K."],
+      "team_members": ["Eli F.", "Sarah K."],
       "department": "IAG",
-      "dateStarted": "Jan 15, 2025",
-      "dateFinished": "Jan 20, 2025",
+      "date_started": "Jan 15, 2025",
+      "date_finished": "Jan 20, 2025",
       "status": "Completed",
-      "portfolioLogged": true,
+      "portfolio_logged": true,
       "nna": 25000000,
       "notes": "Client requested additional sector breakdowns."
     }
   ],
   "total": 332,
   "page": 1,
-  "pageSize": 50,
-  "hasMore": true
+  "page_size": 50,
+  "has_more": true
 }
 ```
 
@@ -191,16 +266,55 @@ Fetch paginated engagements with filtering and sorting.
 
 Fetch dashboard metrics only. Use for refreshing metrics without full reload.
 
-**Query Parameters:** Same filters as `/dashboard`
+**Query Parameters:** Same as POST `/dashboard` (as query params)
 
-**Response:**
+**Response (200 OK):**
 
 ```json
 {
-  "clientProjects": { ... },
-  "gcgAdHoc": { ... },
-  "inProgress": { ... },
-  "nna": { ... }
+  "client_projects": {
+    "count": 245,
+    "change_percent": 12,
+    "period_label": "YoY",
+    "intake_source_breakdown": {
+      "irq_count": 156,
+      "irq_percent": 64,
+      "grff_count": 89,
+      "grff_percent": 36,
+      "portfolios_logged": 198,
+      "portfolios_total": 245,
+      "portfolios_percent": 81
+    }
+  },
+  "gcg_ad_hoc": {
+    "count": 87,
+    "change_percent": 18,
+    "period_label": "YoY",
+    "intake_breakdown": [
+      { "intake": "In-Person", "count": 32, "percent": 37, "color": "#a5f3fc" },
+      { "intake": "Email", "count": 41, "percent": 47, "color": "#22d3ee" },
+      { "intake": "Teams", "count": 14, "percent": 16, "color": "#0e7490" }
+    ]
+  },
+  "in_progress": {
+    "count": 23,
+    "change": 2,
+    "sparkline_data": [
+      { "value": 18 }, { "value": 19 }, { "value": 21 },
+      { "value": 20 }, { "value": 22 }, { "value": 21 },
+      { "value": 21 }, { "value": 23 }
+    ]
+  },
+  "nna": {
+    "total": 2450000000,
+    "project_count": 45,
+    "change_percent": 8,
+    "tiers": [
+      { "label": "<$50M", "count": 28, "color": "#0e7490" },
+      { "label": "$50-200M", "count": 12, "color": "#22d3ee" },
+      { "label": "$200M+", "count": 5, "color": "#39FF14" }
+    ]
+  }
 }
 ```
 
@@ -210,9 +324,9 @@ Fetch dashboard metrics only. Use for refreshing metrics without full reload.
 
 Fetch department breakdown for the chart.
 
-**Query Parameters:** Same filters as `/dashboard`
+**Query Parameters:** Same filter params as `/dashboard`
 
-**Response:**
+**Response (200 OK):**
 
 ```json
 {
@@ -227,31 +341,43 @@ Fetch department breakdown for the chart.
 
 ---
 
-### GET /contribution-data
+### GET /contribution
 
-Fetch contribution heatmap data.
+Fetch contribution heatmap data (GitHub-style activity graph).
 
-**Query Parameters:** Same filters as `/dashboard`
+**Query Parameters:** Same filter params as `/dashboard`
 
-**Response:**
+**Response (200 OK):**
 
 ```json
 {
   "weeks": [
     [
       {
-        "date": "2024-02-01T00:00:00.000Z",
+        "date": "2024-02-01",
         "level": 2,
         "count": 3,
-        "projectCount": 2,
-        "adHocCount": 1
+        "project_count": 2,
+        "ad_hoc_count": 1
+      },
+      {
+        "date": "2024-02-02",
+        "level": 0,
+        "count": 0,
+        "project_count": 0,
+        "ad_hoc_count": 0
       }
     ]
   ],
-  "totalDays": 365,
-  "maxCount": 8
+  "total_days": 365,
+  "max_count": 8
 }
 ```
+
+**Level Calculation:**
+- `level` is 0-4 based on count relative to max_count
+- 0 = no activity, 4 = highest activity
+- Used for heatmap cell coloring
 
 ---
 
@@ -263,47 +389,110 @@ Create a new engagement.
 
 ```json
 {
-  "externalClient": "Vanguard Advisors",
-  "internalClient": {
+  "external_client": "Vanguard Advisors",
+  "internal_client": {
     "name": "Jennifer Martinez",
-    "gcgDepartment": "IAG"
+    "gcg_department": "IAG"
   },
-  "intakeType": "IRQ",
-  "adHocChannel": null,
+  "intake_type": "IRQ",
+  "ad_hoc_channel": null,
   "type": "Meeting",
-  "teamMembers": ["Eli F.", "Sarah K."],
-  "department": "IAG",
-  "dateStarted": "Jan 28, 2025",
-  "dateFinished": "—",
+  "team_members": ["Eli F.", "Sarah K."],
+  "date_started": "Jan 28, 2025",
+  "date_finished": "—",
   "status": "In Progress",
-  "portfolioLogged": false,
+  "portfolio_logged": false,
+  "portfolio": null,
   "nna": null,
   "notes": null
 }
 ```
 
-**Response:** The created engagement with assigned `id`
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `external_client` | string \| null | No | External client company name |
+| `internal_client` | object | **Yes** | `{ name: string, gcg_department: string }` |
+| `intake_type` | string | **Yes** | `IRQ`, `GRRF`, or `GCG Ad-Hoc` |
+| `ad_hoc_channel` | string \| null | Conditional | Required if `intake_type` is `GCG Ad-Hoc`: `In-Person`, `Email`, `Teams` |
+| `type` | string | **Yes** | `Meeting`, `Follow-Up`, `Data Request`, `PCR`, `Other` |
+| `team_members` | string[] | **Yes** | Array of team member names |
+| `date_started` | string | **Yes** | Formatted date: `"Jan 28, 2025"` |
+| `date_finished` | string | **Yes** | Formatted date or `"—"` if not finished |
+| `status` | string | **Yes** | `In Progress`, `Pending`, or `Completed` |
+| `portfolio_logged` | boolean | **Yes** | Whether portfolio was logged |
+| `portfolio` | array \| null | No | Portfolio holdings array |
+| `nna` | number \| null | No | Net New Assets in dollars |
+| `notes` | string \| null | No | Optional notes |
+
+**Response (201 Created):**
+
+```json
+{
+  "id": 1234,
+  "external_client": "Vanguard Advisors",
+  "internal_client": {
+    "name": "Jennifer Martinez",
+    "gcg_department": "IAG"
+  },
+  "intake_type": "IRQ",
+  "ad_hoc_channel": null,
+  "type": "Meeting",
+  "team_members": ["Eli F.", "Sarah K."],
+  "department": "IAG",
+  "date_started": "Jan 28, 2025",
+  "date_finished": "—",
+  "status": "In Progress",
+  "portfolio_logged": false,
+  "nna": null,
+  "notes": null
+}
+```
+
+**Note:** The `department` field is derived from `internal_client.gcg_department` on the backend.
 
 ---
 
 ### PATCH /engagements/:id
 
-Update an existing engagement.
+Update an existing engagement with partial data.
 
 **URL Parameters:**
-- `id`: Engagement ID
+- `id`: Engagement ID (number)
 
-**Request Body:** Partial engagement object with fields to update
+**Request Body:** Only include fields to update
 
 ```json
 {
   "status": "Completed",
-  "dateFinished": "Jan 31, 2025",
-  "portfolioLogged": true
+  "date_finished": "Jan 31, 2025",
+  "portfolio_logged": true,
+  "nna": 25000000
 }
 ```
 
-**Response:** The updated engagement
+**Response (200 OK):** The full updated engagement object
+
+```json
+{
+  "id": 1234,
+  "external_client": "Vanguard Advisors",
+  "internal_client": {
+    "name": "Jennifer Martinez",
+    "gcg_department": "IAG"
+  },
+  "intake_type": "IRQ",
+  "ad_hoc_channel": null,
+  "type": "Meeting",
+  "team_members": ["Eli F.", "Sarah K."],
+  "department": "IAG",
+  "date_started": "Jan 28, 2025",
+  "date_finished": "Jan 31, 2025",
+  "status": "Completed",
+  "portfolio_logged": true,
+  "nna": 25000000,
+  "notes": null
+}
+```
 
 ---
 
@@ -312,7 +501,7 @@ Update an existing engagement.
 Optimized endpoint for status updates only.
 
 **URL Parameters:**
-- `id`: Engagement ID
+- `id`: Engagement ID (number)
 
 **Request Body:**
 
@@ -322,15 +511,19 @@ Optimized endpoint for status updates only.
 }
 ```
 
-**Response:**
+**Response (200 OK):**
 
 ```json
 {
   "id": 1234,
   "status": "Completed",
-  "dateFinished": "Jan 31, 2025"
+  "date_finished": "Jan 31, 2025"
 }
 ```
+
+**Backend Logic:**
+- When `status` changes to `"Completed"`, automatically set `date_finished` to today's date
+- Return both fields so frontend can update UI
 
 ---
 
@@ -339,7 +532,7 @@ Optimized endpoint for status updates only.
 Optimized endpoint for NNA updates only.
 
 **URL Parameters:**
-- `id`: Engagement ID
+- `id`: Engagement ID (number)
 
 **Request Body:**
 
@@ -349,7 +542,14 @@ Optimized endpoint for NNA updates only.
 }
 ```
 
-**Response:**
+To clear NNA:
+```json
+{
+  "nna": null
+}
+```
+
+**Response (200 OK):**
 
 ```json
 {
@@ -365,7 +565,7 @@ Optimized endpoint for NNA updates only.
 Optimized endpoint for notes updates only.
 
 **URL Parameters:**
-- `id`: Engagement ID
+- `id`: Engagement ID (number)
 
 **Request Body:**
 
@@ -375,7 +575,14 @@ Optimized endpoint for notes updates only.
 }
 ```
 
-**Response:**
+To clear notes:
+```json
+{
+  "notes": null
+}
+```
+
+**Response (200 OK):**
 
 ```json
 {
@@ -388,12 +595,19 @@ Optimized endpoint for notes updates only.
 
 ### DELETE /engagements/:id
 
-Delete an engagement.
+Delete an engagement permanently.
 
 **URL Parameters:**
-- `id`: Engagement ID
+- `id`: Engagement ID (number)
 
-**Response:** `204 No Content`
+**Response:** `204 No Content` (empty body)
+
+**Error Response (404):**
+```json
+{
+  "detail": "Engagement not found"
+}
+```
 
 ---
 
@@ -401,14 +615,18 @@ Delete an engagement.
 
 Export filtered engagements as CSV.
 
-**Query Parameters:** Same filters as `/engagements`
+**Query Parameters:** Same as GET `/engagements` (excluding pagination)
 
-**Response:** CSV file download
-
-**Headers:**
+**Response Headers:**
 ```
 Content-Type: text/csv
 Content-Disposition: attachment; filename="client-interactions-export.csv"
+```
+
+**Response Body (CSV):**
+```csv
+ID,External Client,Internal Client,Department,Intake Type,Ad Hoc Channel,Type,Team Members,Date Started,Date Finished,Status,Portfolio Logged,NNA,Notes
+1234,"Vanguard Advisors","Jennifer Martinez","IAG","IRQ","","Meeting","Eli F., Sarah K.","Jan 15, 2025","Jan 20, 2025","Completed",true,25000000,"Client notes here"
 ```
 
 ---
@@ -419,37 +637,82 @@ Content-Disposition: attachment; filename="client-interactions-export.csv"
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `id` | number | Unique identifier |
-| `externalClient` | string \| null | External client company name (optional) |
-| `internalClient` | InternalClient | GCG contact/relationship owner |
-| `intakeType` | string | `IRQ`, `GRRF`, or `GCG Ad-Hoc` |
-| `adHocChannel` | string \| null | `In-Person`, `Email`, or `Teams` (only for GCG Ad-Hoc) |
+| `id` | number | Unique identifier (auto-generated) |
+| `external_client` | string \| null | External client company name (optional) |
+| `internal_client` | InternalClient | GCG contact/relationship owner |
+| `intake_type` | string | `IRQ`, `GRRF`, or `GCG Ad-Hoc` |
+| `ad_hoc_channel` | string \| null | `In-Person`, `Email`, or `Teams` (only for GCG Ad-Hoc) |
 | `type` | string | Project type: `Meeting`, `Follow-Up`, `Data Request`, `PCR`, `Other` |
-| `teamMembers` | string[] | Array of team member names |
-| `department` | string | Department derived from internal client |
-| `dateStarted` | string | Formatted date string (e.g., "Jan 15, 2025") |
-| `dateFinished` | string | Formatted date string or "—" if not finished |
+| `team_members` | string[] | Array of team member names |
+| `department` | string | Derived from `internal_client.gcg_department` |
+| `date_started` | string | Formatted date (e.g., `"Jan 15, 2025"`) |
+| `date_finished` | string | Formatted date or `"—"` if not finished |
 | `status` | string | `In Progress`, `Completed`, or `On Hold` |
-| `portfolioLogged` | boolean | Whether a portfolio was logged |
-| `nna` | number \| undefined | Net New Assets in dollars |
-| `notes` | string \| undefined | Optional notes |
+| `portfolio_logged` | boolean | Whether a portfolio was logged |
+| `portfolio` | PortfolioHolding[] \| null | Optional portfolio holdings |
+| `nna` | number \| null | Net New Assets in dollars |
+| `notes` | string \| null | Optional notes |
 
 ### InternalClient
 
 | Field | Type | Description |
 |-------|------|-------------|
 | `name` | string | Contact name |
-| `gcgDepartment` | string | `IAG`, `Broker-Dealer`, or `Institution` |
+| `gcg_department` | string | `IAG`, `Broker-Dealer`, or `Institution` |
+
+### PortfolioHolding
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `identifier` | string | Ticker, ISIN, or CUSIP |
+| `asset_class` | string | `Equity`, `Fixed Income`, or `Alternatives` |
+| `weight` | number | Normalized weight (0-1, sums to 1) |
 
 ### DayData (Contribution Heatmap)
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `date` | Date | The date |
+| `date` | string | ISO date string (e.g., `"2024-02-01"`) |
 | `level` | number | Activity level 0-4 for heatmap coloring |
 | `count` | number | Total engagements on this day |
-| `projectCount` | number | Project engagements (IRQ/GRRF) |
-| `adHocCount` | number | GCG Ad-Hoc engagements |
+| `project_count` | number | Project engagements (IRQ/GRRF) |
+| `ad_hoc_count` | number | GCG Ad-Hoc engagements |
+
+### IntakeBreakdown
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `intake` | string | Channel name: `In-Person`, `Email`, `Teams` |
+| `count` | number | Number of engagements |
+| `percent` | number | Percentage of total (0-100) |
+| `color` | string | Hex color for chart |
+
+### NNATier
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `label` | string | Tier label: `<$50M`, `$50-200M`, `$200M+` |
+| `count` | number | Number of engagements in tier |
+| `color` | string | Hex color for chart |
+
+---
+
+## Error Handling
+
+All endpoints return errors in this format:
+
+```json
+{
+  "detail": "Error message here"
+}
+```
+
+| Status Code | Meaning |
+|-------------|---------|
+| 400 | Bad Request - Invalid parameters |
+| 404 | Not Found - Resource doesn't exist |
+| 422 | Unprocessable Entity - Validation failed |
+| 500 | Internal Server Error |
 
 ---
 
@@ -457,7 +720,7 @@ Content-Disposition: attachment; filename="client-interactions-export.csv"
 
 ### Initial Load
 
-Use the `/dashboard` endpoint for initial page load. This single request returns:
+Use the POST `/dashboard` endpoint for initial page load. This single request returns:
 - Pre-computed metrics for all 4 metric cards
 - Department breakdown for the chart
 - Contribution heatmap data
@@ -470,16 +733,50 @@ This eliminates multiple round-trips and allows parallel rendering of all dashbo
 
 | Action | Recommended Endpoint |
 |--------|---------------------|
-| Filter change | `/dashboard` with new filters |
-| Table pagination | `/engagements` with page parameter |
-| Status update | `/engagements/:id/status` |
-| NNA update | `/engagements/:id/nna` |
-| Notes update | `/engagements/:id/notes` |
-| Full engagement edit | `/engagements/:id` (PATCH) |
+| Filter change | POST `/dashboard` with new filters |
+| Table pagination | GET `/engagements` with page parameter |
+| Status update | PATCH `/engagements/:id/status` |
+| NNA update | PATCH `/engagements/:id/nna` |
+| Notes update | PATCH `/engagements/:id/notes` |
+| Full engagement edit | PATCH `/engagements/:id` |
 
 ### Caching Recommendations
 
-- Filter options: Cache for session duration
-- Department colors: Static, can be hardcoded
-- Contribution data: Cache for 5 minutes, invalidate on engagement create/update
-- Metrics: Cache for 1 minute, invalidate on engagement changes
+- **Filter options**: Cache for session duration (rarely changes)
+- **Department colors**: Static, can be hardcoded
+- **Contribution data**: Cache for 5 minutes, invalidate on engagement create/update
+- **Metrics**: Cache for 1 minute, invalidate on engagement changes
+
+---
+
+## Team Member Filtering
+
+The team member filter supports these values:
+
+| Value | Description |
+|-------|-------------|
+| `"All Team Members"` | No team member filter |
+| `"Austin Office"` | Filter to Austin office members |
+| `"Charlotte Office"` | Filter to Charlotte office members |
+| `"Eli F."` | Filter to specific team member |
+
+**Privacy Note**: The frontend only shows "All Team Members" and the current user. Users cannot filter by other team members' individual activity.
+
+---
+
+## Frontend Integration
+
+The `client-interactions.ts` file handles:
+
+1. **Toggle**: Set `USE_REAL_API = true` to use real API, `false` for mock data
+2. **Base URL**: Set via `NEXT_PUBLIC_API_URL` env var (default: `http://localhost:8000/api`)
+3. **Case conversion**: Automatic `snake_case` ↔ `camelCase` conversion
+4. **Error handling**: Throws Error with message from `detail` field
+
+```typescript
+// Enable real API
+const USE_REAL_API = true;
+
+// Environment variable
+NEXT_PUBLIC_API_URL=http://localhost:8000/api
+```
