@@ -20,8 +20,16 @@ interface EditableHolding {
 
 const ASSET_CLASSES: AssetClass[] = ['Equity', 'Fixed Income', 'Alternatives'];
 
+// Fallback for environments where crypto.randomUUID isn't available
+const generateId = (): string => {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
+  return `${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
+};
+
 const createEmptyRow = (): EditableHolding => ({
-  id: crypto.randomUUID(),
+  id: generateId(),
   identifier: '',
   assetClass: '',
   weight: '',
@@ -44,7 +52,7 @@ const PortfolioModal: React.FC<PortfolioModalProps> = ({
       if (currentPortfolio && currentPortfolio.length > 0) {
         setHoldings(
           currentPortfolio.map((h) => ({
-            id: crypto.randomUUID(),
+            id: generateId(),
             identifier: h.identifier,
             assetClass: h.assetClass,
             weight: (h.weight * 100).toFixed(2), // Convert to percentage for display
@@ -142,7 +150,7 @@ const PortfolioModal: React.FC<PortfolioModalProps> = ({
         }
 
         newHoldings.push({
-          id: crypto.randomUUID(),
+          id: generateId(),
           identifier,
           assetClass,
           weight: weightStr.replace('%', '').trim(),
