@@ -170,8 +170,8 @@ Fetch all dashboard data in a single optimized call. This is the primary endpoin
           "name": "Jennifer Martinez",
           "gcg_department": "IAG"
         },
-        "intake_type": "IRQ",
-        "ad_hoc_channel": null,
+        "intake_type": "GCG Ad-Hoc",
+        "ad_hoc_channel": "In-Person",
         "type": "Meeting",
         "team_members": ["Eli F.", "Sarah K."],
         "department": "IAG",
@@ -180,7 +180,8 @@ Fetch all dashboard data in a single optimized call. This is the primary endpoin
         "status": "Completed",
         "portfolio_logged": true,
         "nna": 25000000,
-        "notes": "Client requested additional sector breakdowns."
+        "notes": "Client requested additional sector breakdowns.",
+        "tickers_mentioned": ["AAPL", "MSFT"]
       }
     ],
     "total": 332,
@@ -240,8 +241,8 @@ GET /engagements?page=1&page_size=50&period=1Y&departments=IAG&departments=Broke
         "name": "Jennifer Martinez",
         "gcg_department": "IAG"
       },
-      "intake_type": "IRQ",
-      "ad_hoc_channel": null,
+      "intake_type": "GCG Ad-Hoc",
+      "ad_hoc_channel": "In-Person",
       "type": "Meeting",
       "team_members": ["Eli F.", "Sarah K."],
       "department": "IAG",
@@ -250,7 +251,8 @@ GET /engagements?page=1&page_size=50&period=1Y&departments=IAG&departments=Broke
       "status": "Completed",
       "portfolio_logged": true,
       "nna": 25000000,
-      "notes": "Client requested additional sector breakdowns."
+      "notes": "Client requested additional sector breakdowns.",
+      "tickers_mentioned": ["AAPL", "MSFT"]
     }
   ],
   "total": 332,
@@ -394,8 +396,8 @@ Create a new engagement.
     "name": "Jennifer Martinez",
     "gcg_department": "IAG"
   },
-  "intake_type": "IRQ",
-  "ad_hoc_channel": null,
+  "intake_type": "GCG Ad-Hoc",
+  "ad_hoc_channel": "In-Person",
   "type": "Meeting",
   "team_members": ["Eli F.", "Sarah K."],
   "date_started": "Jan 28, 2025",
@@ -404,7 +406,8 @@ Create a new engagement.
   "portfolio_logged": false,
   "portfolio": null,
   "nna": null,
-  "notes": null
+  "notes": null,
+  "tickers_mentioned": ["AAPL", "MSFT", "GOOGL"]
 }
 ```
 
@@ -423,6 +426,7 @@ Create a new engagement.
 | `portfolio` | array \| null | No | Portfolio holdings array |
 | `nna` | number \| null | No | Net New Assets in dollars |
 | `notes` | string \| null | No | Optional notes |
+| `tickers_mentioned` | string[] \| null | No | Tickers discussed (GCG Ad-Hoc only, used for Ticker Trends) |
 
 **Response (201 Created):**
 
@@ -434,8 +438,8 @@ Create a new engagement.
     "name": "Jennifer Martinez",
     "gcg_department": "IAG"
   },
-  "intake_type": "IRQ",
-  "ad_hoc_channel": null,
+  "intake_type": "GCG Ad-Hoc",
+  "ad_hoc_channel": "In-Person",
   "type": "Meeting",
   "team_members": ["Eli F.", "Sarah K."],
   "department": "IAG",
@@ -444,7 +448,8 @@ Create a new engagement.
   "status": "In Progress",
   "portfolio_logged": false,
   "nna": null,
-  "notes": null
+  "notes": null,
+  "tickers_mentioned": ["AAPL", "MSFT", "GOOGL"]
 }
 ```
 
@@ -625,8 +630,8 @@ Content-Disposition: attachment; filename="client-interactions-export.csv"
 
 **Response Body (CSV):**
 ```csv
-ID,External Client,Internal Client,Department,Intake Type,Ad Hoc Channel,Type,Team Members,Date Started,Date Finished,Status,Portfolio Logged,NNA,Notes
-1234,"Vanguard Advisors","Jennifer Martinez","IAG","IRQ","","Meeting","Eli F., Sarah K.","Jan 15, 2025","Jan 20, 2025","Completed",true,25000000,"Client notes here"
+ID,External Client,Internal Client,Department,Intake Type,Ad Hoc Channel,Type,Team Members,Date Started,Date Finished,Status,Portfolio Logged,NNA,Notes,Tickers Mentioned
+1234,"Vanguard Advisors","Jennifer Martinez","IAG","GCG Ad-Hoc","In-Person","Meeting","Eli F., Sarah K.","Jan 15, 2025","Jan 20, 2025","Completed",true,25000000,"Client notes here","AAPL, MSFT, GOOGL"
 ```
 
 ---
@@ -652,6 +657,7 @@ ID,External Client,Internal Client,Department,Intake Type,Ad Hoc Channel,Type,Te
 | `portfolio` | PortfolioHolding[] \| null | Optional portfolio holdings |
 | `nna` | number \| null | Net New Assets in dollars |
 | `notes` | string \| null | Optional notes |
+| `tickers_mentioned` | string[] \| null | Tickers discussed (GCG Ad-Hoc only, for Ticker Trends) |
 
 ### InternalClient
 

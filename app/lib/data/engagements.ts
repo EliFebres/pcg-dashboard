@@ -57,6 +57,38 @@ function generatePortfolio(seed: number): PortfolioHolding[] {
 // GCG Ad-Hoc interaction channels
 const adHocChannels: GCGAdHocChannel[] = ['In-Person', 'Email', 'Teams'];
 
+// Sample tickers mentioned in GCG Ad-Hoc conversations (mix of DFA, competitors, and popular ETFs)
+const conversationTickers = [
+  // DFA funds
+  'DFAC', 'DFAS', 'DFAT', 'DFAX', 'DFCF', 'DFEM', 'DFEV', 'DFIC', 'DFIV', 'DFLV', 'DFUV', 'DFSV',
+  // Popular competitor ETFs
+  'VOO', 'VTI', 'SPY', 'IVV', 'QQQ', 'VEA', 'VWO', 'IEMG', 'EFA', 'AGG', 'BND', 'LQD',
+  // Large cap stocks often discussed
+  'AAPL', 'MSFT', 'GOOGL', 'AMZN', 'NVDA', 'META', 'TSLA', 'BRK.B', 'JPM', 'V', 'JNJ', 'UNH',
+  // Other popular ETFs
+  'SCHD', 'VIG', 'JEPI', 'VYM', 'XLK', 'XLF', 'XLE', 'IWM', 'RSP', 'ARKK',
+];
+
+// Generate random tickers mentioned (1-5 tickers)
+function generateTickersMentioned(seed: number): string[] {
+  const numTickers = 1 + Math.floor(seededRandom(seed) * 5); // 1-5 tickers
+  const tickers: string[] = [];
+  const usedIndices = new Set<number>();
+
+  for (let i = 0; i < numTickers; i++) {
+    let idx: number;
+    let attempts = 0;
+    do {
+      idx = Math.floor(seededRandom(seed + i * 7 + attempts) * conversationTickers.length);
+      attempts++;
+    } while (usedIndices.has(idx) && attempts < 50);
+    usedIndices.add(idx);
+    tickers.push(conversationTickers[idx]);
+  }
+
+  return tickers;
+}
+
 // Sample notes for dummy data
 const sampleNotes = [
   'Client requested additional breakdowns by sector. Follow up scheduled for next week.',
@@ -262,6 +294,10 @@ function generateEngagements(): Engagement[] {
       const hasNNA = !isAfterCutoff && seededRandom(seed + 12) < 0.00001;
       const nnaValue = hasNNA ? generateNNA(dept, seed + 13) : undefined;
 
+      // Tickers mentioned: ~45% of GCG Ad-Hoc interactions discuss specific tickers
+      const hasTickersMentioned = seededRandom(seed + 15) < 0.45;
+      const tickersMentioned = hasTickersMentioned ? generateTickersMentioned(seed + 16) : undefined;
+
       engagements.push({
         id: id++,
         externalClient: hasExternalClient ? externalClients[Math.floor(seededRandom(seed + 4) * externalClients.length)] : null,
@@ -277,6 +313,7 @@ function generateEngagements(): Engagement[] {
         portfolioLogged: false, // GCG Ad-Hoc don't have logged portfolios
         nna: nnaValue,
         notes: seededRandom(seed + 6) > 0.6 ? sampleNotes[Math.floor(seededRandom(seed + 14) * sampleNotes.length)] : undefined,
+        tickersMentioned,
       });
     }
 

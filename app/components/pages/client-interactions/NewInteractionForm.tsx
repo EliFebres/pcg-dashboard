@@ -20,6 +20,7 @@ export interface InteractionFormData {
   portfolioLogged: boolean;
   portfolio?: PortfolioHolding[];
   nna: number | null;
+  tickersMentioned?: string[]; // Only for GCG Ad-Hoc - tickers discussed during interaction
 }
 
 export interface EditingEngagement {
@@ -117,6 +118,7 @@ export default function NewInteractionForm({ isOpen, onClose, onSubmit, onUpdate
     portfolioLogged: false,
     portfolio: undefined,
     nna: null,
+    tickersMentioned: [],
   });
 
   const [formData, setFormData] = useState<InteractionFormData>(getDefaultFormData());
@@ -126,6 +128,7 @@ export default function NewInteractionForm({ isOpen, onClose, onSubmit, onUpdate
   const [showInternalClientDropdown, setShowInternalClientDropdown] = useState(false);
   const [isNNAModalOpen, setIsNNAModalOpen] = useState(false);
   const [isPortfolioModalOpen, setIsPortfolioModalOpen] = useState(false);
+  const [tickerInput, setTickerInput] = useState('');
   const internalClientRef = useRef<HTMLDivElement>(null);
 
   // Close dropdown when clicking outside
@@ -152,6 +155,7 @@ export default function NewInteractionForm({ isOpen, onClose, onSubmit, onUpdate
       setErrors({});
       setInternalClientSearch('');
       setShowInternalClientDropdown(false);
+      setTickerInput('');
     }
   }, [isOpen, editingEngagement]);
 
@@ -247,6 +251,39 @@ export default function NewInteractionForm({ isOpen, onClose, onSubmit, onUpdate
         ? prev.teamMembers.filter(m => m !== member)
         : [...prev.teamMembers, member]
     }));
+  };
+
+  const addTickers = (input: string) => {
+    const newTickers = input
+      .split(/[,\s]+/)
+      .map(t => t.trim().toUpperCase())
+      .filter(t => t.length > 0 && !formData.tickersMentioned?.includes(t));
+
+    if (newTickers.length > 0) {
+      setFormData(prev => ({
+        ...prev,
+        tickersMentioned: [...(prev.tickersMentioned || []), ...newTickers]
+      }));
+    }
+    setTickerInput('');
+  };
+
+  const removeTicker = (ticker: string) => {
+    setFormData(prev => ({
+      ...prev,
+      tickersMentioned: prev.tickersMentioned?.filter(t => t !== ticker) || []
+    }));
+  };
+
+  const handleTickerKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' || e.key === ',') {
+      e.preventDefault();
+      addTickers(tickerInput);
+    } else if (e.key === 'Backspace' && !tickerInput && formData.tickersMentioned?.length) {
+      // Remove last ticker if backspace pressed on empty input
+      const tickers = formData.tickersMentioned;
+      removeTicker(tickers[tickers.length - 1]);
+    }
   };
 
   if (!isOpen) return null;
@@ -350,6 +387,42 @@ export default function NewInteractionForm({ isOpen, onClose, onSubmit, onUpdate
                   </div>
                 )}
               </div>
+
+              {/* Tickers Mentioned - Only for GCG Ad-Hoc */}
+              {formData.intakeType === 'GCG Ad-Hoc' && (
+                <div>
+                  <label className="block text-sm font-medium text-zinc-300 mb-1.5">
+                    Tickers Mentioned <span className="text-zinc-500 font-normal text-xs">(Optional - for Ticker Trends)</span>
+                  </label>
+                  <div className="flex flex-wrap gap-1.5 p-2 bg-zinc-800/50 border border-zinc-700 rounded-lg min-h-[42px] focus-within:border-cyan-500/50 transition-colors">
+                    {formData.tickersMentioned?.map((ticker) => (
+                      <span
+                        key={ticker}
+                        className="inline-flex items-center gap-1 px-2 py-1 bg-cyan-500/20 border border-cyan-500/30 rounded text-xs font-medium text-cyan-400"
+                      >
+                        {ticker}
+                        <button
+                          type="button"
+                          onClick={() => removeTicker(ticker)}
+                          className="hover:text-cyan-200 transition-colors"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </span>
+                    ))}
+                    <input
+                      type="text"
+                      value={tickerInput}
+                      onChange={(e) => setTickerInput(e.target.value.toUpperCase())}
+                      onKeyDown={handleTickerKeyDown}
+                      onBlur={() => tickerInput && addTickers(tickerInput)}
+                      placeholder={formData.tickersMentioned?.length ? '' : 'Type tickers (e.g., AAPL, MSFT)...'}
+                      className="flex-1 min-w-[120px] bg-transparent border-none text-white text-sm placeholder-zinc-500 focus:outline-none"
+                    />
+                  </div>
+                  <p className="mt-1 text-xs text-zinc-500">Press Enter or comma to add. Used for Ticker Trends analytics.</p>
+                </div>
+              )}
 
               {/* Row 2: External Client + Internal Client */}
               <div className="grid grid-cols-2 gap-4">

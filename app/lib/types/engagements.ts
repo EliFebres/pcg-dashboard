@@ -85,6 +85,7 @@ export interface Engagement {
   portfolio?: PortfolioHolding[]; // Optional client portfolio holdings
   nna?: number; // Net New Assets - dollar amount of AUM moved into funds (optional)
   notes?: string; // Optional notes field
+  tickersMentioned?: string[]; // Tickers discussed during GCG Ad-Hoc interactions (used for Ticker Trends)
 }
 
 export interface ContributionData {

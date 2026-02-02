@@ -430,6 +430,7 @@ export async function getContributionData(filters: EngagementFilters = {}): Prom
  * @param engagement.dateStarted - Date string like "Jan 28, 2025"
  * @param engagement.dateFinished - Date string or "—"
  * @param engagement.status - 'In Progress', 'Pending', or 'Completed'
+ * @param engagement.tickersMentioned - Optional array of tickers discussed (GCG Ad-Hoc only, for Ticker Trends)
  *
  * @returns Promise<Engagement> - Created engagement with generated ID
  *
@@ -457,6 +458,7 @@ export async function createEngagement(engagement: Omit<Engagement, 'id'>): Prom
         portfolio: engagement.portfolio || null,
         nna: engagement.nna || null,
         notes: engagement.notes || null,
+        tickers_mentioned: engagement.tickersMentioned || null,
       }),
     });
 
@@ -519,6 +521,7 @@ export async function updateEngagement(
     if (updates.portfolio !== undefined) body.portfolio = updates.portfolio;
     if (updates.nna !== undefined) body.nna = updates.nna;
     if (updates.notes !== undefined) body.notes = updates.notes;
+    if (updates.tickersMentioned !== undefined) body.tickers_mentioned = updates.tickersMentioned;
 
     const response = await fetch(`${API_BASE_URL}/client-interactions/engagements/${id}`, {
       method: 'PATCH',
