@@ -207,11 +207,94 @@ export async function getDashboardData(filters: EngagementFilters = {}): Promise
 }
 // Response snippet:
 // {
-//   "metrics": { "clientProjects": { "count": 156, "changePercent": 12, ... }, ... },
-//   "departments": { "departments": [{ "name": "IAG", "value": 55, "count": 89 }], "total": 162 },
-//   "contributionData": { "weeks": [[{ "date": "2024-01-29", "level": 2, "count": 3 }]], "totalDays": 260 },
-//   "engagements": { "engagements": [...], "total": 162, "page": 1, "hasMore": true },
-//   "filterOptions": { "departments": ["IAG", "Broker-Dealer"], "intakeTypes": ["IRQ", "GRRF"] }
+//   "metrics": {
+//     "clientProjects": {
+//       "count": 156,
+//       "changePercent": 12,
+//       "periodLabel": "YoY",
+//       "intakeSourceBreakdown": {
+//         "irqCount": 98,
+//         "irqPercent": 63,
+//         "grffCount": 58,
+//         "grffPercent": 37,
+//         "portfoliosLogged": 142,
+//         "portfoliosTotal": 156,
+//         "portfoliosPercent": 91
+//       }
+//     },
+//     "gcgAdHoc": {
+//       "count": 234,
+//       "changePercent": 8,
+//       "periodLabel": "YoY",
+//       "intakeBreakdown": [
+//         { "intake": "In-Person", "count": 78, "percent": 33, "color": "#a5f3fc" },
+//         { "intake": "Email", "count": 98, "percent": 42, "color": "#22d3ee" },
+//         { "intake": "Teams", "count": 58, "percent": 25, "color": "#0e7490" }
+//       ]
+//     },
+//     "inProgress": {
+//       "count": 12,
+//       "change": 2,
+//       "sparklineData": [{ "value": 8 }, { "value": 10 }, { "value": 9 }, { "value": 12 }]
+//     },
+//     "nna": {
+//       "total": 245000000,
+//       "projectCount": 18,
+//       "changePercent": 15,
+//       "tiers": [
+//         { "label": "<$50M", "count": 10, "color": "#0e7490" },
+//         { "label": "$50-200M", "count": 6, "color": "#22d3ee" },
+//         { "label": "$200M+", "count": 2, "color": "#39FF14" }
+//       ]
+//     }
+//   },
+//   "departments": {
+//     "departments": [
+//       { "name": "IAG", "value": 55, "count": 89, "color": "#a5f3fc" },
+//       { "name": "Broker-Dealer", "value": 33, "count": 53, "color": "#22d3ee" },
+//       { "name": "Institution", "value": 12, "count": 20, "color": "#0e7490" }
+//     ],
+//     "total": 162
+//   },
+//   "contributionData": {
+//     "weeks": [[
+//       { "date": "2024-01-29", "level": 2, "count": 3, "projectCount": 1, "adHocCount": 2 },
+//       { "date": "2024-01-30", "level": 1, "count": 1, "projectCount": 0, "adHocCount": 1 }
+//     ]],
+//     "totalDays": 260,
+//     "maxCount": 8
+//   },
+//   "engagements": {
+//     "engagements": [{
+//       "id": 1234,
+//       "externalClient": "Vanguard Advisors",
+//       "internalClient": { "name": "Jennifer Martinez", "gcgDepartment": "IAG" },
+//       "intakeType": "GCG Ad-Hoc",
+//       "adHocChannel": "In-Person",
+//       "type": "Meeting",
+//       "teamMembers": ["Eli F.", "Sarah K."],
+//       "department": "IAG",
+//       "dateStarted": "Jan 15, 2025",
+//       "dateFinished": "Jan 15, 2025",
+//       "status": "Completed",
+//       "portfolioLogged": false,
+//       "nna": null,
+//       "notes": "Discussed portfolio rebalancing strategy.",
+//       "tickersMentioned": ["VOO", "DFAC", "AAPL"]
+//     }],
+//     "total": 162,
+//     "page": 1,
+//     "pageSize": 50,
+//     "hasMore": true
+//   },
+//   "filterOptions": {
+//     "teamMembers": ["All Team Members", "Austin Office", "Charlotte Office"],
+//     "teamMemberGroups": [{ "label": "Office", "options": ["Austin Office", "Charlotte Office"] }],
+//     "departments": ["IAG", "Broker-Dealer", "Institution"],
+//     "intakeTypes": ["IRQ", "GRRF", "GCG Ad-Hoc"],
+//     "projectTypes": ["Meeting", "Follow-Up", "Data Request", "PCR", "Other"],
+//     "statuses": ["In Progress", "Completed", "On Hold"]
+//   }
 // }
 
 
@@ -267,7 +350,23 @@ export async function getEngagements(filters: EngagementFilters = {}): Promise<E
 }
 // Response snippet:
 // {
-//   "engagements": [{ "id": 1, "externalClient": "Acme Corp", "intakeType": "IRQ", ... }],
+//   "engagements": [{
+//     "id": 1234,
+//     "externalClient": "Vanguard Advisors",
+//     "internalClient": { "name": "Jennifer Martinez", "gcgDepartment": "IAG" },
+//     "intakeType": "GCG Ad-Hoc",
+//     "adHocChannel": "Email",
+//     "type": "Follow-Up",
+//     "teamMembers": ["Eli F.", "Sarah K."],
+//     "department": "IAG",
+//     "dateStarted": "Jan 20, 2025",
+//     "dateFinished": "Jan 21, 2025",
+//     "status": "Completed",
+//     "portfolioLogged": false,
+//     "nna": null,
+//     "notes": "Client requested additional breakdowns by sector.",
+//     "tickersMentioned": ["MSFT", "GOOGL"]
+//   }],
 //   "total": 162,
 //   "page": 1,
 //   "pageSize": 50,
@@ -314,10 +413,45 @@ export async function getMetrics(filters: EngagementFilters = {}): Promise<Dashb
 }
 // Response snippet:
 // {
-//   "clientProjects": { "count": 156, "changePercent": 12, "periodLabel": "YoY" },
-//   "gcgAdHoc": { "count": 234, "changePercent": -5, "intakeBreakdown": [...] },
-//   "inProgress": { "count": 12, "change": 2, "sparklineData": [{ "value": 8 }, ...] },
-//   "nna": { "total": 45000000, "projectCount": 8, "tiers": [...] }
+//   "clientProjects": {
+//     "count": 156,
+//     "changePercent": 12,
+//     "periodLabel": "YoY",
+//     "intakeSourceBreakdown": {
+//       "irqCount": 98,
+//       "irqPercent": 63,
+//       "grffCount": 58,
+//       "grffPercent": 37,
+//       "portfoliosLogged": 142,
+//       "portfoliosTotal": 156,
+//       "portfoliosPercent": 91
+//     }
+//   },
+//   "gcgAdHoc": {
+//     "count": 234,
+//     "changePercent": -5,
+//     "periodLabel": "YoY",
+//     "intakeBreakdown": [
+//       { "intake": "In-Person", "count": 78, "percent": 33, "color": "#a5f3fc" },
+//       { "intake": "Email", "count": 98, "percent": 42, "color": "#22d3ee" },
+//       { "intake": "Teams", "count": 58, "percent": 25, "color": "#0e7490" }
+//     ]
+//   },
+//   "inProgress": {
+//     "count": 12,
+//     "change": 2,
+//     "sparklineData": [{ "value": 8 }, { "value": 10 }, { "value": 9 }, { "value": 11 }, { "value": 12 }]
+//   },
+//   "nna": {
+//     "total": 245000000,
+//     "projectCount": 18,
+//     "changePercent": 15,
+//     "tiers": [
+//       { "label": "<$50M", "count": 10, "color": "#0e7490" },
+//       { "label": "$50-200M", "count": 6, "color": "#22d3ee" },
+//       { "label": "$200M+", "count": 2, "color": "#39FF14" }
+//     ]
+//   }
 // }
 
 
@@ -408,7 +542,13 @@ export async function getContributionData(filters: EngagementFilters = {}): Prom
 // Response snippet:
 // {
 //   "weeks": [
-//     [{ "date": "2024-01-29", "level": 2, "count": 3, "projectCount": 1, "adHocCount": 2 }, ...]
+//     [
+//       { "date": "2024-01-29", "level": 2, "count": 3, "projectCount": 1, "adHocCount": 2 },
+//       { "date": "2024-01-30", "level": 1, "count": 1, "projectCount": 0, "adHocCount": 1 },
+//       { "date": "2024-01-31", "level": 0, "count": 0, "projectCount": 0, "adHocCount": 0 },
+//       { "date": "2024-02-01", "level": 3, "count": 5, "projectCount": 2, "adHocCount": 3 },
+//       { "date": "2024-02-02", "level": 4, "count": 7, "projectCount": 3, "adHocCount": 4 }
+//     ]
 //   ],
 //   "totalDays": 260,
 //   "maxCount": 8
@@ -476,11 +616,21 @@ export async function createEngagement(engagement: Omit<Engagement, 'id'>): Prom
 // Response snippet (201 Created):
 // {
 //   "id": 1234,
-//   "externalClient": "Acme Corp",
+//   "externalClient": "Vanguard Advisors",
 //   "internalClient": { "name": "Jennifer Martinez", "gcgDepartment": "IAG" },
-//   "intakeType": "IRQ",
+//   "intakeType": "GCG Ad-Hoc",
+//   "adHocChannel": "In-Person",
 //   "type": "Meeting",
-//   "status": "In Progress"
+//   "teamMembers": ["Eli F.", "Sarah K."],
+//   "department": "IAG",
+//   "dateStarted": "Jan 28, 2025",
+//   "dateFinished": "—",
+//   "status": "In Progress",
+//   "portfolioLogged": false,
+//   "portfolio": null,
+//   "nna": null,
+//   "notes": null,
+//   "tickersMentioned": ["AAPL", "MSFT", "VOO"]
 // }
 
 
@@ -543,10 +693,21 @@ export async function updateEngagement(
 // Response snippet:
 // {
 //   "id": 1234,
-//   "externalClient": "Acme Corp",
-//   "status": "Completed",
+//   "externalClient": "Vanguard Advisors",
+//   "internalClient": { "name": "Jennifer Martinez", "gcgDepartment": "IAG" },
+//   "intakeType": "GCG Ad-Hoc",
+//   "adHocChannel": "In-Person",
+//   "type": "Meeting",
+//   "teamMembers": ["Eli F.", "Sarah K."],
+//   "department": "IAG",
+//   "dateStarted": "Jan 28, 2025",
 //   "dateFinished": "Jan 30, 2025",
-//   "nna": 25000000
+//   "status": "Completed",
+//   "portfolioLogged": false,
+//   "portfolio": null,
+//   "nna": 25000000,
+//   "notes": "Client approved new allocation.",
+//   "tickersMentioned": ["AAPL", "MSFT", "VOO"]
 // }
 
 
@@ -730,9 +891,10 @@ export async function exportEngagements(filters: EngagementFilters = {}): Promis
 
   return getMockExportEngagements(filters);
 }
-// Response: CSV file
-// ID,External Client,Internal Client,Department,...
-// 1234,"Acme Corp","Jennifer Martinez","IAG",...
+// Response: CSV file (Content-Type: text/csv)
+// ID,External Client,Internal Client,Department,Intake Type,Ad Hoc Channel,Type,Team Members,Date Started,Date Finished,Status,Portfolio Logged,NNA,Notes,Tickers Mentioned
+// 1234,"Vanguard Advisors","Jennifer Martinez","IAG","GCG Ad-Hoc","In-Person","Meeting","Eli F., Sarah K.","Jan 15, 2025","Jan 15, 2025","Completed",false,,"Discussed portfolio strategy.","AAPL, MSFT, VOO"
+// 1235,"Fidelity Wealth","Robert Chen","IAG","IRQ","","Data Request","Mike R.","Jan 16, 2025","Jan 18, 2025","Completed",true,25000000,"Client approved allocation.",""
 
 
 // =============================================================================
