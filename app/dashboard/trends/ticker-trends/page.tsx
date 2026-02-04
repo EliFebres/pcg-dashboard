@@ -17,6 +17,7 @@ import type { HotTicker } from '@/app/lib/types/trends';
 import DashboardHeader from '@/app/components/DashboardHeader';
 import NotesModal from '@/app/components/pages/shared/NotesModal';
 import LinkModal from '@/app/components/pages/shared/LinkModal';
+import RequestBreakdownChart from '@/app/components/pages/ticker-trends/RequestBreakdownChart';
 
 export default function TickerTrendsDashboard() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -423,6 +424,42 @@ export default function TickerTrendsDashboard() {
                   </tbody>
                 </table>
               )}
+            </div>
+          </div>
+        </div>
+
+        {/* ==================== CHARTS ROW ==================== */}
+        <div className="grid grid-cols-2 gap-6">
+          {/* Request Breakdown Chart */}
+          <div className="relative overflow-hidden bg-zinc-900/60 backdrop-blur-md border border-zinc-800/50">
+            <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] via-transparent to-transparent pointer-events-none" />
+            <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+            <div className="relative z-10 p-4 border-b border-zinc-800/50">
+              <h4 className="text-sm font-medium text-white">Top 10 Hot Tickers Request Breakdown by Ticker</h4>
+              <p className="text-xs text-zinc-500">Distribution of request types across top tickers</p>
+            </div>
+            <div className="relative z-10 p-4" style={{ height: 350 }}>
+              {isLoading ? (
+                <div className="flex items-center justify-center h-full">
+                  <Loader2 className="w-6 h-6 text-cyan-400 animate-spin" />
+                  <span className="ml-2 text-sm text-zinc-400">Loading chart...</span>
+                </div>
+              ) : (
+                <RequestBreakdownChart tickers={filteredTickers} />
+              )}
+            </div>
+          </div>
+
+          {/* Placeholder for future chart */}
+          <div className="relative overflow-hidden bg-zinc-900/60 backdrop-blur-md border border-zinc-800/50">
+            <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] via-transparent to-transparent pointer-events-none" />
+            <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+            <div className="relative z-10 p-4 border-b border-zinc-800/50">
+              <h4 className="text-sm font-medium text-white">Ticker Trend Over Time</h4>
+              <p className="text-xs text-zinc-500">Request volume trends by ticker</p>
+            </div>
+            <div className="relative z-10 flex items-center justify-center" style={{ height: 350 }}>
+              <span className="text-sm text-zinc-500">Coming Soon</span>
             </div>
           </div>
         </div>

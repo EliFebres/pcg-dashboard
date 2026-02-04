@@ -15,6 +15,13 @@ export interface BenchmarkComparison {
   delta: number;
 }
 
+export interface TickerRequestBreakdown {
+  pcrRequests: number;
+  pcrDownloads: number;
+  tickersMentioned: number;
+  clientModels: number;
+}
+
 export interface HotTicker {
   rank: number;
   type: string;
@@ -44,6 +51,7 @@ export interface HotTicker {
   notes: string;
   talkingPointsUrl: string;
   pcrUrl: string;
+  requestBreakdown?: TickerRequestBreakdown;
 }
 
 export interface PopularDFATicker {
