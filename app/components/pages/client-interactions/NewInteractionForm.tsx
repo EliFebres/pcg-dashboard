@@ -323,7 +323,7 @@ export default function NewInteractionForm({ isOpen, onClose, onSubmit, onUpdate
           </div>
 
           {/* Form Content */}
-          <form onSubmit={handleSubmit} className="flex-1">
+          <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto min-h-0">
             <div className="p-6 space-y-4">
               {/* Row 1: Intake Type + Project Type + Interaction Type for Ad-Hoc */}
               <div className={`grid gap-4 ${formData.intakeType === 'GCG Ad-Hoc' ? 'grid-cols-3' : 'grid-cols-2'}`}>
