@@ -133,16 +133,11 @@ function FundDetailCard({ tickers, isLoading }: FundDetailCardProps) {
       <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
 
       <div className="relative z-10 flex flex-col" style={{ height: 350 }}>
-        {/* Top Half — combined header + metrics */}
-        <div className="bg-zinc-800/40 px-4 pt-3 pb-3 flex flex-col gap-1.5">
-          {/* Title row + dropdown */}
-          <div className="flex items-start justify-between">
-            <div className="flex items-center gap-1.5">
-              <Activity className="w-3.5 h-3.5 text-zinc-500" />
-              <h4 className="text-xs font-medium text-zinc-500">Request Frequency</h4>
-            </div>
-            {/* Dropdown */}
-            <div className="relative -my-1 translate-y-1" ref={dropdownRef}>
+        {/* Top Section — two-column layout */}
+        <div className="bg-gradient-to-b from-zinc-950 to-zinc-800/40 px-4 pt-3 pb-3 flex flex-row-reverse shadow-[0_4px_12px_-2px_rgba(0,0,0,0.5)]">
+          {/* Right column — dropdown (20%) */}
+          <div className="w-1/5 flex items-start justify-end pt-1" ref={dropdownRef}>
+            <div className="relative">
               <button
                 onClick={() => setDropdownOpen(!dropdownOpen)}
                 className="relative overflow-hidden flex items-center gap-2 px-4 py-1.5 text-sm font-semibold bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white transition-colors"
@@ -184,26 +179,35 @@ function FundDetailCard({ tickers, isLoading }: FundDetailCardProps) {
             </div>
           </div>
 
-          {/* Hero Metric Row */}
-          <div className="flex items-end gap-3 flex-wrap">
-            <div className="relative">
-              <span className="text-8xl font-bold text-white">{currentQ}</span>
-              {/* QoQ Badge — superscript */}
-              {qoqChange !== 0 && (
+          {/* Right column — content (80%) */}
+          <div className="w-4/5 flex flex-col">
+            {/* Top — title */}
+            <div className="flex items-center gap-1.5">
+              <Activity className="w-3.5 h-3.5 text-zinc-500" />
+              <h4 className="text-xs font-medium text-zinc-500">Request Frequency</h4>
+            </div>
+
+            {/* Middle — hero metric */}
+            <div className="flex items-end gap-3 flex-wrap mt-1" style={{ transform: 'scale(0.95)', transformOrigin: 'left bottom' }}>
+              <div className="relative">
+                <span className="text-8xl font-bold text-white">{currentQ}</span>
+                {/* QoQ Badge — superscript */}
                 <span className={`absolute top-2 -right-2 translate-x-full whitespace-nowrap inline-flex items-center text-base px-2 py-0.5 font-medium ${
                   qoqChange > 0
                     ? 'bg-emerald-500/20 text-emerald-400'
-                    : 'bg-red-500/20 text-red-400'
+                    : qoqChange < 0
+                      ? 'bg-red-500/20 text-red-400'
+                      : 'bg-zinc-500/20 text-zinc-400'
                 }`}>
                   {qoqChange > 0 ? '+' : ''}{qoqChange}% QoQ
                 </span>
-              )}
+              </div>
+              <span className="text-xl text-zinc-500 mb-2">requests</span>
             </div>
-            <span className="text-xl text-zinc-500 mb-2">requests</span>
-          </div>
 
-          {/* Narrative */}
-          <p className="leading-relaxed w-4/5" style={{ fontSize: '0.7875rem', color: '#8b8b98' }}>{narrative}</p>
+            {/* Bottom — narrative */}
+            <p className="leading-relaxed mt-1.5" style={{ fontSize: '0.7875rem', color: '#8b8b98' }}>{narrative}</p>
+          </div>
         </div>
 
         {/* Bottom Half — placeholder */}
