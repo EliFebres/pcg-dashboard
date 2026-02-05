@@ -18,6 +18,7 @@ import DashboardHeader from '@/app/components/DashboardHeader';
 import NotesModal from '@/app/components/pages/shared/NotesModal';
 import LinkModal from '@/app/components/pages/shared/LinkModal';
 import RequestBreakdownChart from '@/app/components/pages/ticker-trends/RequestBreakdownChart';
+import FundFrequencyCard from '@/app/components/pages/ticker-trends/FundFrequencyCard';
 
 export default function TickerTrendsDashboard() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -450,18 +451,8 @@ export default function TickerTrendsDashboard() {
             </div>
           </div>
 
-          {/* Placeholder for future chart */}
-          <div className="relative overflow-hidden bg-zinc-900/60 backdrop-blur-md border border-zinc-800/50">
-            <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] via-transparent to-transparent pointer-events-none" />
-            <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
-            <div className="relative z-10 p-4 border-b border-zinc-800/50">
-              <h4 className="text-sm font-medium text-white">Ticker Trend Over Time</h4>
-              <p className="text-xs text-zinc-500">Request volume trends by ticker</p>
-            </div>
-            <div className="relative z-10 flex items-center justify-center" style={{ height: 350 }}>
-              <span className="text-sm text-zinc-500">Coming Soon</span>
-            </div>
-          </div>
+          {/* Fund Frequency Card */}
+          <FundFrequencyCard tickers={filteredTickers} isLoading={isLoading} />
         </div>
       </div>
 

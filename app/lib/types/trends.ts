@@ -22,6 +22,11 @@ export interface TickerRequestBreakdown {
   clientModels: number;
 }
 
+export interface QuarterlyRequests {
+  quarter: string;   // e.g. "Q4 2024"
+  requests: number;
+}
+
 export interface HotTicker {
   rank: number;
   type: string;
@@ -52,6 +57,7 @@ export interface HotTicker {
   talkingPointsUrl: string;
   pcrUrl: string;
   requestBreakdown?: TickerRequestBreakdown;
+  quarterlyRequests?: QuarterlyRequests[];
 }
 
 export interface PopularDFATicker {
