@@ -1,8 +1,11 @@
 'use client';
 
 import React, { useState, useMemo, useRef, useEffect } from 'react';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import type { BarShapeProps } from 'recharts';
 import { ChevronDown, Check, Activity, Loader2 } from 'lucide-react';
 import type { HotTicker } from '@/app/lib/types/trends';
+import ClientOnlyChart from '@/app/components/ClientOnlyChart';
 
 interface FundDetailCardProps {
   tickers: HotTicker[];
@@ -90,6 +93,24 @@ function FundDetailCard({ tickers, isLoading }: FundDetailCardProps) {
     return `${label} has held steady in requests quarter-over-quarter, unchanged from ${prevQ} requests in ${prevQuarterLabel}${devClause}.`;
   }, [selectedFund, qoqChange, prevQ, prevQuarterLabel, deviation]);
 
+  const { peakQ, lowestQ } = useMemo(() => {
+    if (!selectedFund?.quarterlyRequests || selectedFund.quarterlyRequests.length === 0) {
+      return { peakQ: 0, lowestQ: 0 };
+    }
+    const vals = selectedFund.quarterlyRequests.map((q) => q.requests);
+    return { peakQ: Math.max(...vals), lowestQ: Math.min(...vals) };
+  }, [selectedFund]);
+
+  const chartData = useMemo(() => {
+    if (!selectedFund?.quarterlyRequests) return [];
+    return selectedFund.quarterlyRequests.map((q) => {
+      // "Q4 2024" → "Q4 24"
+      const parts = q.quarter.split(' ');
+      const shortYear = parts[1]?.slice(-2) ?? '';
+      return { label: `${parts[0]} ${shortYear}`, requests: q.requests };
+    });
+  }, [selectedFund]);
+
   if (isLoading) {
     return (
       <div className="relative overflow-hidden bg-zinc-900/60 backdrop-blur-md border border-zinc-800/50">
@@ -132,9 +153,9 @@ function FundDetailCard({ tickers, isLoading }: FundDetailCardProps) {
       <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] via-transparent to-transparent pointer-events-none" />
       <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
 
-      <div className="relative z-10 flex flex-col" style={{ height: 350 }}>
+      <div className="relative z-10 flex flex-col h-full">
         {/* Top Section — two-column layout */}
-        <div className="bg-gradient-to-b from-zinc-950 to-zinc-800/40 px-4 pt-3 pb-3 flex flex-row-reverse shadow-[0_4px_12px_-2px_rgba(0,0,0,0.5)]">
+        <div className="bg-gradient-to-b from-zinc-950 to-zinc-800/40 px-6 pt-3 pb-3 flex flex-row-reverse shadow-[0_4px_12px_-2px_rgba(0,0,0,0.5)]">
           {/* Right column — dropdown (20%) */}
           <div className="w-1/5 flex items-start justify-end pt-1" ref={dropdownRef}>
             <div className="relative">
@@ -164,11 +185,10 @@ function FundDetailCard({ tickers, isLoading }: FundDetailCardProps) {
                         setSelectedTicker(t.ticker);
                         setDropdownOpen(false);
                       }}
-                      className={`w-full px-3 py-2 text-left text-xs flex items-center justify-between transition-colors ${
-                        t.ticker === selectedTicker
-                          ? 'bg-cyan-500/20 text-cyan-400'
-                          : 'text-zinc-300 hover:bg-zinc-700/50'
-                      }`}
+                      className={`w-full px-3 py-2 text-left text-xs flex items-center justify-between transition-colors ${t.ticker === selectedTicker
+                        ? 'bg-cyan-500/20 text-cyan-400'
+                        : 'text-zinc-300 hover:bg-zinc-700/50'
+                        }`}
                     >
                       <span>{t.ticker}</span>
                       {t.ticker === selectedTicker && <Check className="w-3 h-3" />}
@@ -192,13 +212,12 @@ function FundDetailCard({ tickers, isLoading }: FundDetailCardProps) {
               <div className="relative">
                 <span className="text-8xl font-bold text-white">{currentQ}</span>
                 {/* QoQ Badge — superscript */}
-                <span className={`absolute top-2 -right-2 translate-x-full whitespace-nowrap inline-flex items-center text-base px-2 py-0.5 font-medium ${
-                  qoqChange > 0
-                    ? 'bg-emerald-500/20 text-emerald-400'
-                    : qoqChange < 0
-                      ? 'bg-red-500/20 text-red-400'
-                      : 'bg-zinc-500/20 text-zinc-400'
-                }`}>
+                <span className={`absolute top-2 -right-2 translate-x-full whitespace-nowrap inline-flex items-center text-base px-2 py-0.5 font-medium ${qoqChange > 0
+                  ? 'bg-emerald-500/20 text-emerald-400'
+                  : qoqChange < 0
+                    ? 'bg-red-500/20 text-red-400'
+                    : 'bg-zinc-500/20 text-zinc-400'
+                  }`}>
                   {qoqChange > 0 ? '+' : ''}{qoqChange}% QoQ
                 </span>
               </div>
@@ -210,9 +229,89 @@ function FundDetailCard({ tickers, isLoading }: FundDetailCardProps) {
           </div>
         </div>
 
-        {/* Bottom Half — placeholder */}
-        <div className="flex-1 flex items-center justify-center">
-          <span className="text-xs text-zinc-600">Additional details coming soon</span>
+        {/* Bottom Half — stats row + bar chart */}
+        <div className="flex-1 flex flex-col px-6">
+          {/* Stats Row */}
+          <div className="py-2 flex items-center">
+            <div className="w-3/4 grid grid-cols-3">
+              <div>
+                <span className="text-xs text-zinc-500">Current Req</span>
+                <div className="flex items-baseline gap-1">
+                  <span className="text-lg font-bold text-white">{currentQ}</span>
+                  <span className="text-xs text-zinc-500">requests</span>
+                </div>
+              </div>
+              <div>
+                <span className="text-xs text-zinc-500">Peak</span>
+                <div className="flex items-baseline gap-1">
+                  <span className="text-lg font-bold text-white">{peakQ}</span>
+                  <span className="text-xs text-zinc-500">requests</span>
+                </div>
+              </div>
+              <div>
+                <span className="text-xs text-zinc-500">Lowest</span>
+                <div className="flex items-baseline gap-1">
+                  <span className="text-lg font-bold text-white">{lowestQ}</span>
+                  <span className="text-xs text-zinc-500">requests</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Bar Chart — fills remaining space */}
+          <div className="flex-1 relative">
+            <div className="absolute inset-0">
+              <ClientOnlyChart>
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart
+                    data={chartData}
+                    margin={{ top: 0, right: 4, bottom: 0, left: 4 }}
+                  >
+                    <YAxis domain={[0, 'dataMax']} hide />
+                    <XAxis
+                      dataKey="label"
+                      tick={{ fontSize: 10, fill: '#71717a' }}
+                      axisLine={false}
+                      tickLine={false}
+                      interval={0}
+                    />
+                    <Tooltip
+                      cursor={{ fill: 'rgba(255,255,255,0.04)' }}
+                      contentStyle={{
+                        backgroundColor: '#18181b',
+                        border: '1px solid #3f3f46',
+                        borderRadius: 4,
+                        fontSize: 12,
+                      }}
+                      labelStyle={{ color: '#a1a1aa' }}
+                      itemStyle={{ color: '#22d3ee' }}
+                      formatter={(value: number | undefined) => [`${value ?? 0} requests`, 'Requests']}
+                    />
+                    <Bar
+                      dataKey="requests"
+                      animationDuration={700}
+                      shape={(props: BarShapeProps) => {
+                        const { x, y, width, height, fill } = props as BarShapeProps & { fill: string };
+                        return (
+                          <g>
+                            <rect x={x} y={y} width={width} height={height} fill={fill} />
+                            <rect x={x} y={y} width={width} height={1.5} fill="#ffffff" />
+                          </g>
+                        );
+                      }}
+                    >
+                      {chartData.map((entry, index) => (
+                        <Cell
+                          key={entry.label}
+                          fill={index === chartData.length - 1 ? '#06b6d4' : '#22d3ee50'}
+                        />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </ClientOnlyChart>
+            </div>
+          </div>
         </div>
       </div>
     </div>

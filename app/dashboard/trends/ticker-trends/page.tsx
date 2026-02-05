@@ -439,7 +439,7 @@ export default function TickerTrendsDashboard() {
               <h4 className="text-sm font-medium text-white">Top 10 Hot Tickers Request Breakdown by Ticker</h4>
               <p className="text-xs text-zinc-500">Distribution of request types across top tickers</p>
             </div>
-            <div className="relative z-10 p-4" style={{ height: 350 }}>
+            <div className="relative z-10 p-4" style={{ height: 420 }}>
               {isLoading ? (
                 <div className="flex items-center justify-center h-full">
                   <Loader2 className="w-6 h-6 text-cyan-400 animate-spin" />
