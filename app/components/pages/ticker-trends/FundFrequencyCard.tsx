@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import type { BarShapeProps } from 'recharts';
 import { ChevronDown, Check, Activity, Loader2 } from 'lucide-react';
 import type { HotTicker } from '@/app/lib/types/trends';
@@ -93,6 +93,19 @@ function FundDetailCard({ tickers, isLoading }: FundDetailCardProps) {
     return `${label} has held steady in requests quarter-over-quarter, unchanged from ${prevQ} requests in ${prevQuarterLabel}${devClause}.`;
   }, [selectedFund, qoqChange, prevQ, prevQuarterLabel, deviation]);
 
+  const globalMax = useMemo(() => {
+    let max = 0;
+    for (const t of tickers) {
+      if (t.quarterlyRequests) {
+        for (const q of t.quarterlyRequests) {
+          if (q.requests > max) max = q.requests;
+        }
+      }
+    }
+    // Round up to nearest multiple of 10 for clean tick spacing
+    return Math.ceil(max / 10) * 10;
+  }, [tickers]);
+
   const { peakQ, lowestQ } = useMemo(() => {
     if (!selectedFund?.quarterlyRequests || selectedFund.quarterlyRequests.length === 0) {
       return { peakQ: 0, lowestQ: 0 };
@@ -155,7 +168,7 @@ function FundDetailCard({ tickers, isLoading }: FundDetailCardProps) {
 
       <div className="relative z-10 flex flex-col h-full">
         {/* Top Section — two-column layout */}
-        <div className="bg-gradient-to-b from-zinc-950 to-zinc-800/40 px-6 pt-3 pb-3 flex flex-row-reverse shadow-[0_4px_12px_-2px_rgba(0,0,0,0.5)]">
+        <div className="bg-gradient-to-b from-zinc-950 to-zinc-800/40 px-6 pt-5 pb-3 flex flex-row-reverse shadow-[0_4px_12px_-2px_rgba(0,0,0,0.5)]">
           {/* Right column — dropdown (20%) */}
           <div className="w-1/5 flex items-start justify-end pt-1" ref={dropdownRef}>
             <div className="relative">
@@ -203,29 +216,31 @@ function FundDetailCard({ tickers, isLoading }: FundDetailCardProps) {
           <div className="w-4/5 flex flex-col">
             {/* Top — title */}
             <div className="flex items-center gap-1.5">
-              <Activity className="w-3.5 h-3.5 text-zinc-500" />
-              <h4 className="text-xs font-medium text-zinc-500">Request Frequency</h4>
+              <Activity className="w-4.5 h-4.5 text-zinc-500" />
+              <h4 className="text-base font-medium text-zinc-500">Request Frequency</h4>
             </div>
 
             {/* Middle — hero metric */}
-            <div className="flex items-end gap-3 flex-wrap mt-1" style={{ transform: 'scale(0.95)', transformOrigin: 'left bottom' }}>
+            <div className="flex items-end gap-3 flex-wrap my-2" style={{ transform: 'scale(0.95)', transformOrigin: 'left bottom' }}>
               <div className="relative">
-                <span className="text-8xl font-bold text-white">{currentQ}</span>
-                {/* QoQ Badge — superscript */}
-                <span className={`absolute top-2 -right-2 translate-x-full whitespace-nowrap inline-flex items-center text-base px-2 py-0.5 font-medium ${qoqChange > 0
+                <span className="text-8xl font-bold text-white">
+                  {qoqChange > 0 ? '+' : ''}{qoqChange}%
+                </span>
+                {/* Badge — superscript */}
+                <span className={`absolute top-2 -right-2 translate-x-full whitespace-nowrap inline-flex items-center text-base px-2 py-0.5 font-medium ${deviation > 0
                   ? 'bg-emerald-500/20 text-emerald-400'
-                  : qoqChange < 0
+                  : deviation < 0
                     ? 'bg-red-500/20 text-red-400'
                     : 'bg-zinc-500/20 text-zinc-400'
                   }`}>
-                  {qoqChange > 0 ? '+' : ''}{qoqChange}% QoQ
+                  {deviation > 0 ? '+' : ''}{deviation}% vs avg
                 </span>
               </div>
-              <span className="text-xl text-zinc-500 mb-2">requests</span>
+              <span className="text-xl text-zinc-500 mb-2">QoQ</span>
             </div>
 
             {/* Bottom — narrative */}
-            <p className="leading-relaxed mt-1.5" style={{ fontSize: '0.7875rem', color: '#8b8b98' }}>{narrative}</p>
+            <p className="text-sm leading-relaxed mt-1.5" style={{ color: '#8b8b98' }}>{narrative}</p>
           </div>
         </div>
 
@@ -235,31 +250,31 @@ function FundDetailCard({ tickers, isLoading }: FundDetailCardProps) {
           <div className="py-2 flex items-center">
             <div className="w-3/4 grid grid-cols-3">
               <div>
-                <span className="text-xs text-zinc-500">Current Req</span>
-                <div className="flex items-baseline gap-1">
-                  <span className="text-lg font-bold text-white">{currentQ}</span>
-                  <span className="text-xs text-zinc-500">requests</span>
+                <span className="text-sm text-zinc-500">Current Req</span>
+                <div className="flex items-baseline gap-1.5">
+                  <span className="text-xl font-bold text-white">{currentQ}</span>
+                  <span className="text-sm text-zinc-500">requests</span>
                 </div>
               </div>
               <div>
-                <span className="text-xs text-zinc-500">Peak</span>
-                <div className="flex items-baseline gap-1">
-                  <span className="text-lg font-bold text-white">{peakQ}</span>
-                  <span className="text-xs text-zinc-500">requests</span>
+                <span className="text-sm text-zinc-500">Peak</span>
+                <div className="flex items-baseline gap-1.5">
+                  <span className="text-xl font-bold text-white">{peakQ}</span>
+                  <span className="text-sm text-zinc-500">requests</span>
                 </div>
               </div>
               <div>
-                <span className="text-xs text-zinc-500">Lowest</span>
-                <div className="flex items-baseline gap-1">
-                  <span className="text-lg font-bold text-white">{lowestQ}</span>
-                  <span className="text-xs text-zinc-500">requests</span>
+                <span className="text-sm text-zinc-500">Lowest</span>
+                <div className="flex items-baseline gap-1.5">
+                  <span className="text-xl font-bold text-white">{lowestQ}</span>
+                  <span className="text-sm text-zinc-500">requests</span>
                 </div>
               </div>
             </div>
           </div>
 
           {/* Bar Chart — fills remaining space */}
-          <div className="flex-1 relative">
+          <div className="flex-1 relative mt-2">
             <div className="absolute inset-0">
               <ClientOnlyChart>
                 <ResponsiveContainer width="100%" height="100%">
@@ -267,7 +282,8 @@ function FundDetailCard({ tickers, isLoading }: FundDetailCardProps) {
                     data={chartData}
                     margin={{ top: 0, right: 4, bottom: 0, left: 4 }}
                   >
-                    <YAxis domain={[0, 'dataMax']} hide />
+                    <CartesianGrid horizontal vertical={false} strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" />
+                    <YAxis domain={[0, globalMax]} tickCount={5} hide />
                     <XAxis
                       dataKey="label"
                       tick={{ fontSize: 10, fill: '#71717a' }}
@@ -292,9 +308,19 @@ function FundDetailCard({ tickers, isLoading }: FundDetailCardProps) {
                       animationDuration={700}
                       shape={(props: BarShapeProps) => {
                         const { x, y, width, height, fill } = props as BarShapeProps & { fill: string };
+                        const filterId = `glow-${x}-${y}`;
                         return (
                           <g>
-                            <rect x={x} y={y} width={width} height={height} fill={fill} />
+                            <defs>
+                              <filter id={filterId} x="-40%" y="-40%" width="180%" height="180%">
+                                <feGaussianBlur in="SourceGraphic" stdDeviation="1" result="blur" />
+                                <feMerge>
+                                  <feMergeNode in="blur" />
+                                  <feMergeNode in="SourceGraphic" />
+                                </feMerge>
+                              </filter>
+                            </defs>
+                            <rect x={x} y={y} width={width} height={height} fill={fill} filter={`url(#${filterId})`} />
                             <rect x={x} y={y} width={width} height={1.5} fill="#ffffff" />
                           </g>
                         );
