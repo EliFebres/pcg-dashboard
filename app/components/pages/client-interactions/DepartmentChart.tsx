@@ -12,7 +12,7 @@ interface DepartmentChartProps {
 const DepartmentChart = React.memo<DepartmentChartProps>(({ data }) => {
   return (
     <>
-      <div className="flex-1 mb-3">
+      <div className="flex-1 mb-3 min-h-[80px]">
         <ClientOnlyChart>
           <ResponsiveContainer width="100%" height="100%" minWidth={100} minHeight={80}>
             <BarChart data={data} layout="vertical" barSize={16}>

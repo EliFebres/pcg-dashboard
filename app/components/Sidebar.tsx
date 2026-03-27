@@ -10,6 +10,7 @@ interface NavItem {
   href: string;
   icon: React.ComponentType<{ className?: string }>;
   children?: NavItem[];
+  disabled?: boolean;
 }
 
 interface NavSection {
@@ -26,6 +27,7 @@ const navSections: NavSection[] = [
         label: 'Trends',
         href: '/dashboard/trends',
         icon: BarChart3,
+        disabled: true,
         children: [
           { label: 'Portfolio Trends', href: '/dashboard/trends/portfolio-trends', icon: PieChart },
           { label: 'Ticker Trends', href: '/dashboard/trends/ticker-trends', icon: Flame },
@@ -135,8 +137,23 @@ export default function Sidebar({ className = '' }: SidebarProps) {
                 const parentActive = isParentActive(item);
                 const hasChildren = item.children && item.children.length > 0;
                 const isExpanded = expandedItems.includes(item.label);
+                const isDisabled = item.disabled === true;
 
                 if (hasChildren) {
+                  if (isDisabled) {
+                    return (
+                      <div key={item.label}>
+                        <div className="w-full flex items-center justify-between px-2 py-2 border-l-2 border-transparent opacity-40 cursor-not-allowed">
+                          <div className="flex items-center gap-2.5">
+                            <Icon className="w-5 h-5 flex-shrink-0 text-zinc-600" />
+                            <span className="text-[0.9rem] font-semibold tracking-wide text-zinc-600">{item.label}</span>
+                          </div>
+                          <ChevronDown className="w-4 h-4 text-zinc-600" />
+                        </div>
+                      </div>
+                    );
+                  }
+
                   return (
                     <div key={item.label}>
                       <button

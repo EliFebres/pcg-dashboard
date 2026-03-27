@@ -1,8 +1,9 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { ArrowUpRight, ArrowDownRight } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell, AreaChart, Area, PieChart, Pie, Tooltip } from 'recharts';
+import ClientOnlyChart from '@/app/components/ClientOnlyChart';
 import type { EngagementMetric } from '@/app/lib/types/engagements';
 
 interface MetricCardsProps {
@@ -13,6 +14,15 @@ interface MetricCardsProps {
 }
 
 export default function MetricCards({ metrics, flippedCard, onCardEnter, onCardLeave }: MetricCardsProps) {
+  const [windowWidth, setWindowWidth] = useState(0);
+  useEffect(() => {
+    setWindowWidth(window.innerWidth);
+    const handler = () => setWindowWidth(window.innerWidth);
+    window.addEventListener('resize', handler);
+    return () => window.removeEventListener('resize', handler);
+  }, []);
+  const showCharts = windowWidth >= 1600;
+
   return (
     <div className="grid grid-cols-4 gap-4">
       {metrics.map((metric, index) => {
@@ -85,75 +95,80 @@ export default function MetricCards({ metrics, flippedCard, onCardEnter, onCardL
                 )}
 
                 {/* Sparkline for metrics with trend data */}
-                {metric.sparklineData && (
+                {metric.sparklineData && showCharts && (
                   <div className="absolute bottom-4 right-4 w-[45%] h-10">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <AreaChart data={metric.sparklineData} margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
-                        <defs>
-                          <linearGradient id={`sparklineGradient-${index}`} x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="0%" stopColor={metric.isPositive ? '#39FF14' : '#FF3131'} stopOpacity={0.3} />
-                            <stop offset="100%" stopColor={metric.isPositive ? '#39FF14' : '#FF3131'} stopOpacity={0} />
-                          </linearGradient>
-                        </defs>
-                        <Area
-                          type="monotone"
-                          dataKey="value"
-                          stroke={metric.isPositive ? '#39FF14' : '#FF3131'}
-                          strokeWidth={1.5}
-                          fill={`url(#sparklineGradient-${index})`}
-                          isAnimationActive={true}
-                          animationDuration={700}
-                        />
-                      </AreaChart>
-                    </ResponsiveContainer>
+                    <ClientOnlyChart>
+                      <ResponsiveContainer width="100%" height="100%">
+                        <AreaChart data={metric.sparklineData} margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
+                          <defs>
+                            <linearGradient id={`sparklineGradient-${index}`} x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="0%" stopColor={metric.isPositive ? '#39FF14' : '#FF3131'} stopOpacity={0.3} />
+                              <stop offset="100%" stopColor={metric.isPositive ? '#39FF14' : '#FF3131'} stopOpacity={0} />
+                            </linearGradient>
+                          </defs>
+                          <Area
+                            type="monotone"
+                            dataKey="value"
+                            stroke={metric.isPositive ? '#39FF14' : '#FF3131'}
+                            strokeWidth={1.5}
+                            fill={`url(#sparklineGradient-${index})`}
+                            isAnimationActive={true}
+                            animationDuration={700}
+                          />
+                        </AreaChart>
+                      </ResponsiveContainer>
+                    </ClientOnlyChart>
                   </div>
                 )}
 
                 {/* Mini donut chart for metrics with pie data */}
                 {metric.pieData && metric.pieData.length > 0 && (
                   <div className="absolute bottom-2 right-2 w-16 h-16">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
-                        <Pie
-                          data={metric.pieData}
-                          dataKey="value"
-                          nameKey="name"
-                          cx="50%"
-                          cy="50%"
-                          innerRadius={18}
-                          outerRadius={28}
-                          paddingAngle={2}
-                          isAnimationActive={true}
-                          animationDuration={700}
-                        >
-                          {metric.pieData.map((entry, i) => (
-                            <Cell key={`cell-${i}`} fill={entry.color} />
-                          ))}
-                        </Pie>
-                        <Tooltip
-                          content={({ active, payload }) => {
-                            if (active && payload && payload.length) {
-                              const data = payload[0].payload;
-                              const total = metric.pieData!.reduce((sum, d) => sum + d.value, 0);
-                              const percent = Math.round((data.value / total) * 100);
-                              return (
-                                <div className="bg-zinc-800 border border-zinc-700 px-2 py-1 rounded text-xs">
-                                  <span style={{ color: data.color }}>{data.name}</span>
-                                  <span className="text-zinc-300 ml-1">{percent}%</span>
-                                </div>
-                              );
-                            }
-                            return null;
-                          }}
-                        />
-                      </PieChart>
-                    </ResponsiveContainer>
+                    <ClientOnlyChart>
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie
+                            data={metric.pieData}
+                            dataKey="value"
+                            nameKey="name"
+                            cx="50%"
+                            cy="50%"
+                            innerRadius={18}
+                            outerRadius={28}
+                            paddingAngle={2}
+                            isAnimationActive={true}
+                            animationDuration={700}
+                          >
+                            {metric.pieData.map((entry, i) => (
+                              <Cell key={`cell-${i}`} fill={entry.color} />
+                            ))}
+                          </Pie>
+                          <Tooltip
+                            content={({ active, payload }) => {
+                              if (active && payload && payload.length) {
+                                const data = payload[0].payload;
+                                const total = metric.pieData!.reduce((sum, d) => sum + d.value, 0);
+                                const percent = Math.round((data.value / total) * 100);
+                                return (
+                                  <div className="bg-zinc-800 border border-zinc-700 px-2 py-1 rounded text-xs">
+                                    <span style={{ color: data.color }}>{data.name}</span>
+                                    <span className="text-zinc-300 ml-1">{percent}%</span>
+                                  </div>
+                                );
+                              }
+                              return null;
+                            }}
+                          />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </ClientOnlyChart>
                   </div>
                 )}
 
                 {/* Mini stacked bar chart for metrics with stacked bar data */}
-                {metric.stackedBarData && metric.stackedBarData.length > 0 && (
+                {metric.stackedBarData && metric.stackedBarData.length > 0 && showCharts && (
                   <div className="absolute bottom-3 right-3 w-[50%] h-14 overflow-visible">
+                    <ClientOnlyChart>
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart data={metric.stackedBarData} margin={{ top: 2, right: 2, bottom: 2, left: 2 }} barCategoryGap="20%">
                         <XAxis dataKey="month" hide />
@@ -184,12 +199,13 @@ export default function MetricCards({ metrics, flippedCard, onCardEnter, onCardL
                         <Bar dataKey="Institution" stackId="a" fill="#0e7490" radius={[2, 2, 0, 0]} isAnimationActive={true} animationDuration={700} />
                       </BarChart>
                     </ResponsiveContainer>
+                    </ClientOnlyChart>
                   </div>
                 )}
 
                 {/* NNA distribution tiers */}
                 {metric.nnaTiers && metric.nnaTiers.length > 0 && (
-                  <div className="absolute bottom-3 right-4 w-[50%]">
+                  <div className="absolute bottom-3 right-4 w-[50%] hidden min-[1600px]:block">
                     <div className="space-y-1">
                       {metric.nnaTiers.map((tier, i) => {
                         const maxCount = Math.max(...metric.nnaTiers!.map(t => t.count), 1);

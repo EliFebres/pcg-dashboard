@@ -1,25 +1,16 @@
 'use client';
 
-import { useSyncExternalStore, type ReactNode } from 'react';
+import { useState, useEffect, type ReactNode } from 'react';
 
 interface ClientOnlyChartProps {
   children: ReactNode;
   fallback?: ReactNode;
 }
 
-// Simple store that returns true after hydration
-const emptySubscribe = () => () => {};
-const getClientSnapshot = () => true;
-const getServerSnapshot = () => false;
-
-// Wrapper component that only renders children on the client
-// This prevents Recharts SSR warnings about container dimensions
+// Defers chart rendering until after first paint so Recharts ResizeObserver
+// always sees real container dimensions instead of -1x-1.
 export default function ClientOnlyChart({ children, fallback = null }: ClientOnlyChartProps) {
-  const isClient = useSyncExternalStore(emptySubscribe, getClientSnapshot, getServerSnapshot);
-
-  if (!isClient) {
-    return fallback;
-  }
-
-  return <>{children}</>;
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  return mounted ? <>{children}</> : <>{fallback}</>;
 }
