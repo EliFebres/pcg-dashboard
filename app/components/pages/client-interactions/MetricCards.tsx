@@ -51,11 +51,13 @@ export default function MetricCards({ metrics, flippedCard, onCardEnter, onCardL
                 className="absolute inset-0 overflow-visible bg-zinc-900/60 backdrop-blur-md border border-zinc-800/50 p-5 rounded-xl hover:border-zinc-700/50 transition-all duration-300"
                 style={{ backfaceVisibility: 'hidden' }}
               >
-                <div className="absolute top-5 right-4 flex items-center gap-0.5">
-                  <div className="w-1 h-1 bg-white/80 rounded-full" />
-                  <div className="w-1 h-1 bg-white/80 rounded-full" />
-                  <div className="w-1 h-1 bg-white/80 rounded-full" />
-                </div>
+                {isFlippable && (
+                  <div className="absolute top-5 right-4 flex items-center gap-0.5">
+                    <div className="w-1 h-1 bg-white/80 rounded-full" />
+                    <div className="w-1 h-1 bg-white/80 rounded-full" />
+                    <div className="w-1 h-1 bg-white/80 rounded-full" />
+                  </div>
+                )}
                 <div className="absolute top-3.5 left-5 z-10">
                   <p className="text-white text-[0.8rem]">{metric.label}</p>
                 </div>

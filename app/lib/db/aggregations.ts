@@ -79,21 +79,30 @@ export async function computeMetrics(filters: EngagementFilters): Promise<Dashbo
     FROM engagements ${prevAndClause}
   `, prevParams);
 
-  // ---- In-progress count (never period-filtered) ----
-  const inProgressRows = await query<Record<string, unknown>>(`
-    SELECT COUNT(*) AS count FROM engagements WHERE status = 'In Progress'
-  `);
+  // ---- In-progress count (respects all active filters except status) ----
+  const inProgressFilters = { ...filters, status: undefined };
+  const { whereClause: ipWhere, params: ipParams } = buildFilterClause(inProgressFilters);
+  const inProgressAndClause = ipWhere
+    ? `${ipWhere} AND status = 'In Progress'`
+    : `WHERE status = 'In Progress'`;
 
-  // ---- Weekly in-progress sparkline (last 8 weeks) ----
+  const inProgressRows = await query<Record<string, unknown>>(`
+    SELECT COUNT(*) AS count FROM engagements ${inProgressAndClause}
+  `, ipParams);
+
+  // ---- Weekly in-progress sparkline (last 8 weeks, same filters) ----
+  const sparklineAndClause = ipWhere
+    ? `${ipWhere} AND date_started >= (CURRENT_DATE - INTERVAL '8 weeks')`
+    : `WHERE date_started >= (CURRENT_DATE - INTERVAL '8 weeks')`;
+
   const sparklineRows = await query<Record<string, unknown>>(`
     SELECT
       strftime(date_started, '%Y-W%W') AS week_key,
       COUNT(*) FILTER (WHERE status = 'In Progress') AS in_progress_count
-    FROM engagements
-    WHERE date_started >= (CURRENT_DATE - INTERVAL '8 weeks')
+    FROM engagements ${sparklineAndClause}
     GROUP BY week_key
     ORDER BY week_key
-  `);
+  `, ipParams);
 
   // -------------------------------------------------------------------------
   // Compute metrics from query results
