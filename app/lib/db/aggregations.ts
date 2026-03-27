@@ -2,8 +2,8 @@
  * Server-side aggregation functions for the Client Interactions dashboard.
  *
  * DATA SOURCE:
- * - If DUCKDB_PATH env var is set → query DuckDB (real data)
- * - If DUCKDB_PATH is not set    → return mock data (development/demo)
+ * - If DUCKDB_DIR env var is set → query DuckDB (real data)
+ * - If DUCKDB_DIR is not set    → return mock data (development/demo)
  */
 import { query } from './index';
 import {
@@ -35,7 +35,7 @@ export const STATIC_FILTER_OPTIONS: FilterOptions = {
 // =============================================================================
 
 export async function computeMetrics(filters: EngagementFilters): Promise<DashboardMetrics> {
-  if (!process.env.DUCKDB_PATH) return getMockMetrics(filters);
+  if (!process.env.DUCKDB_DIR) return getMockMetrics(filters);
 
   const period = filters.period || '1Y';
   const prevDates = getPreviousPeriodDates(period);
@@ -206,7 +206,7 @@ export async function computeMetrics(filters: EngagementFilters): Promise<Dashbo
 // =============================================================================
 
 export async function computeDepartmentBreakdown(filters: EngagementFilters): Promise<DepartmentBreakdown> {
-  if (!process.env.DUCKDB_PATH) return getMockDepartmentBreakdown(filters);
+  if (!process.env.DUCKDB_DIR) return getMockDepartmentBreakdown(filters);
 
   const { whereClause, params } = buildFilterClause(filters);
 
@@ -248,7 +248,7 @@ export async function computeDepartmentBreakdown(filters: EngagementFilters): Pr
 // =============================================================================
 
 export async function computeContributionData(filters: EngagementFilters): Promise<ContributionDataResponse> {
-  if (!process.env.DUCKDB_PATH) return getMockContributionData(filters);
+  if (!process.env.DUCKDB_DIR) return getMockContributionData(filters);
 
   // Apply all filters EXCEPT period — heatmap always shows a rolling 104-week window
   const heatmapFilters = { ...filters, period: undefined };
@@ -332,7 +332,7 @@ export async function computeContributionData(filters: EngagementFilters): Promi
 // =============================================================================
 
 export async function computeEngagementsList(filters: EngagementFilters): Promise<EngagementsResponse> {
-  if (!process.env.DUCKDB_PATH) return getMockEngagementsList(filters);
+  if (!process.env.DUCKDB_DIR) return getMockEngagementsList(filters);
 
   const { whereClause, params } = buildFilterClause(filters);
   const page = filters.page || 1;

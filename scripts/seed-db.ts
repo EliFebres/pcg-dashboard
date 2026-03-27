@@ -10,8 +10,8 @@
  *   npx tsx scripts/seed-db.ts              # Create schema only
  *   npx tsx scripts/seed-db.ts --with-mock  # Schema + seed with mock data
  *
- * Requires DUCKDB_PATH to be set (via .env.local or environment):
- *   DUCKDB_PATH=./data/engagements.duckdb npx tsx scripts/seed-db.ts --with-mock
+ * Requires DUCKDB_DIR to be set (via .env.local or environment):
+ *   DUCKDB_DIR=./data npx tsx scripts/seed-db.ts --with-mock
  * =============================================================================
  */
 
@@ -25,22 +25,21 @@ import fs from 'fs';
 import { engagements } from '../app/lib/data/engagements';
 
 async function main() {
-  const dbPath = process.env.DUCKDB_PATH;
-  if (!dbPath) {
-    console.error('ERROR: DUCKDB_PATH environment variable is not set.');
-    console.error('Create a .env.local file with: DUCKDB_PATH=./data/engagements.duckdb');
+  const dbDir = process.env.DUCKDB_DIR;
+  if (!dbDir) {
+    console.error('ERROR: DUCKDB_DIR environment variable is not set.');
+    console.error('Create a .env.local file with: DUCKDB_DIR=./data');
     process.exit(1);
   }
 
-  const resolved = path.resolve(dbPath);
-
-  // Ensure the parent directory exists
-  const dir = path.dirname(resolved);
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true });
-    console.log(`Created directory: ${dir}`);
+  // Ensure the data directory exists
+  const resolvedDir = path.resolve(dbDir);
+  if (!fs.existsSync(resolvedDir)) {
+    fs.mkdirSync(resolvedDir, { recursive: true });
+    console.log(`Created directory: ${resolvedDir}`);
   }
 
+  const resolved = path.join(resolvedDir, 'engagements.duckdb');
   console.log(`Connecting to DuckDB at: ${resolved}`);
   const instance = await DuckDBInstance.create(resolved);
   const conn = await instance.connect();

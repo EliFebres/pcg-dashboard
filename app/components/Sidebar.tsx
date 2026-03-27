@@ -3,7 +3,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, BarChart3, ChevronDown, PieChart, Flame, ChevronsUpDown, User, Settings, HelpCircle } from 'lucide-react';
+import { LayoutDashboard, BarChart3, ChevronDown, PieChart, Flame, ChevronsUpDown, User, LogOut, Users } from 'lucide-react';
+import { useCurrentUser } from '@/app/lib/auth/context';
+import { toDisplayName } from '@/app/lib/auth/types';
 
 interface NavItem {
   label: string;
@@ -54,6 +56,7 @@ function formatDisplayName(fullName: string): string {
 
 export default function Sidebar({ className = '' }: SidebarProps) {
   const pathname = usePathname();
+  const { user } = useCurrentUser();
   // Compute which items should be expanded based on current pathname
   const getExpandedItemsForPath = (path: string) => {
     const items: string[] = [];
@@ -114,8 +117,17 @@ export default function Sidebar({ className = '' }: SidebarProps) {
 
           {/* Name and Role */}
           <div className="flex-1 min-w-0 text-left">
-            <p className="text-[1.21rem] font-semibold text-zinc-200 truncate tracking-wide leading-tight">{formatDisplayName('Eli Febres')}</p>
-            <p className="text-[0.86rem] text-zinc-500 truncate -mt-0.5">Associate</p>
+            <div className="flex items-center gap-1.5 min-w-0">
+              <p className="text-[1.21rem] font-semibold text-zinc-200 truncate tracking-wide leading-tight">
+                {user ? formatDisplayName(`${user.firstName} ${user.lastName}`) : '...'}
+              </p>
+              {user?.role === 'admin' && (
+                <span className="flex-shrink-0 text-[0.6rem] font-semibold px-1.5 py-0.5 rounded bg-cyan-500/15 text-cyan-400 border border-cyan-500/20 uppercase tracking-wider">
+                  Admin
+                </span>
+              )}
+            </div>
+            <p className="text-[0.86rem] text-zinc-500 truncate -mt-0.5">{user?.title ?? ''}</p>
           </div>
 
           {/* Up-Down Arrow */}
@@ -216,28 +228,38 @@ export default function Sidebar({ className = '' }: SidebarProps) {
         ))}
       </nav>
 
+      {/* Admin section — only visible to admins */}
+      {user?.role === 'admin' && (
+        <div className="px-1.5 pb-1">
+          <div className="mb-1">
+            <p className="px-2 text-xs font-medium text-zinc-600 uppercase tracking-wider mb-0.5">Admin</p>
+            <Link
+              href="/admin/users"
+              className={`w-full flex items-center gap-2.5 px-2 py-2 transition-colors border-l-2 ${
+                pathname === '/admin/users'
+                  ? 'bg-gradient-to-r from-blue-600/20 to-cyan-600/10 text-cyan-400 border-cyan-400 backdrop-blur-sm'
+                  : 'text-zinc-400 hover:bg-white/[0.03] hover:text-zinc-200 border-transparent'
+              }`}
+            >
+              <Users className="w-5 h-5 flex-shrink-0" />
+              <span className="text-[0.9rem] font-semibold tracking-wide">User Management</span>
+            </Link>
+          </div>
+        </div>
+      )}
+
       {/* Footer Actions - adjust pb-[20px] to change bottom spacing */}
       <div className="relative px-1.5 pt-3 pb-[20px]">
         <div className="space-y-0.5">
           <button
-            className="w-full flex items-center gap-2.5 px-2 py-2 text-zinc-400 hover:bg-white/[0.03] hover:text-zinc-200 border-l-2 border-transparent transition-colors"
-            onClick={() => {
-              // TODO: Open settings
-              console.log('Settings clicked');
+            className="w-full flex items-center gap-2.5 px-2 py-2 text-red-400/70 hover:bg-red-500/[0.06] hover:text-red-400 border-l-2 border-transparent transition-colors"
+            onClick={async () => {
+              await fetch('/api/auth/logout', { method: 'POST' });
+              window.location.href = '/login';
             }}
           >
-            <Settings className="w-5 h-5 flex-shrink-0" />
-            <span className="text-[0.9rem] font-semibold tracking-wide">Settings</span>
-          </button>
-          <button
-            className="w-full flex items-center gap-2.5 px-2 py-2 text-zinc-400 hover:bg-white/[0.03] hover:text-zinc-200 border-l-2 border-transparent transition-colors"
-            onClick={() => {
-              // TODO: Open help center
-              console.log('Help Center clicked');
-            }}
-          >
-            <HelpCircle className="w-5 h-5 flex-shrink-0" />
-            <span className="text-[0.9rem] font-semibold tracking-wide">Help Center</span>
+            <LogOut className="w-5 h-5 flex-shrink-0" />
+            <span className="text-[0.9rem] font-semibold tracking-wide">Log Out</span>
           </button>
         </div>
       </div>

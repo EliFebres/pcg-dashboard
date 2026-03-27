@@ -18,6 +18,8 @@ import {
 import type { DashboardData, DashboardMetrics, EngagementFilters } from '@/app/lib/api/client-interactions';
 import type { EngagementMetric, Engagement } from '@/app/lib/types/engagements';
 import DashboardHeader from '@/app/components/DashboardHeader';
+import { useCurrentUser } from '@/app/lib/auth/context';
+import { toDisplayName } from '@/app/lib/auth/types';
 
 // =============================================================================
 // HELPERS
@@ -105,6 +107,7 @@ function parseISODate(dateStr: string): string {
 // =============================================================================
 
 export default function EngagementsDashboard() {
+  const { user } = useCurrentUser();
   const [isLoading, setIsLoading] = useState(true);
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -152,7 +155,7 @@ export default function EngagementsDashboard() {
   // -------------------------------------------------------------------------
   // Data loading — fires on mount and whenever any filter/search changes
   // -------------------------------------------------------------------------
-  const currentUser = 'Eli F.';
+  const currentUser = user ? toDisplayName(user.firstName, user.lastName) : 'All Team Members';
 
   useEffect(() => {
     const filters: EngagementFilters = {

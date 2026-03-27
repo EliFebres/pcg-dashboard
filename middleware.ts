@@ -1,0 +1,52 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { jwtVerify } from 'jose';
+
+const SESSION_COOKIE = 'pcg_session';
+
+function getSecret(): Uint8Array {
+  return new TextEncoder().encode(process.env.JWT_SECRET ?? '');
+}
+
+export async function middleware(req: NextRequest) {
+  const { pathname } = req.nextUrl;
+  const token = req.cookies.get(SESSION_COOKIE)?.value;
+
+  let payload: { role?: string; status?: string } | null = null;
+  if (token) {
+    try {
+      const result = await jwtVerify(token, getSecret());
+      payload = result.payload as { role?: string; status?: string };
+    } catch {
+      payload = null;
+    }
+  }
+
+  const isAuthenticated = payload !== null && payload.status === 'active';
+  const isAdmin = isAuthenticated && payload?.role === 'admin';
+
+  // Redirect already-authenticated users away from login/signup
+  if ((pathname === '/login' || pathname === '/signup') && isAuthenticated) {
+    return NextResponse.redirect(new URL('/dashboard/client-interactions', req.url));
+  }
+
+  // Protect /dashboard/* — require active session
+  if (pathname.startsWith('/dashboard/') && !isAuthenticated) {
+    return NextResponse.redirect(new URL('/login', req.url));
+  }
+
+  // Protect /admin/* — require active session + admin role
+  if (pathname.startsWith('/admin/')) {
+    if (!isAuthenticated) {
+      return NextResponse.redirect(new URL('/login', req.url));
+    }
+    if (!isAdmin) {
+      return NextResponse.redirect(new URL('/dashboard/client-interactions', req.url));
+    }
+  }
+
+  return NextResponse.next();
+}
+
+export const config = {
+  matcher: ['/dashboard/:path*', '/admin/:path*', '/login', '/signup'],
+};

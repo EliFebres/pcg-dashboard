@@ -38,7 +38,7 @@ export async function GET(req: NextRequest) {
 // POST /api/client-interactions/engagements
 // Body: engagement fields (camelCase)
 export async function POST(req: NextRequest) {
-  if (!process.env.DUCKDB_PATH) {
+  if (!process.env.DUCKDB_DIR) {
     return NextResponse.json({ error: 'Database not configured. Set DUCKDB_PATH to enable write operations.' }, { status: 503 });
   }
   try {

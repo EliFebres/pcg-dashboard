@@ -1,0 +1,92 @@
+export const runtime = 'nodejs';
+
+import { NextRequest, NextResponse } from 'next/server';
+import { queryUsers, executeUsers } from '@/app/lib/db/users';
+import { verifyJWT, SESSION_COOKIE } from '@/app/lib/auth/jwt';
+import { rowToUser } from '@/app/lib/auth/types';
+
+const VALID_STATUSES = ['pending', 'active', 'inactive'];
+const VALID_ROLES = ['user', 'admin'];
+
+export async function PATCH(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const token = req.cookies.get(SESSION_COOKIE)?.value;
+    if (!token) {
+      return NextResponse.json({ error: 'Not authenticated.' }, { status: 401 });
+    }
+
+    let payload;
+    try {
+      payload = await verifyJWT(token);
+    } catch {
+      return NextResponse.json({ error: 'Invalid or expired session.' }, { status: 401 });
+    }
+
+    if (payload.role !== 'admin') {
+      return NextResponse.json({ error: 'Forbidden.' }, { status: 403 });
+    }
+
+    const { id } = await params;
+
+    // Fetch target user
+    const rows = await queryUsers('SELECT * FROM users WHERE id = ?', [id]);
+    if (rows.length === 0) {
+      return NextResponse.json({ error: 'User not found.' }, { status: 404 });
+    }
+
+    const body = await req.json();
+    const { status, role } = body;
+
+    // Safety: block self-deactivation and self-demotion
+    if (payload.sub === id) {
+      if (status === 'inactive') {
+        return NextResponse.json({ error: 'You cannot deactivate your own account.' }, { status: 400 });
+      }
+      if (role === 'user') {
+        return NextResponse.json({ error: 'You cannot remove admin from your own account.' }, { status: 400 });
+      }
+    }
+
+    // Validate provided fields
+    if (status !== undefined && !VALID_STATUSES.includes(status)) {
+      return NextResponse.json({ error: 'Invalid status value.' }, { status: 400 });
+    }
+    if (role !== undefined && !VALID_ROLES.includes(role)) {
+      return NextResponse.json({ error: 'Invalid role value.' }, { status: 400 });
+    }
+
+    const sets: string[] = [];
+    const values: unknown[] = [];
+
+    if (status !== undefined) {
+      sets.push('status = ?');
+      values.push(status);
+      if (status === 'active') {
+        sets.push('approved_at = now()');
+        sets.push('approved_by_id = ?');
+        values.push(payload.sub);
+      }
+    }
+    if (role !== undefined) {
+      sets.push('role = ?');
+      values.push(role);
+    }
+
+    if (sets.length === 0) {
+      return NextResponse.json({ error: 'No valid fields to update.' }, { status: 400 });
+    }
+
+    values.push(id);
+    await executeUsers(`UPDATE users SET ${sets.join(', ')} WHERE id = ?`, values);
+
+    const updated = await queryUsers('SELECT * FROM users WHERE id = ?', [id]);
+    const user = rowToUser(updated[0] as Record<string, unknown>);
+    return NextResponse.json(user, { status: 200 });
+  } catch (err) {
+    console.error('[PATCH /api/admin/users/[id]]', err);
+    return NextResponse.json({ error: 'Internal server error.' }, { status: 500 });
+  }
+}

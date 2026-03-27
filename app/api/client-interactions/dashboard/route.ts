@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
       departments,
       contributionData,
       engagements,
-      filterOptions: process.env.DUCKDB_PATH ? STATIC_FILTER_OPTIONS : getMockFilterOptions(),
+      filterOptions: process.env.DUCKDB_DIR ? STATIC_FILTER_OPTIONS : getMockFilterOptions(),
     });
   } catch (err) {
     console.error('POST /api/client-interactions/dashboard error:', err);

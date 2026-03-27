@@ -1,0 +1,43 @@
+export interface User {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  title: string;
+  department: 'ISG';
+  team: 'Portfolio Consulting Group' | 'Equity Specialist' | 'Fixed Income Specialist';
+  office: 'Charlotte' | 'Austin' | 'Santa Monica' | 'UK' | 'Sydney';
+  role: 'user' | 'admin';
+  status: 'pending' | 'active' | 'inactive';
+  createdAt: string;
+  approvedAt: string | null;
+  approvedById: string | null;
+}
+
+/**
+ * Converts a first/last name pair to the display format used in TEAM_MEMBER_OFFICES
+ * and in engagement team_members arrays. e.g. "Eli" + "Febres" → "Eli F."
+ */
+export function toDisplayName(firstName: string, lastName: string): string {
+  if (!lastName || lastName.length === 0) return firstName;
+  return `${firstName} ${lastName[0]}.`;
+}
+
+/** Map a raw DB row (snake_case) to a User object */
+export function rowToUser(row: Record<string, unknown>): User {
+  return {
+    id: row.id as string,
+    email: row.email as string,
+    firstName: row.first_name as string,
+    lastName: row.last_name as string,
+    title: row.title as string,
+    department: (row.department as string ?? 'ISG') as 'ISG',
+    team: row.team as User['team'],
+    office: row.office as User['office'],
+    role: row.role as User['role'],
+    status: row.status as User['status'],
+    createdAt: row.created_at ? String(row.created_at) : new Date().toISOString(),
+    approvedAt: row.approved_at ? String(row.approved_at) : null,
+    approvedById: row.approved_by_id as string | null,
+  };
+}

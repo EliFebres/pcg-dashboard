@@ -3,21 +3,25 @@ import type { DuckDBConnection } from '@duckdb/node-api';
 import path from 'path';
 import fs from 'fs';
 
-let connectionPromise: Promise<DuckDBConnection> | null = null;
+// Store on `global` so the connection survives Next.js hot reloads in dev mode.
+// Module-level variables get reset on each reload, leaving the old connection
+// holding the file lock and causing "file already open" errors.
+const g = global as typeof globalThis & {
+  _engagementsConnectionPromise?: Promise<DuckDBConnection>;
+};
 
 export async function getConnection(): Promise<DuckDBConnection> {
-  if (!connectionPromise) {
-    connectionPromise = (async () => {
-      const dbPath = process.env.DUCKDB_PATH;
-      if (!dbPath) throw new Error('DUCKDB_PATH environment variable is not set');
+  if (!g._engagementsConnectionPromise) {
+    g._engagementsConnectionPromise = (async () => {
+      const dbDir = process.env.DUCKDB_DIR;
+      if (!dbDir) throw new Error('DUCKDB_DIR environment variable is not set');
 
-      const resolved = path.resolve(dbPath);
-
-      // Ensure the parent directory exists before DuckDB tries to create the file
-      const dir = path.dirname(resolved);
-      if (!fs.existsSync(dir)) {
-        fs.mkdirSync(dir, { recursive: true });
+      // Ensure the data directory exists before DuckDB tries to create the file
+      const resolvedDir = path.resolve(dbDir);
+      if (!fs.existsSync(resolvedDir)) {
+        fs.mkdirSync(resolvedDir, { recursive: true });
       }
+      const resolved = path.join(resolvedDir, 'engagements.duckdb');
 
       const instance = await DuckDBInstance.create(resolved);
       const conn = await instance.connect();
@@ -52,7 +56,7 @@ export async function getConnection(): Promise<DuckDBConnection> {
       return conn;
     })();
   }
-  return connectionPromise;
+  return g._engagementsConnectionPromise;
 }
 
 export async function query<T = Record<string, unknown>>(

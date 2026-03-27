@@ -9,7 +9,7 @@ export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  if (!process.env.DUCKDB_PATH) {
+  if (!process.env.DUCKDB_DIR) {
     return NextResponse.json({ error: 'Database not configured.' }, { status: 503 });
   }
   try {
