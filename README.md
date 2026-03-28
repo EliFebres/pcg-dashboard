@@ -16,7 +16,7 @@ A Next.js dashboard application for tracking client interactions, portfolio tren
 - Promote users to admin or demote admins to standard users
 
 ### Client Interactions Dashboard
-- Track and manage client engagements (IRQ, GRRF, GCG Ad-Hoc) with full CRUD support
+- Track and manage client engagements (IRQ, SRRF, GCG Ad-Hoc) with full CRUD support
 - Create, edit, and delete engagements via modal forms
 - Inline edits for status, NNA (Net New Assets), and notes
 - GitHub-style contribution heatmap showing daily activity over time

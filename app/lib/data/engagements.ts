@@ -323,7 +323,7 @@ function generateEngagements(): Engagement[] {
       const seed = id * 23;
       const dept = getWeightedDepartment(seed);
       const internalClient = getInternalClientByDepartment(dept, seed + 1);
-      const intakeType: 'IRQ' | 'GRRF' = seededRandom(seed + 2) > 0.5 ? 'IRQ' : 'GRRF';
+      const intakeType: 'IRQ' | 'SRRF' = seededRandom(seed + 2) > 0.5 ? 'IRQ' : 'SRRF';
       const projectType = projectTypes[Math.floor(seededRandom(seed + 3) * projectTypes.length)];
       const teamCount = 1 + Math.floor(seededRandom(seed + 4) * 3);
       const selectedTeam: string[] = [];
@@ -376,7 +376,7 @@ function generateEngagements(): Engagement[] {
     const seed = (id + i) * 31;
     const dept = getWeightedDepartment(seed);
     const internalClient = getInternalClientByDepartment(dept, seed + 1);
-    const intakeType: 'IRQ' | 'GRRF' = seededRandom(seed + 2) > 0.5 ? 'IRQ' : 'GRRF';
+    const intakeType: 'IRQ' | 'SRRF' = seededRandom(seed + 2) > 0.5 ? 'IRQ' : 'SRRF';
     const status = i < 3 ? 'In Progress' : 'Pending';
     const teamCount = 1 + Math.floor(seededRandom(seed + 4) * 3);
     const selectedTeam: string[] = [];

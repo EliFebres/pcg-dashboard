@@ -5,11 +5,13 @@ import { X, ChevronDown, Check, DollarSign, Briefcase } from 'lucide-react';
 import NNAModal from '../shared/NNAModal';
 import PortfolioModal from '../shared/PortfolioModal';
 import { PortfolioHolding } from '@/app/lib/types/engagements';
+import { getGcgClients, GcgClient } from '@/app/lib/api/client-interactions';
 
 export interface InteractionFormData {
   externalClient: string | null;
   internalClient: string;
-  intakeType: 'IRQ' | 'GRRF' | 'GCG Ad-Hoc' | '';
+  internalClientDept: 'IAG' | 'Broker-Dealer' | 'Institution' | '';
+  intakeType: 'IRQ' | 'SRRF' | 'GCG Ad-Hoc' | '';
   adHocChannel?: 'In-Person' | 'Email' | 'Teams';
   projectType: string;
   teamMembers: string[];
@@ -38,14 +40,7 @@ interface NewInteractionFormProps {
   editingEngagement?: EditingEngagement | null;
 }
 
-// Internal clients grouped by department
-const internalClientsByDept = {
-  'IAG': ['Jennifer Martinez', 'Robert Chen', 'Amanda Foster'],
-  'Broker-Dealer': ['Michael Thompson', 'Jessica Williams', 'Daniel Park'],
-  'Institution': ['Christopher Lee', 'Rachel Goldman', 'Andrew Mitchell'],
-};
-
-const allInternalClients = Object.values(internalClientsByDept).flat();
+const GCG_DEPARTMENTS = ['IAG', 'Broker-Dealer', 'Institution'] as const;
 
 // Team members
 const teamMembers = [
@@ -56,7 +51,7 @@ const teamMembers = [
 // Project types by intake
 const projectTypesByIntake = {
   'IRQ': ['Meeting', 'Follow-Up', 'Data Request', 'PCR'],
-  'GRRF': ['Meeting', 'Follow-Up', 'Data Request', 'PCR'],
+  'SRRF': ['Meeting', 'Follow-Up', 'Data Request', 'PCR'],
   'GCG Ad-Hoc': ['PCR', 'Follow-Up', 'Data Request', 'Other'],
 };
 
@@ -110,6 +105,7 @@ export default function NewInteractionForm({ isOpen, onClose, onSubmit, onUpdate
   const getDefaultFormData = (): InteractionFormData => ({
     externalClient: '',
     internalClient: '',
+    internalClientDept: '',
     intakeType: '',
     projectType: '',
     teamMembers: [],
@@ -124,6 +120,10 @@ export default function NewInteractionForm({ isOpen, onClose, onSubmit, onUpdate
   const [formData, setFormData] = useState<InteractionFormData>(getDefaultFormData());
 
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [gcgClients, setGcgClients] = useState<GcgClient[]>([]);
+  const [gcgClientsLoading, setGcgClientsLoading] = useState(false);
+  const [showDeptDropdown, setShowDeptDropdown] = useState(false);
+  const deptDropdownRef = useRef<HTMLDivElement>(null);
   const [internalClientSearch, setInternalClientSearch] = useState('');
   const [showInternalClientDropdown, setShowInternalClientDropdown] = useState(false);
   const [isNNAModalOpen, setIsNNAModalOpen] = useState(false);
@@ -131,16 +131,29 @@ export default function NewInteractionForm({ isOpen, onClose, onSubmit, onUpdate
   const [tickerInput, setTickerInput] = useState('');
   const internalClientRef = useRef<HTMLDivElement>(null);
 
-  // Close dropdown when clicking outside
+  // Close dropdowns when clicking outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (internalClientRef.current && !internalClientRef.current.contains(event.target as Node)) {
         setShowInternalClientDropdown(false);
       }
+      if (deptDropdownRef.current && !deptDropdownRef.current.contains(event.target as Node)) {
+        setShowDeptDropdown(false);
+      }
     }
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  // Fetch GCG clients fresh each time the form opens
+  useEffect(() => {
+    if (!isOpen) return;
+    setGcgClientsLoading(true);
+    getGcgClients()
+      .then(setGcgClients)
+      .catch(() => setGcgClients([]))
+      .finally(() => setGcgClientsLoading(false));
+  }, [isOpen]);
 
   // Reset form when opened (or populate with editing data)
   useEffect(() => {
@@ -159,24 +172,23 @@ export default function NewInteractionForm({ isOpen, onClose, onSubmit, onUpdate
     }
   }, [isOpen, editingEngagement]);
 
-  // Filter internal clients based on search
-  const filteredInternalClients = useMemo(() => {
-    const search = internalClientSearch.toLowerCase();
-    if (!search) {
-      // Return all clients grouped by department
-      return Object.entries(internalClientsByDept).map(([dept, clients]) => ({
-        dept,
-        clients,
-      }));
-    }
-    // Filter clients that match the search
-    return Object.entries(internalClientsByDept)
-      .map(([dept, clients]) => ({
-        dept,
-        clients: clients.filter(client => client.toLowerCase().includes(search)),
-      }))
-      .filter(group => group.clients.length > 0);
-  }, [internalClientSearch]);
+  // Clients matching the current search, grouped by department
+  const trimmedSearch = internalClientSearch.trim();
+  const filteredClientGroups = useMemo(() => {
+    const filtered = trimmedSearch
+      ? gcgClients.filter(c => c.name.toLowerCase().includes(trimmedSearch.toLowerCase()))
+      : gcgClients;
+    const groups: Record<string, string[]> = {};
+    filtered.forEach(c => {
+      if (!groups[c.dept]) groups[c.dept] = [];
+      groups[c.dept].push(c.name);
+    });
+    return Object.entries(groups);
+  }, [gcgClients, trimmedSearch]);
+
+  // True when the typed name doesn't match any existing client exactly
+  const isNewClient = trimmedSearch.length > 0 &&
+    !gcgClients.some(c => c.name.toLowerCase() === trimmedSearch.toLowerCase());
 
   // Get available project types based on intake type
   const availableProjectTypes = formData.intakeType
@@ -200,6 +212,8 @@ export default function NewInteractionForm({ isOpen, onClose, onSubmit, onUpdate
 
     if (!formData.internalClient) {
       newErrors.internalClient = 'Internal client is required';
+    } else if (!formData.internalClientDept) {
+      newErrors.internalClient = 'Department is required';
     }
 
     if (!formData.projectType) {
@@ -334,12 +348,12 @@ export default function NewInteractionForm({ isOpen, onClose, onSubmit, onUpdate
                   <div className="relative">
                     <select
                       value={formData.intakeType}
-                      onChange={(e) => setFormData(prev => ({ ...prev, intakeType: e.target.value as 'IRQ' | 'GRRF' | 'GCG Ad-Hoc' | '', adHocChannel: undefined }))}
+                      onChange={(e) => setFormData(prev => ({ ...prev, intakeType: e.target.value as 'IRQ' | 'SRRF' | 'GCG Ad-Hoc' | '', adHocChannel: undefined }))}
                       className="w-full px-3 py-2 bg-zinc-800/50 border border-zinc-700 rounded-lg text-white focus:outline-none focus:border-cyan-500/50 transition-colors appearance-none cursor-pointer"
                     >
                       <option value="" className="bg-zinc-800">Select...</option>
                       <option value="IRQ" className="bg-zinc-800">IRQ</option>
-                      <option value="GRRF" className="bg-zinc-800">GRRF</option>
+                      <option value="SRRF" className="bg-zinc-800">SRRF</option>
                       <option value="GCG Ad-Hoc" className="bg-zinc-800">GCG Ad-Hoc</option>
                     </select>
                     <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 pointer-events-none" />
@@ -448,52 +462,118 @@ export default function NewInteractionForm({ isOpen, onClose, onSubmit, onUpdate
                       value={formData.internalClient || internalClientSearch}
                       onChange={(e) => {
                         setInternalClientSearch(e.target.value);
-                        setFormData(prev => ({ ...prev, internalClient: '' }));
+                        setFormData(prev => ({ ...prev, internalClient: '', internalClientDept: '' }));
                         setShowInternalClientDropdown(true);
                       }}
                       onFocus={() => setShowInternalClientDropdown(true)}
-                      placeholder="Search clients..."
+                      placeholder={gcgClientsLoading ? 'Loading...' : 'Search or add a client...'}
                       className="w-full px-3 py-2 bg-zinc-800/50 border border-zinc-700 rounded-lg text-white placeholder-zinc-500 focus:outline-none focus:border-cyan-500/50 transition-colors"
                     />
                     <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 pointer-events-none" />
                   </div>
                   {/* Dropdown */}
-                  {showInternalClientDropdown && (
-                    <div className="absolute z-50 w-full mt-1 max-h-48 overflow-y-auto bg-zinc-800 border border-zinc-700 rounded-lg shadow-xl">
-                      {filteredInternalClients.length > 0 ? (
-                        filteredInternalClients.map(({ dept, clients }) => (
+                  {showInternalClientDropdown && !gcgClientsLoading && (
+                    <div className="absolute z-50 w-full mt-1 max-h-52 overflow-y-auto bg-zinc-800 border border-zinc-700 rounded-lg shadow-xl">
+                      {filteredClientGroups.length > 0 ? (
+                        filteredClientGroups.map(([dept, names]) => (
                           <div key={dept}>
-                            <div className="px-3 py-1.5 text-xs font-semibold text-zinc-500 uppercase tracking-wider bg-zinc-800/80">
+                            <div className="px-3 py-1.5 text-xs font-semibold text-zinc-500 uppercase tracking-wider bg-zinc-800/80 sticky top-0">
                               {dept}
                             </div>
-                            {clients.map(client => (
+                            {names.map(name => (
                               <button
-                                key={client}
+                                key={name}
                                 type="button"
                                 onClick={() => {
-                                  setFormData(prev => ({ ...prev, internalClient: client }));
+                                  const client = gcgClients.find(c => c.name === name)!;
+                                  setFormData(prev => ({ ...prev, internalClient: name, internalClientDept: client.dept as 'IAG' | 'Broker-Dealer' | 'Institution' }));
                                   setInternalClientSearch('');
                                   setShowInternalClientDropdown(false);
                                 }}
                                 className={`w-full px-3 py-2 text-left text-sm transition-colors ${
-                                  formData.internalClient === client
+                                  formData.internalClient === name
                                     ? 'bg-cyan-500/20 text-cyan-400'
                                     : 'text-zinc-300 hover:bg-zinc-700/50'
                                 }`}
                               >
-                                {client}
+                                {name}
                               </button>
                             ))}
                           </div>
                         ))
-                      ) : (
-                        <div className="px-3 py-2 text-sm text-zinc-500">No matches found</div>
+                      ) : !trimmedSearch ? (
+                        <div className="px-3 py-3 text-sm text-zinc-500 text-center">
+                          No clients yet — type a name to add one
+                        </div>
+                      ) : null}
+                      {/* "Add new client" option when typed name is new */}
+                      {isNewClient && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setFormData(prev => ({ ...prev, internalClient: trimmedSearch, internalClientDept: '' }));
+                            setInternalClientSearch('');
+                            setShowInternalClientDropdown(false);
+                          }}
+                          className="w-full px-3 py-2 text-left text-sm text-cyan-400 hover:bg-zinc-700/50 flex items-center gap-2 border-t border-zinc-700/50"
+                        >
+                          <span className="text-zinc-500 text-base leading-none">+</span>
+                          Add &quot;{trimmedSearch}&quot; as new GCG client
+                        </button>
                       )}
                     </div>
                   )}
                   {errors.internalClient && <p className="mt-1 text-xs text-red-400">{errors.internalClient}</p>}
                 </div>
               </div>
+
+              {/* Department row — shown when a client name is committed */}
+              {formData.internalClient && (
+                <div className="grid grid-cols-2 gap-4">
+                  <div /> {/* spacer aligns with External Client column */}
+                  <div>
+                    {formData.internalClientDept ? (
+                      /* Existing client — show dept as read-only */
+                      <div className="flex items-center gap-2 px-3 py-2 bg-zinc-800/30 border border-zinc-700/50 rounded-lg">
+                        <span className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">Dept</span>
+                        <span className="text-sm text-zinc-300">{formData.internalClientDept}</span>
+                      </div>
+                    ) : (
+                      /* New client — dept selector */
+                      <div ref={deptDropdownRef} className="relative">
+                        <label className="block text-sm font-medium text-zinc-300 mb-1.5">
+                          Department <span className="text-red-400">*</span>
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => setShowDeptDropdown(v => !v)}
+                          className="w-full flex items-center justify-between px-3 py-2 bg-zinc-800/40 border border-zinc-700/50 rounded-lg text-sm transition-colors focus:outline-none focus:ring-1 focus:ring-cyan-500/30 text-zinc-500"
+                        >
+                          <span>Select department...</span>
+                          <ChevronDown className={`w-4 h-4 text-zinc-500 transition-transform ${showDeptDropdown ? 'rotate-180' : ''}`} />
+                        </button>
+                        {showDeptDropdown && (
+                          <div className="absolute z-50 mt-1 w-full bg-zinc-900/90 backdrop-blur-md border border-zinc-700/50 rounded-lg shadow-xl overflow-hidden">
+                            {GCG_DEPARTMENTS.map(dept => (
+                              <button
+                                key={dept}
+                                type="button"
+                                onClick={() => {
+                                  setFormData(prev => ({ ...prev, internalClientDept: dept }));
+                                  setShowDeptDropdown(false);
+                                }}
+                                className="w-full text-left px-3 py-2 text-sm text-zinc-200 hover:bg-white/[0.06] transition-colors"
+                              >
+                                {dept}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
 
               {/* Row 3: Team Members (4 columns) */}
               <div>

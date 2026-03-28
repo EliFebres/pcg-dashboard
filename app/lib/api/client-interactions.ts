@@ -31,7 +31,7 @@ export interface EngagementFilters {
   search?: string;                 // Text search across multiple fields
   teamMember?: string;             // 'All Team Members', 'Austin Office', 'Charlotte Office', or member name
   departments?: string[];          // Multi-select: ['IAG', 'Broker-Dealer', 'Institution']
-  intakeTypes?: string[];          // Multi-select: ['IRQ', 'GRRF', 'GCG Ad-Hoc']
+  intakeTypes?: string[];          // Multi-select: ['IRQ', 'SRRF', 'GCG Ad-Hoc']
   projectTypes?: string[];         // Multi-select: ['Meeting', 'Follow-Up', 'Data Request', 'PCR', 'Other']
   period?: string;                 // '1W', '1M', '3M', '6M', 'YTD', '1Y', 'ALL'
   status?: string;                 // 'In Progress', 'Pending', 'Completed'
@@ -39,6 +39,12 @@ export interface EngagementFilters {
   pageSize?: number;               // Pagination: items per page (default 50)
   sortColumn?: string;             // Column to sort by
   sortDirection?: 'asc' | 'desc';  // Sort direction
+}
+
+/** A single GCG internal client with their department */
+export interface GcgClient {
+  name: string;
+  dept: string;
 }
 
 /** Paginated engagements response */
@@ -317,6 +323,17 @@ export async function deleteEngagement(id: number): Promise<void> {
     method: 'DELETE',
   });
   if (!response.ok) throw new Error('Failed to delete engagement');
+}
+
+/**
+ * Fetches the distinct list of GCG internal clients (name + dept) from existing engagements.
+ * Endpoint: GET /api/client-interactions/gcg-clients
+ */
+export async function getGcgClients(): Promise<GcgClient[]> {
+  const response = await fetch(`${API_BASE_URL}/client-interactions/gcg-clients`);
+  if (!response.ok) throw new Error('Failed to fetch GCG clients');
+  const data = await response.json();
+  return data.clients as GcgClient[];
 }
 
 /**

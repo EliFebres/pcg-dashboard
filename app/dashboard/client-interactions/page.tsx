@@ -78,15 +78,6 @@ function toMetricCards(metrics: DashboardMetrics): EngagementMetric[] {
   ];
 }
 
-// Maps internal client name to GCG department (needed for form submissions).
-function getClientDepartment(clientName: string): 'IAG' | 'Broker-Dealer' | 'Institution' {
-  const deptMap: Record<string, 'IAG' | 'Broker-Dealer' | 'Institution'> = {
-    'Jennifer Martinez': 'IAG', 'Robert Chen': 'IAG', 'Amanda Foster': 'IAG',
-    'Michael Thompson': 'Broker-Dealer', 'Jessica Williams': 'Broker-Dealer', 'Daniel Park': 'Broker-Dealer',
-    'Christopher Lee': 'Institution', 'Rachel Goldman': 'Institution', 'Andrew Mitchell': 'Institution',
-  };
-  return deptMap[clientName] || 'IAG';
-}
 
 function formatDisplayDate(dateStr: string): string {
   const date = new Date(dateStr);
@@ -217,12 +208,12 @@ export default function EngagementsDashboard() {
     try {
       await createEngagement({
         externalClient: data.externalClient ?? null,
-        internalClient: { name: data.internalClient, gcgDepartment: getClientDepartment(data.internalClient) },
-        intakeType: data.intakeType as 'IRQ' | 'GRRF' | 'GCG Ad-Hoc',
+        internalClient: { name: data.internalClient, gcgDepartment: data.internalClientDept as 'IAG' | 'Broker-Dealer' | 'Institution' },
+        intakeType: data.intakeType as 'IRQ' | 'SRRF' | 'GCG Ad-Hoc',
         adHocChannel: data.adHocChannel,
         type: data.projectType,
         teamMembers: data.teamMembers,
-        department: getClientDepartment(data.internalClient),
+        department: data.internalClientDept as 'IAG' | 'Broker-Dealer' | 'Institution',
         dateStarted: formatDisplayDate(data.dateStarted),
         dateFinished: '—',
         status: 'In Progress',
@@ -278,6 +269,7 @@ export default function EngagementsDashboard() {
       data: {
         externalClient: engagement.externalClient,
         internalClient: engagement.internalClient.name,
+        internalClientDept: engagement.internalClient.gcgDepartment,
         intakeType: engagement.intakeType,
         adHocChannel: engagement.adHocChannel,
         projectType: engagement.type,
@@ -309,12 +301,12 @@ export default function EngagementsDashboard() {
     try {
       await updateEngagement(engagementId, {
         externalClient: data.externalClient ?? null,
-        internalClient: { name: data.internalClient, gcgDepartment: getClientDepartment(data.internalClient) },
-        intakeType: data.intakeType as 'IRQ' | 'GRRF' | 'GCG Ad-Hoc',
+        internalClient: { name: data.internalClient, gcgDepartment: data.internalClientDept as 'IAG' | 'Broker-Dealer' | 'Institution' },
+        intakeType: data.intakeType as 'IRQ' | 'SRRF' | 'GCG Ad-Hoc',
         adHocChannel: data.adHocChannel,
         type: data.projectType,
         teamMembers: data.teamMembers,
-        department: getClientDepartment(data.internalClient),
+        department: data.internalClientDept as 'IAG' | 'Broker-Dealer' | 'Institution',
         dateStarted: dateStartedChanged ? formatDisplayDate(data.dateStarted) : (originalDateStarted || undefined),
         dateFinished: dateFinishedChanged
           ? (data.dateFinished ? formatDisplayDate(data.dateFinished) : '—')
