@@ -107,8 +107,10 @@ export default function SignupPage() {
     }
     if (!form.password) {
       errors.password = 'Required';
-    } else if (form.password.length < 8) {
-      errors.password = 'Must be at least 8 characters';
+    } else if (form.password.length < 10) {
+      errors.password = 'Must be at least 10 characters';
+    } else if (!/[a-zA-Z]/.test(form.password) || !/[0-9]/.test(form.password)) {
+      errors.password = 'Must contain at least one letter and one number';
     }
     if (!form.confirmPassword) {
       errors.confirmPassword = 'Required';
@@ -267,7 +269,7 @@ export default function SignupPage() {
                   value={form.password}
                   onChange={set('password')}
                   className={`w-full px-3 py-2.5 bg-zinc-800/60 border rounded-lg text-zinc-100 text-sm placeholder-zinc-600 focus:outline-none focus:ring-1 transition-colors pr-10 ${fieldErrors.password ? 'border-red-500/50 focus:border-red-500/50 focus:ring-red-500/20' : 'border-zinc-700/50 focus:border-cyan-500/50 focus:ring-cyan-500/30'}`}
-                  placeholder="Min 8 characters"
+                  placeholder="Min 10 characters"
                   autoComplete="new-password"
                 />
                 <button type="button" onClick={() => setShowPassword(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 transition-colors" tabIndex={-1}>
