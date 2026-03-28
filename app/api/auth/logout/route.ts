@@ -7,7 +7,7 @@ export async function POST() {
   const response = NextResponse.json({ message: 'Logged out.' }, { status: 200 });
   response.cookies.set(SESSION_COOKIE, '', {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
+    secure: process.env.COOKIE_SECURE === 'true',
     sameSite: 'lax',
     path: '/',
     maxAge: 0,
