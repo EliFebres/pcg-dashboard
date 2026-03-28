@@ -236,6 +236,7 @@ export default function EngagementsDashboard() {
         dateFinished: '—',
         status: 'In Progress',
         portfolioLogged: data.portfolioLogged,
+        portfolio: data.portfolio,
         nna: data.nna || undefined,
         notes: data.notes?.trim() || undefined,
         tickersMentioned: data.tickersMentioned?.length ? data.tickersMentioned : undefined,
