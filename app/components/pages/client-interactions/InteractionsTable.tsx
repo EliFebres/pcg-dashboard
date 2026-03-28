@@ -67,12 +67,12 @@ interface InteractionsTableProps {
   sortDirection: 'asc' | 'desc' | null;
   onSort: (column: string | null, direction: 'asc' | 'desc' | null) => void;
   onStatusChange: (engagementId: number, newStatus: string) => void;
-  onNotesChange: (engagementId: number, notes: string) => void;
+  onNoteAdded: (engagementId: number) => void;
   onNNAChange: (engagementId: number, nna: number | undefined) => void;
   onRowClick: (engagement: Engagement) => void;
 }
 
-const InteractionsTable: React.FC<InteractionsTableProps> = ({ engagements, sortColumn, sortDirection, onSort, onStatusChange, onNotesChange, onNNAChange, onRowClick }) => {
+const InteractionsTable: React.FC<InteractionsTableProps> = ({ engagements, sortColumn, sortDirection, onSort, onStatusChange, onNoteAdded, onNNAChange, onRowClick }) => {
   const sortConfig: SortConfig = useMemo(
     () => ({ column: sortColumn as SortColumn, direction: sortDirection as SortDirection }),
     [sortColumn, sortDirection]
@@ -308,14 +308,19 @@ const InteractionsTable: React.FC<InteractionsTableProps> = ({ engagements, sort
       <td className="px-4 py-3 text-center" onClick={(e) => e.stopPropagation()}>
         <button
           onClick={() => setNotesModalEngagement(engagement)}
-          className={`p-1.5 transition-colors ${
-            engagement.notes
+          className={`relative inline-flex items-center justify-center p-1.5 transition-colors ${
+            (engagement.noteCount ?? 0) > 0 || engagement.notes
               ? 'bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400'
               : 'bg-zinc-800/50 hover:bg-zinc-700/50 text-zinc-500 hover:text-zinc-300'
           }`}
-          title={engagement.notes ? 'View/edit notes' : 'Add notes'}
+          title={(engagement.noteCount ?? 0) > 0 || engagement.notes ? 'View notes' : 'Add notes'}
         >
           <FileText className="w-4 h-4" />
+          {(engagement.noteCount ?? 0) > 0 && (
+            <span className="absolute -top-1 -right-1 min-w-[14px] h-[14px] px-0.5 bg-cyan-500 text-black text-[9px] font-bold flex items-center justify-center rounded-full leading-none">
+              {(engagement.noteCount ?? 0) > 9 ? '9+' : engagement.noteCount}
+            </span>
+          )}
         </button>
       </td>
     </tr>
@@ -394,13 +399,12 @@ const InteractionsTable: React.FC<InteractionsTableProps> = ({ engagements, sort
         onClose={() => setNotesModalEngagement(null)}
         title="Notes"
         subtitle={notesModalEngagement?.externalClient || notesModalEngagement?.internalClient.name || ''}
-        currentNotes={notesModalEngagement?.notes ?? ''}
-        onSave={(notes) => {
+        engagementId={notesModalEngagement?.id ?? 0}
+        onNoteAdded={() => {
           if (notesModalEngagement) {
-            onNotesChange(notesModalEngagement.id, notes);
+            onNoteAdded(notesModalEngagement.id);
           }
         }}
-        placeholder="Add notes about this interaction..."
       />
 
       {/* NNA Modal */}

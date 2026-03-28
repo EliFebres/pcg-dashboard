@@ -14,7 +14,6 @@ import {
   updateEngagement,
   updateEngagementStatus,
   updateEngagementNNA,
-  updateEngagementNotes,
 } from '@/app/lib/api/client-interactions';
 import type { DashboardData, DashboardMetrics, EngagementFilters } from '@/app/lib/api/client-interactions';
 import type { EngagementMetric, Engagement } from '@/app/lib/types/engagements';
@@ -272,9 +271,8 @@ export default function EngagementsDashboard() {
     updateEngagementStatus(engagementId, newStatus).catch(console.error);
   };
 
-  const handleNotesChange = (engagementId: number, notes: string) => {
-    patchEngagements(e => ({ ...e, notes: notes.trim() || undefined }), engagementId);
-    updateEngagementNotes(engagementId, notes).catch(console.error);
+  const handleNoteAdded = (engagementId: number) => {
+    patchEngagements(e => ({ ...e, noteCount: (e.noteCount ?? 0) + 1 }), engagementId);
   };
 
   const handleNNAChange = (engagementId: number, nna: number | undefined) => {
@@ -484,7 +482,7 @@ export default function EngagementsDashboard() {
               sortDirection={sortDirection}
               onSort={handleSort}
               onStatusChange={handleStatusChange}
-              onNotesChange={handleNotesChange}
+              onNoteAdded={handleNoteAdded}
               onNNAChange={handleNNAChange}
               onRowClick={handleRowClick}
             />

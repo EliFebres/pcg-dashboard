@@ -58,6 +58,31 @@ export async function getConnection(): Promise<DuckDBConnection> {
       await conn.run(`CREATE INDEX IF NOT EXISTS idx_dept_started     ON engagements (internal_client_dept, date_started)`);
       await conn.run(`CREATE INDEX IF NOT EXISTS idx_date_fin_started ON engagements (date_finished, date_started)`);
 
+      // Engagement notes — append-only log with author attribution
+      await conn.run(`CREATE SEQUENCE IF NOT EXISTS engagement_notes_id_seq START 1`);
+      await conn.run(`
+        CREATE TABLE IF NOT EXISTS engagement_notes (
+          id            INTEGER     PRIMARY KEY DEFAULT nextval('engagement_notes_id_seq'),
+          engagement_id INTEGER     NOT NULL,
+          note_text     VARCHAR     NOT NULL,
+          author_name   VARCHAR     NOT NULL,
+          author_id     VARCHAR     NOT NULL,
+          created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
+        )
+      `);
+      await conn.run(`CREATE INDEX IF NOT EXISTS idx_engagement_notes_engagement_id ON engagement_notes (engagement_id)`);
+
+      // One-time migration: copy legacy free-text notes into the new log table.
+      // Guard: only migrate engagements that have no entries yet, so re-runs are safe.
+      await conn.run(`
+        INSERT INTO engagement_notes (engagement_id, note_text, author_name, author_id, created_at)
+        SELECT id, notes, 'Imported Note', 'system', now()
+        FROM engagements
+        WHERE notes IS NOT NULL
+          AND notes != ''
+          AND id NOT IN (SELECT DISTINCT engagement_id FROM engagement_notes)
+      `);
+
       return conn;
     })();
   }

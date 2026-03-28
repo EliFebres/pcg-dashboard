@@ -13,6 +13,7 @@
 
 import type {
   Engagement,
+  NoteEntry,
   DayData,
   DepartmentData,
   IntakeBreakdown,
@@ -299,19 +300,27 @@ export async function updateEngagementNNA(
 }
 
 /**
- * Optimized endpoint for quick notes updates.
- * Endpoint: PATCH /api/client-interactions/engagements/:id/notes
+ * Fetches all note entries for an engagement, newest first.
+ * Endpoint: GET /api/client-interactions/engagements/:id/notes
  */
-export async function updateEngagementNotes(
-  id: number,
-  notes: string
-): Promise<{ id: number; notes: string }> {
+export async function getEngagementNotes(id: number): Promise<NoteEntry[]> {
+  const response = await fetch(`${API_BASE_URL}/client-interactions/engagements/${id}/notes`);
+  if (!response.ok) throw new Error('Failed to fetch notes');
+  const data = await response.json();
+  return data.notes as NoteEntry[];
+}
+
+/**
+ * Appends a new note entry to an engagement, attributed to the logged-in user.
+ * Endpoint: POST /api/client-interactions/engagements/:id/notes
+ */
+export async function addEngagementNote(id: number, noteText: string): Promise<NoteEntry> {
   const response = await fetch(`${API_BASE_URL}/client-interactions/engagements/${id}/notes`, {
-    method: 'PATCH',
+    method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ notes: notes || null }),
+    body: JSON.stringify({ noteText }),
   });
-  if (!response.ok) throw new Error('Failed to update notes');
+  if (!response.ok) throw new Error('Failed to add note');
   return response.json();
 }
 

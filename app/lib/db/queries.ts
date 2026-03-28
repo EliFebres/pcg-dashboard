@@ -147,6 +147,7 @@ export function rowToEngagement(row: Record<string, unknown>): Engagement {
       : undefined,
     nna: row.nna != null ? Number(row.nna) : undefined,
     notes: (row.notes as string | undefined) || undefined,
+    noteCount: Number(row.note_count ?? 0),
     tickersMentioned: row.tickers_mentioned
       ? (JSON.parse(row.tickers_mentioned as string) as string[])
       : undefined,

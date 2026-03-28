@@ -14,7 +14,7 @@ import {
 } from '@/app/lib/api/ticker-trends';
 import type { HotTicker } from '@/app/lib/types/trends';
 import DashboardHeader from '@/app/components/DashboardHeader';
-import NotesModal from '@/app/components/pages/shared/NotesModal';
+import NotesModal from '@/app/components/pages/shared/SimpleNotesModal';
 import LinkModal from '@/app/components/pages/shared/LinkModal';
 import HotTickersTable from '@/app/components/pages/ticker-trends/HotTickersTable';
 import RequestBreakdownChart from '@/app/components/pages/ticker-trends/RequestBreakdownChart';

@@ -71,6 +71,15 @@ export interface PortfolioHolding {
   weight: number; // Normalized weight (0-1, sums to 1)
 }
 
+export interface NoteEntry {
+  id: number;
+  engagementId: number;
+  noteText: string;
+  authorName: string;
+  authorId: string;
+  createdAt: string; // ISO string
+}
+
 export interface Engagement {
   id: number;
   externalClient: string | null; // Optional - GCG Ad-Hoc may not have an external client
@@ -86,7 +95,8 @@ export interface Engagement {
   portfolioLogged: boolean;
   portfolio?: PortfolioHolding[]; // Optional client portfolio holdings
   nna?: number; // Net New Assets - dollar amount of AUM moved into funds (optional)
-  notes?: string; // Optional notes field
+  notes?: string; // Optional notes field (legacy — used by engagement form)
+  noteCount?: number; // Number of entries in engagement_notes table (undefined when not loaded)
   tickersMentioned?: string[]; // Tickers discussed during GCG Ad-Hoc interactions (used for Ticker Trends)
 }
 
