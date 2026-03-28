@@ -1,14 +1,14 @@
 'use client';
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { X, ChevronDown, Check, DollarSign, Briefcase } from 'lucide-react';
+import { X, ChevronDown, Check, DollarSign, Briefcase, FileText } from 'lucide-react';
 import NNAModal from '../shared/NNAModal';
 import PortfolioModal from '../shared/PortfolioModal';
+import NotesModal from '../shared/NotesModal';
 import { PortfolioHolding } from '@/app/lib/types/engagements';
 import { getGcgClients, GcgClient } from '@/app/lib/api/client-interactions';
 import { useCurrentUser } from '@/app/lib/auth/context';
 import type { TeamMember } from '@/app/lib/auth/types';
-import RichTextEditor from '@/app/components/ui/RichTextEditor';
 
 export interface InteractionFormData {
   externalClient: string | null;
@@ -42,6 +42,9 @@ interface NewInteractionFormProps {
   onSubmit: (data: InteractionFormData) => void;
   onUpdate?: (id: number, data: InteractionFormData) => void;
   editingEngagement?: EditingEngagement | null;
+  initialNoteCount?: number;
+  onNoteAdded?: (engagementId: number) => void;
+  onNoteDeleted?: (engagementId: number) => void;
 }
 
 const GCG_DEPARTMENTS = ['IAG', 'Broker-Dealer', 'Institutional'] as const;
@@ -98,7 +101,7 @@ const formatNNADisplay = (value: number | null): string => {
   return `$${value.toLocaleString()}`;
 };
 
-export default function NewInteractionForm({ isOpen, onClose, onSubmit, onUpdate, editingEngagement }: NewInteractionFormProps) {
+export default function NewInteractionForm({ isOpen, onClose, onSubmit, onUpdate, editingEngagement, initialNoteCount, onNoteAdded, onNoteDeleted }: NewInteractionFormProps) {
   const isEditMode = !!editingEngagement;
   const { user: currentUser } = useCurrentUser();
 
@@ -128,6 +131,8 @@ export default function NewInteractionForm({ isOpen, onClose, onSubmit, onUpdate
   const [showInternalClientDropdown, setShowInternalClientDropdown] = useState(false);
   const [isNNAModalOpen, setIsNNAModalOpen] = useState(false);
   const [isPortfolioModalOpen, setIsPortfolioModalOpen] = useState(false);
+  const [isNotesModalOpen, setIsNotesModalOpen] = useState(false);
+  const [localNoteCount, setLocalNoteCount] = useState(initialNoteCount ?? 0);
   const [tickerInput, setTickerInput] = useState('');
   const internalClientRef = useRef<HTMLDivElement>(null);
   const [teamMembersByOffice, setTeamMembersByOffice] = useState<Record<string, TeamMember[]>>({});
@@ -186,8 +191,9 @@ export default function NewInteractionForm({ isOpen, onClose, onSubmit, onUpdate
       setInternalClientSearch('');
       setShowInternalClientDropdown(false);
       setTickerInput('');
+      setLocalNoteCount(initialNoteCount ?? 0);
     }
-  }, [isOpen, editingEngagement]);
+  }, [isOpen, editingEngagement, initialNoteCount]);
 
   // Clients matching the current search, grouped by department
   const trimmedSearch = internalClientSearch.trim();
@@ -704,12 +710,27 @@ export default function NewInteractionForm({ isOpen, onClose, onSubmit, onUpdate
                 <label className="block text-sm font-medium text-zinc-300 mb-1.5">
                   Notes <span className="text-zinc-500 font-normal text-xs">(Optional)</span>
                 </label>
-                <RichTextEditor
-                  value={formData.notes}
-                  onChange={(html) => setFormData(prev => ({ ...prev, notes: html }))}
-                  placeholder="Add any relevant notes..."
-                  minHeight="3.5rem"
-                />
+                {!editingEngagement?.id ? (
+                  <div className="w-full h-[38px] px-3 bg-zinc-800/50 border border-zinc-700 rounded-lg text-sm text-zinc-500 flex items-center gap-2 cursor-not-allowed select-none">
+                    <FileText className="w-4 h-4" />
+                    Notes available after saving
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setIsNotesModalOpen(true)}
+                    className={`w-full h-[38px] px-3 bg-zinc-800/50 border rounded-lg text-sm text-left transition-colors flex items-center gap-2 ${
+                      localNoteCount > 0
+                        ? 'border-cyan-500/50 text-cyan-400 hover:border-cyan-500/70'
+                        : 'border-zinc-700 text-zinc-400 hover:border-cyan-500/50'
+                    }`}
+                  >
+                    <FileText className="w-4 h-4" />
+                    {localNoteCount > 0
+                      ? `${localNoteCount} note${localNoteCount === 1 ? '' : 's'}`
+                      : '+ Add Notes'}
+                  </button>
+                )}
               </div>
             </div>
           </form>
@@ -763,6 +784,25 @@ export default function NewInteractionForm({ isOpen, onClose, onSubmit, onUpdate
           }));
         }}
       />
+
+      {/* Notes Modal */}
+      {editingEngagement?.id ? (
+        <NotesModal
+          isOpen={isNotesModalOpen}
+          onClose={() => setIsNotesModalOpen(false)}
+          title="Engagement Notes"
+          subtitle={`${formData.externalClient || formData.internalClient || 'Engagement'} · ${formData.projectType}`}
+          engagementId={editingEngagement.id}
+          onNoteAdded={() => {
+            setLocalNoteCount(prev => prev + 1);
+            onNoteAdded?.(editingEngagement.id);
+          }}
+          onNoteDeleted={() => {
+            setLocalNoteCount(prev => Math.max(0, prev - 1));
+            onNoteDeleted?.(editingEngagement.id);
+          }}
+        />
+      ) : null}
     </>
   );
 }

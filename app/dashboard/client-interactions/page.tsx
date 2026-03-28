@@ -118,6 +118,7 @@ export default function EngagementsDashboard() {
   const [isNewInteractionOpen, setIsNewInteractionOpen] = useState(false);
   const [isBulkUploadOpen, setIsBulkUploadOpen] = useState(false);
   const [editingEngagement, setEditingEngagement] = useState<EditingEngagement | null>(null);
+  const [editingEngagementNoteCount, setEditingEngagementNoteCount] = useState<number>(0);
   const [conflictError, setConflictError] = useState<string | null>(null);
   const conflictTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -318,6 +319,7 @@ export default function EngagementsDashboard() {
       originalDateFinished: engagement.dateFinished,
       version: engagement.version,
     });
+    setEditingEngagementNoteCount(engagement.noteCount ?? 0);
     setIsNewInteractionOpen(true);
   };
 
@@ -365,6 +367,7 @@ export default function EngagementsDashboard() {
   const handleCloseForm = () => {
     setIsNewInteractionOpen(false);
     setEditingEngagement(null);
+    setEditingEngagementNoteCount(0);
   };
 
   // -------------------------------------------------------------------------
@@ -378,6 +381,9 @@ export default function EngagementsDashboard() {
         onSubmit={handleNewInteraction}
         onUpdate={handleUpdateInteraction}
         editingEngagement={editingEngagement}
+        initialNoteCount={editingEngagementNoteCount}
+        onNoteAdded={handleNoteAdded}
+        onNoteDeleted={handleNoteDeleted}
       />
       <BulkUploadModal
         isOpen={isBulkUploadOpen}
