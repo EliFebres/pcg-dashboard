@@ -6,6 +6,8 @@ import NNAModal from '../shared/NNAModal';
 import PortfolioModal from '../shared/PortfolioModal';
 import { PortfolioHolding } from '@/app/lib/types/engagements';
 import { getGcgClients, GcgClient } from '@/app/lib/api/client-interactions';
+import { useCurrentUser } from '@/app/lib/auth/context';
+import type { TeamMember } from '@/app/lib/auth/types';
 
 export interface InteractionFormData {
   externalClient: string | null;
@@ -42,11 +44,6 @@ interface NewInteractionFormProps {
 
 const GCG_DEPARTMENTS = ['IAG', 'Broker-Dealer', 'Institution'] as const;
 
-// Team members
-const teamMembers = [
-  'Eli F.', 'Sarah K.', 'Mike R.', 'Lisa M.', 'James T.',
-  'David L.', 'Rachel W.', 'Chris B.', 'Amanda P.', 'Kevin H.', 'Nicole S.', 'Brandon T.'
-];
 
 // Project types by intake
 const projectTypesByIntake = {
@@ -101,6 +98,7 @@ const formatNNADisplay = (value: number | null): string => {
 
 export default function NewInteractionForm({ isOpen, onClose, onSubmit, onUpdate, editingEngagement }: NewInteractionFormProps) {
   const isEditMode = !!editingEngagement;
+  const { user: currentUser } = useCurrentUser();
 
   const getDefaultFormData = (): InteractionFormData => ({
     externalClient: '',
@@ -130,6 +128,7 @@ export default function NewInteractionForm({ isOpen, onClose, onSubmit, onUpdate
   const [isPortfolioModalOpen, setIsPortfolioModalOpen] = useState(false);
   const [tickerInput, setTickerInput] = useState('');
   const internalClientRef = useRef<HTMLDivElement>(null);
+  const [teamMembersByOffice, setTeamMembersByOffice] = useState<Record<string, TeamMember[]>>({});
 
   // Close dropdowns when clicking outside
   useEffect(() => {
@@ -144,6 +143,22 @@ export default function NewInteractionForm({ isOpen, onClose, onSubmit, onUpdate
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  // Fetch team members for current user's team
+  useEffect(() => {
+    if (!currentUser) return;
+    fetch(`/api/team-members?team=${encodeURIComponent(currentUser.team)}`)
+      .then(r => r.json())
+      .then((members: TeamMember[]) => {
+        const grouped = members.reduce((acc, m) => {
+          if (!acc[m.office]) acc[m.office] = [];
+          acc[m.office].push(m);
+          return acc;
+        }, {} as Record<string, TeamMember[]>);
+        setTeamMembersByOffice(grouped);
+      })
+      .catch(() => setTeamMembersByOffice({}));
+  }, [currentUser]);
 
   // Fetch GCG clients fresh each time the form opens
   useEffect(() => {
@@ -575,28 +590,41 @@ export default function NewInteractionForm({ isOpen, onClose, onSubmit, onUpdate
                 </div>
               )}
 
-              {/* Row 3: Team Members (4 columns) */}
+              {/* Row 3: Team Members (4 columns, grouped by office) */}
               <div>
                 <label className="block text-sm font-medium text-zinc-300 mb-1.5">
                   Team Members <span className="text-red-400">*</span>
                 </label>
-                <div className="grid grid-cols-4 gap-1.5">
-                  {teamMembers.map((member) => (
-                    <button
-                      key={member}
-                      type="button"
-                      onClick={() => toggleTeamMember(member)}
-                      className={`px-2 py-1.5 text-xs font-medium rounded-md border transition-all flex items-center justify-between ${
-                        formData.teamMembers.includes(member)
-                          ? 'bg-cyan-500/20 border-cyan-500/50 text-cyan-400'
-                          : 'bg-zinc-800/50 border-zinc-700 text-zinc-400 hover:border-zinc-600'
-                      }`}
-                    >
-                      <span className="truncate">{member}</span>
-                      {formData.teamMembers.includes(member) && <Check className="w-3 h-3 ml-1 flex-shrink-0" />}
-                    </button>
-                  ))}
-                </div>
+                {Object.keys(teamMembersByOffice).length === 0 ? (
+                  <p className="text-xs text-zinc-500 py-2">No team members configured yet.</p>
+                ) : (
+                  <div className="space-y-2">
+                    {Object.entries(teamMembersByOffice).map(([office, members]) => (
+                      <div key={office}>
+                        {Object.keys(teamMembersByOffice).length > 1 && (
+                          <p className="text-xs text-zinc-600 uppercase tracking-wider mb-1">{office}</p>
+                        )}
+                        <div className="grid grid-cols-4 gap-1.5">
+                          {members.map((member) => (
+                            <button
+                              key={member.id}
+                              type="button"
+                              onClick={() => toggleTeamMember(member.displayName)}
+                              className={`px-2 py-1.5 text-xs font-medium rounded-md border transition-all flex items-center justify-between ${
+                                formData.teamMembers.includes(member.displayName)
+                                  ? 'bg-cyan-500/20 border-cyan-500/50 text-cyan-400'
+                                  : 'bg-zinc-800/50 border-zinc-700 text-zinc-400 hover:border-zinc-600'
+                              }`}
+                            >
+                              <span className="truncate">{member.displayName}</span>
+                              {formData.teamMembers.includes(member.displayName) && <Check className="w-3 h-3 ml-1 flex-shrink-0" />}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
                 {errors.teamMembers && <p className="mt-1 text-xs text-red-400">{errors.teamMembers}</p>}
               </div>
 

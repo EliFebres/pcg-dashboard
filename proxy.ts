@@ -9,7 +9,7 @@ function getSecret(): Uint8Array {
   return new TextEncoder().encode(secret);
 }
 
-export async function middleware(req: NextRequest) {
+export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
   const token = req.cookies.get(SESSION_COOKIE)?.value;
 

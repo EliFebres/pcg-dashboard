@@ -45,6 +45,22 @@ export async function getUsersConnection(): Promise<DuckDBConnection> {
       await conn.run(`CREATE INDEX IF NOT EXISTS idx_users_email  ON users (email)`);
       await conn.run(`CREATE INDEX IF NOT EXISTS idx_users_status ON users (status)`);
 
+      await conn.run(`
+        CREATE TABLE IF NOT EXISTS team_members (
+          id           VARCHAR     PRIMARY KEY,
+          display_name VARCHAR     NOT NULL,
+          first_name   VARCHAR     NOT NULL,
+          last_name    VARCHAR     NOT NULL,
+          team         VARCHAR     NOT NULL,
+          office       VARCHAR     NOT NULL,
+          status       VARCHAR     NOT NULL DEFAULT 'active',
+          user_id      VARCHAR,
+          created_at   TIMESTAMPTZ NOT NULL DEFAULT now()
+        )
+      `);
+      await conn.run(`CREATE INDEX IF NOT EXISTS idx_tm_team   ON team_members (team)`);
+      await conn.run(`CREATE INDEX IF NOT EXISTS idx_tm_status ON team_members (status)`);
+
       return conn;
     })();
   }

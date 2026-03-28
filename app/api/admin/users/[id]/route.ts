@@ -3,7 +3,7 @@ export const runtime = 'nodejs';
 import { NextRequest, NextResponse } from 'next/server';
 import { queryUsers, executeUsers } from '@/app/lib/db/users';
 import { verifyJWT, SESSION_COOKIE } from '@/app/lib/auth/jwt';
-import { rowToUser } from '@/app/lib/auth/types';
+import { rowToUser, toDisplayName } from '@/app/lib/auth/types';
 
 const VALID_STATUSES = ['pending', 'active', 'inactive'];
 const VALID_ROLES = ['user', 'admin'];
@@ -84,6 +84,20 @@ export async function PATCH(
 
     const updated = await queryUsers('SELECT * FROM users WHERE id = ?', [id]);
     const user = rowToUser(updated[0] as Record<string, unknown>);
+
+    // Auto-link: when a user is approved, try to match them to an unlinked team member
+    if (status === 'active') {
+      const displayName = toDisplayName(user.firstName, user.lastName);
+      const matches = await queryUsers(
+        `SELECT id FROM team_members WHERE display_name = ? AND team = ? AND user_id IS NULL`,
+        [displayName, user.team]
+      );
+      if (matches.length === 1) {
+        const tm = matches[0] as Record<string, unknown>;
+        await executeUsers(`UPDATE team_members SET user_id = ? WHERE id = ?`, [user.id, tm.id]);
+      }
+    }
+
     return NextResponse.json(user, { status: 200 });
   } catch (err) {
     console.error('[PATCH /api/admin/users/[id]]', err);

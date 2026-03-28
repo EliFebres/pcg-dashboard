@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, BarChart3, ChevronDown, PieChart, Flame, ChevronsUpDown, User, LogOut, Users } from 'lucide-react';
+import { LayoutDashboard, BarChart3, ChevronDown, PieChart, Flame, ChevronsUpDown, User, LogOut, Users, UserCheck } from 'lucide-react';
 import { useCurrentUser } from '@/app/lib/auth/context';
 import { toDisplayName } from '@/app/lib/auth/types';
 
@@ -242,6 +242,17 @@ export default function Sidebar({ className = '' }: SidebarProps) {
             >
               <Users className="w-5 h-5 flex-shrink-0" />
               <span className="text-[0.9rem] font-semibold tracking-wide">User Management</span>
+            </Link>
+            <Link
+              href="/admin/team-members"
+              className={`w-full flex items-center gap-2.5 px-2 py-2 transition-colors border-l-2 ${
+                pathname === '/admin/team-members'
+                  ? 'bg-gradient-to-r from-blue-600/20 to-cyan-600/10 text-cyan-400 border-cyan-400 backdrop-blur-sm'
+                  : 'text-zinc-400 hover:bg-white/[0.03] hover:text-zinc-200 border-transparent'
+              }`}
+            >
+              <UserCheck className="w-5 h-5 flex-shrink-0" />
+              <span className="text-[0.9rem] font-semibold tracking-wide">Team Members</span>
             </Link>
           </div>
         </div>

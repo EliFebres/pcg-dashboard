@@ -23,6 +23,32 @@ export function toDisplayName(firstName: string, lastName: string): string {
   return `${firstName} ${lastName[0]}.`;
 }
 
+export interface TeamMember {
+  id: string;
+  displayName: string;
+  firstName: string;
+  lastName: string;
+  team: User['team'];
+  office: User['office'];
+  status: 'active' | 'inactive';
+  userId: string | null;
+  createdAt: string;
+}
+
+export function rowToTeamMember(row: Record<string, unknown>): TeamMember {
+  return {
+    id: row.id as string,
+    displayName: row.display_name as string,
+    firstName: row.first_name as string,
+    lastName: row.last_name as string,
+    team: row.team as User['team'],
+    office: row.office as User['office'],
+    status: row.status as TeamMember['status'],
+    userId: row.user_id as string | null,
+    createdAt: row.created_at ? String(row.created_at) : new Date().toISOString(),
+  };
+}
+
 /** Map a raw DB row (snake_case) to a User object */
 export function rowToUser(row: Record<string, unknown>): User {
   return {
