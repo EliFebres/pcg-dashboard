@@ -1,10 +1,12 @@
 'use client';
 
-import React, { useState, useEffect, useRef, ReactNode } from 'react';
+import React, { useState, useEffect, ReactNode } from 'react';
 import { X, Plus, Loader2, Pencil, Trash2, Check, XCircle } from 'lucide-react';
 import { getEngagementNotes, addEngagementNote, updateEngagementNote, deleteEngagementNote } from '@/app/lib/api/client-interactions';
 import { useCurrentUser } from '@/app/lib/auth/context';
 import type { NoteEntry } from '@/app/lib/types/engagements';
+import RichTextEditor from '@/app/components/ui/RichTextEditor';
+import RichTextDisplay from '@/app/components/ui/RichTextDisplay';
 
 interface NotesModalProps {
   isOpen: boolean;
@@ -38,7 +40,6 @@ const NotesModal: React.FC<NotesModalProps> = ({
   const [editText, setEditText] = useState('');
   const [savingEdit, setSavingEdit] = useState(false);
   const [deletingNoteId, setDeletingNoteId] = useState<number | null>(null);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Fetch notes when modal opens
   useEffect(() => {
@@ -51,13 +52,6 @@ const NotesModal: React.FC<NotesModalProps> = ({
       .catch(console.error)
       .finally(() => setLoading(false));
   }, [isOpen, engagementId]);
-
-  // Focus textarea when modal opens (after load)
-  useEffect(() => {
-    if (isOpen && !loading && textareaRef.current) {
-      textareaRef.current.focus();
-    }
-  }, [isOpen, loading]);
 
   // Escape key to close
   useEffect(() => {
@@ -80,14 +74,6 @@ const NotesModal: React.FC<NotesModalProps> = ({
       console.error('Failed to add note:', err);
     } finally {
       setSaving(false);
-    }
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    // Ctrl/Cmd+Enter submits
-    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
-      e.preventDefault();
-      handleAddNote();
     }
   };
 
@@ -207,11 +193,11 @@ const NotesModal: React.FC<NotesModalProps> = ({
 
                   {isEditing ? (
                     <div className="space-y-2">
-                      <textarea
+                      <RichTextEditor
                         value={editText}
-                        onChange={(e) => setEditText(e.target.value)}
-                        rows={3}
-                        className="w-full px-3 py-2 bg-zinc-900/70 border border-zinc-600 text-sm text-white placeholder-zinc-500 resize-y focus:outline-none focus:ring-1 focus:ring-cyan-500/50 focus:border-cyan-500/50 transition-colors"
+                        onChange={setEditText}
+                        onCtrlEnter={() => handleSaveEdit(entry.id)}
+                        minHeight="4.5rem"
                         autoFocus
                       />
                       <div className="flex items-center gap-2 justify-end">
@@ -233,7 +219,7 @@ const NotesModal: React.FC<NotesModalProps> = ({
                       </div>
                     </div>
                   ) : (
-                    <p className="text-sm text-zinc-200 whitespace-pre-wrap leading-relaxed">{entry.noteText}</p>
+                    <RichTextDisplay html={entry.noteText} />
                   )}
                 </div>
               );
@@ -243,14 +229,13 @@ const NotesModal: React.FC<NotesModalProps> = ({
 
         {/* Add new note */}
         <div className="relative z-10 px-5 pt-3 pb-5 border-t border-zinc-800/50 flex-shrink-0 space-y-3">
-          <textarea
-            ref={textareaRef}
+          <RichTextEditor
             value={newText}
-            onChange={(e) => setNewText(e.target.value)}
-            onKeyDown={handleKeyDown}
+            onChange={setNewText}
+            onCtrlEnter={handleAddNote}
             placeholder="Add a new note... (Ctrl+Enter to save)"
-            rows={4}
-            className="w-full px-3 py-2.5 bg-zinc-800/50 border border-zinc-700/50 text-sm text-white placeholder-zinc-500 resize-y focus:outline-none focus:ring-1 focus:ring-cyan-500/50 focus:border-cyan-500/50 transition-colors"
+            minHeight="6rem"
+            autoFocus={!loading}
           />
           <div className="flex items-center justify-end gap-3">
             <button
@@ -261,9 +246,9 @@ const NotesModal: React.FC<NotesModalProps> = ({
             </button>
             <button
               onClick={handleAddNote}
-              disabled={!newText.trim() || saving}
+              disabled={!newText || saving}
               className={`flex items-center gap-2 px-4 py-2 text-sm font-medium transition-all ${
-                newText.trim() && !saving
+                newText && !saving
                   ? 'bg-gradient-to-r from-blue-600 to-cyan-500 text-white hover:from-blue-500 hover:to-cyan-400'
                   : 'bg-zinc-800 text-zinc-500 cursor-not-allowed'
               }`}

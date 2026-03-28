@@ -8,6 +8,7 @@ import { PortfolioHolding } from '@/app/lib/types/engagements';
 import { getGcgClients, GcgClient } from '@/app/lib/api/client-interactions';
 import { useCurrentUser } from '@/app/lib/auth/context';
 import type { TeamMember } from '@/app/lib/auth/types';
+import RichTextEditor from '@/app/components/ui/RichTextEditor';
 
 export interface InteractionFormData {
   externalClient: string | null;
@@ -703,12 +704,11 @@ export default function NewInteractionForm({ isOpen, onClose, onSubmit, onUpdate
                 <label className="block text-sm font-medium text-zinc-300 mb-1.5">
                   Notes <span className="text-zinc-500 font-normal text-xs">(Optional)</span>
                 </label>
-                <textarea
+                <RichTextEditor
                   value={formData.notes}
-                  onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
+                  onChange={(html) => setFormData(prev => ({ ...prev, notes: html }))}
                   placeholder="Add any relevant notes..."
-                  rows={2}
-                  className="w-full px-3 py-2 bg-zinc-800/50 border border-zinc-700 rounded-lg text-white placeholder-zinc-500 focus:outline-none focus:border-cyan-500/50 transition-colors resize-none"
+                  minHeight="3.5rem"
                 />
               </div>
             </div>
