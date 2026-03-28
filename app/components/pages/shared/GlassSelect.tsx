@@ -9,15 +9,19 @@ interface GlassSelectProps {
   options: readonly string[];
   placeholder?: string;
   hasError?: boolean;
+  /** Render the dropdown with position:fixed so it escapes overflow:hidden/auto parents (e.g. table wrappers) */
+  menuFixed?: boolean;
 }
 
-export default function GlassSelect({ value, onChange, options, placeholder = 'Select...', hasError }: GlassSelectProps) {
+export default function GlassSelect({ value, onChange, options, placeholder = 'Select...', hasError, menuFixed }: GlassSelectProps) {
   const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
+  const [menuStyle, setMenuStyle] = useState<React.CSSProperties>({});
+  const containerRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
         setOpen(false);
       }
     }
@@ -25,15 +29,24 @@ export default function GlassSelect({ value, onChange, options, placeholder = 'S
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [open]);
 
+  function handleOpen() {
+    if (menuFixed && buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      setMenuStyle({ top: rect.bottom + 4, left: rect.left, width: rect.width });
+    }
+    setOpen(v => !v);
+  }
+
   const borderClass = hasError
     ? 'border-red-500/50 focus-within:border-red-500/50'
     : 'border-zinc-700/50 focus-within:border-cyan-500/50';
 
   return (
-    <div ref={ref} className="relative">
+    <div ref={containerRef} className="relative">
       <button
+        ref={buttonRef}
         type="button"
-        onClick={() => setOpen(v => !v)}
+        onClick={handleOpen}
         className={`w-full flex items-center justify-between px-3 py-2.5 bg-zinc-800/40 backdrop-blur-sm border rounded-lg text-sm transition-colors focus:outline-none focus:ring-1 ${hasError ? 'focus:ring-red-500/20' : 'focus:ring-cyan-500/30'} ${borderClass} ${value ? 'text-zinc-100' : 'text-zinc-500'}`}
       >
         <span>{value || placeholder}</span>
@@ -41,7 +54,10 @@ export default function GlassSelect({ value, onChange, options, placeholder = 'S
       </button>
 
       {open && (
-        <div className="absolute z-50 mt-1 w-full bg-zinc-900/80 backdrop-blur-md border border-zinc-700/50 rounded-lg shadow-xl overflow-hidden">
+        <div
+          style={menuFixed ? menuStyle : undefined}
+          className={`${menuFixed ? 'fixed z-[9999]' : 'absolute z-50 mt-1 w-full'} bg-zinc-900/80 backdrop-blur-md border border-zinc-700/50 rounded-lg shadow-xl overflow-hidden`}
+        >
           {options.map(opt => (
             <button
               key={opt}

@@ -5,6 +5,8 @@ import { queryUsers, executeUsers } from '@/app/lib/db/users';
 import { verifyJWT, SESSION_COOKIE } from '@/app/lib/auth/jwt';
 import { rowToTeamMember } from '@/app/lib/auth/types';
 
+const VALID_OFFICES = ['Austin', 'Charlotte', 'Santa Monica', 'UK', 'Sydney'];
+
 async function requireAdmin(req: NextRequest) {
   const token = req.cookies.get(SESSION_COOKIE)?.value;
   if (!token) return null;
@@ -35,7 +37,7 @@ export async function PATCH(
     }
 
     const body = await req.json();
-    const { status, userId } = body as { status?: string; userId?: string | null };
+    const { status, userId, office } = body as { status?: string; userId?: string | null; office?: string };
 
     const sets: string[] = [];
     const values: unknown[] = [];
@@ -70,6 +72,14 @@ export async function PATCH(
       }
       sets.push('user_id = ?');
       values.push(userId ?? null);
+    }
+
+    if (office !== undefined) {
+      if (!VALID_OFFICES.includes(office)) {
+        return NextResponse.json({ error: 'Invalid office.' }, { status: 400 });
+      }
+      sets.push('office = ?');
+      values.push(office);
     }
 
     if (sets.length === 0) {

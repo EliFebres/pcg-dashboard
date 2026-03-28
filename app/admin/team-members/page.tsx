@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Users, Plus, Link, LinkIcon, X, AlertCircle } from 'lucide-react';
+import { Users, Plus, LinkIcon, X, AlertCircle } from 'lucide-react';
 import type { TeamMember, User } from '@/app/lib/auth/types';
 import GlassSelect from '@/app/components/pages/shared/GlassSelect';
 
@@ -43,12 +43,11 @@ function ActionButton({
 }: {
   onClick: () => void;
   disabled?: boolean;
-  variant: 'link' | 'unlink' | 'deactivate' | 'reactivate';
+  variant: 'unlink' | 'deactivate' | 'reactivate';
   children: React.ReactNode;
   title?: string;
 }) {
   const styles = {
-    link: 'text-cyan-400 hover:bg-cyan-500/10 border-cyan-500/20',
     unlink: 'text-zinc-400 hover:bg-zinc-500/10 border-zinc-500/20',
     deactivate: 'text-red-400 hover:bg-red-500/10 border-red-500/20',
     reactivate: 'text-cyan-400 hover:bg-cyan-500/10 border-cyan-500/20',
@@ -271,6 +270,7 @@ export default function AdminTeamMembersPage() {
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [linkingMember, setLinkingMember] = useState<TeamMemberWithLinked | null>(null);
+  const [editingOfficeId, setEditingOfficeId] = useState<string | null>(null);
 
   const fetchAll = useCallback(async () => {
     try {
@@ -369,7 +369,29 @@ export default function AdminTeamMembersPage() {
                           <td className="px-4 py-3">
                             <span className="font-mono text-xs px-1.5 py-0.5 bg-zinc-800 rounded text-cyan-400">{m.displayName}</span>
                           </td>
-                          <td className="px-4 py-3 text-zinc-400">{m.office}</td>
+                          <td className="px-4 py-3">
+                            {editingOfficeId === m.id ? (
+                              <div className="w-36">
+                                <GlassSelect
+                                  value={m.office}
+                                  onChange={v => {
+                                    patch(m.id, { office: v });
+                                    setEditingOfficeId(null);
+                                  }}
+                                  options={OFFICES}
+                                  menuFixed
+                                />
+                              </div>
+                            ) : (
+                              <button
+                                onClick={() => setEditingOfficeId(m.id)}
+                                className="text-zinc-400 text-sm hover:text-zinc-200 transition-colors"
+                                title="Click to edit office"
+                              >
+                                {m.office}
+                              </button>
+                            )}
+                          </td>
                           <td className="px-4 py-3"><StatusBadge status={m.status} /></td>
                           <td className="px-4 py-3">
                             {m.linkedEmail ? (
@@ -379,21 +401,16 @@ export default function AdminTeamMembersPage() {
                                 <span className="text-zinc-600 text-xs">({m.linkedEmail})</span>
                               </div>
                             ) : (
-                              <span className="text-zinc-600 text-xs">Unlinked</span>
+                              <button
+                                onClick={() => setLinkingMember(m)}
+                                className="text-zinc-500 text-xs hover:text-cyan-400 border-b border-dashed border-zinc-700 hover:border-cyan-500/50 transition-colors"
+                              >
+                                Unlinked
+                              </button>
                             )}
                           </td>
                           <td className="px-4 py-3">
                             <div className="flex items-center gap-1.5">
-                              {!m.linkedEmail && (
-                                <ActionButton
-                                  variant="link"
-                                  onClick={() => setLinkingMember(m)}
-                                  disabled={busy}
-                                >
-                                  <Link className="w-3 h-3" />
-                                  Link
-                                </ActionButton>
-                              )}
                               {m.linkedEmail && (
                                 <ActionButton
                                   variant="unlink"
