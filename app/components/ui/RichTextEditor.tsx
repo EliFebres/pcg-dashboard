@@ -27,6 +27,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
     extensions: [StarterKit],
     content: value,
     autofocus: autoFocus,
+    immediatelyRender: false,
     editorProps: {
       attributes: {
         class: 'focus:outline-none',
