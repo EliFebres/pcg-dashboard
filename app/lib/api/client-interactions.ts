@@ -325,6 +325,31 @@ export async function addEngagementNote(id: number, noteText: string): Promise<N
 }
 
 /**
+ * Updates the text of an existing note. Only the note's author may edit it.
+ * Endpoint: PATCH /api/client-interactions/engagements/:id/notes/:noteId
+ */
+export async function updateEngagementNote(engagementId: number, noteId: number, noteText: string): Promise<NoteEntry> {
+  const response = await fetch(`${API_BASE_URL}/client-interactions/engagements/${engagementId}/notes/${noteId}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ noteText }),
+  });
+  if (!response.ok) throw new Error('Failed to update note');
+  return response.json();
+}
+
+/**
+ * Deletes a note. Only the note's author may delete it.
+ * Endpoint: DELETE /api/client-interactions/engagements/:id/notes/:noteId
+ */
+export async function deleteEngagementNote(engagementId: number, noteId: number): Promise<void> {
+  const response = await fetch(`${API_BASE_URL}/client-interactions/engagements/${engagementId}/notes/${noteId}`, {
+    method: 'DELETE',
+  });
+  if (!response.ok) throw new Error('Failed to delete note');
+}
+
+/**
  * Deletes an engagement record permanently.
  * Endpoint: DELETE /api/client-interactions/engagements/:id
  */

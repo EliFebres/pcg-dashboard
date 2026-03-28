@@ -266,12 +266,12 @@ export async function computeContributionData(filters: EngagementFilters): Promi
 
   const rows = await query<Record<string, unknown>>(`
     SELECT
-      date_finished AS finish_date,
+      CAST(date_finished AS VARCHAR) AS finish_date,
       COUNT(*) FILTER (WHERE intake_type != 'GCG Ad-Hoc') AS project_count,
       COUNT(*) FILTER (WHERE intake_type = 'GCG Ad-Hoc')  AS ad_hoc_count
     FROM engagements ${dateFilter}
-    GROUP BY date_finished
-    ORDER BY date_finished
+    GROUP BY CAST(date_finished AS VARCHAR)
+    ORDER BY finish_date
   `, [...params, heatmapStartISO]);
 
   // Build a lookup map from ISO date string to counts

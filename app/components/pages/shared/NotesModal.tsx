@@ -1,8 +1,9 @@
 'use client';
 
 import React, { useState, useEffect, useRef, ReactNode } from 'react';
-import { X, Plus, Loader2 } from 'lucide-react';
-import { getEngagementNotes, addEngagementNote } from '@/app/lib/api/client-interactions';
+import { X, Plus, Loader2, Pencil, Trash2, Check, XCircle } from 'lucide-react';
+import { getEngagementNotes, addEngagementNote, updateEngagementNote, deleteEngagementNote } from '@/app/lib/api/client-interactions';
+import { useCurrentUser } from '@/app/lib/auth/context';
 import type { NoteEntry } from '@/app/lib/types/engagements';
 
 interface NotesModalProps {
@@ -28,10 +29,15 @@ const NotesModal: React.FC<NotesModalProps> = ({
   engagementId,
   onNoteAdded,
 }) => {
+  const { user } = useCurrentUser();
   const [notes, setNotes] = useState<NoteEntry[]>([]);
   const [loading, setLoading] = useState(false);
   const [newText, setNewText] = useState('');
   const [saving, setSaving] = useState(false);
+  const [editingNoteId, setEditingNoteId] = useState<number | null>(null);
+  const [editText, setEditText] = useState('');
+  const [savingEdit, setSavingEdit] = useState(false);
+  const [deletingNoteId, setDeletingNoteId] = useState<number | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Fetch notes when modal opens
@@ -39,6 +45,7 @@ const NotesModal: React.FC<NotesModalProps> = ({
     if (!isOpen || !engagementId) return;
     setLoading(true);
     setNewText('');
+    setEditingNoteId(null);
     getEngagementNotes(engagementId)
       .then(setNotes)
       .catch(console.error)
@@ -84,6 +91,44 @@ const NotesModal: React.FC<NotesModalProps> = ({
     }
   };
 
+  const startEdit = (entry: NoteEntry) => {
+    setEditingNoteId(entry.id);
+    setEditText(entry.noteText);
+  };
+
+  const cancelEdit = () => {
+    setEditingNoteId(null);
+    setEditText('');
+  };
+
+  const handleSaveEdit = async (noteId: number) => {
+    if (!editText.trim() || savingEdit) return;
+    setSavingEdit(true);
+    try {
+      const updated = await updateEngagementNote(engagementId, noteId, editText.trim());
+      setNotes(prev => prev.map(n => n.id === noteId ? updated : n));
+      setEditingNoteId(null);
+      setEditText('');
+    } catch (err) {
+      console.error('Failed to update note:', err);
+    } finally {
+      setSavingEdit(false);
+    }
+  };
+
+  const handleDeleteNote = async (noteId: number) => {
+    setDeletingNoteId(noteId);
+    try {
+      await deleteEngagementNote(engagementId, noteId);
+      setNotes(prev => prev.filter(n => n.id !== noteId));
+      onNoteAdded?.();
+    } catch (err) {
+      console.error('Failed to delete note:', err);
+    } finally {
+      setDeletingNoteId(null);
+    }
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -120,19 +165,79 @@ const NotesModal: React.FC<NotesModalProps> = ({
           ) : notes.length === 0 ? (
             <p className="text-sm text-zinc-500 text-center py-8">No notes yet. Add the first one below.</p>
           ) : (
-            notes.map(entry => (
-              <div
-                key={entry.id}
-                className="bg-zinc-800/50 border border-zinc-700/40 p-4"
-              >
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="text-xs font-medium text-cyan-400">{entry.authorName}</span>
-                  <span className="text-zinc-600 text-xs">·</span>
-                  <span className="text-xs text-zinc-500">{formatNoteDate(entry.createdAt)}</span>
+            notes.map(entry => {
+              const isOwner = user?.id === entry.authorId;
+              const isEditing = editingNoteId === entry.id;
+              const isDeleting = deletingNoteId === entry.id;
+
+              return (
+                <div
+                  key={entry.id}
+                  className="bg-zinc-800/50 border border-zinc-700/40 p-4"
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-medium text-cyan-400">{entry.authorName}</span>
+                      <span className="text-zinc-600 text-xs">·</span>
+                      <span className="text-xs text-zinc-500">{formatNoteDate(entry.createdAt)}</span>
+                    </div>
+                    {isOwner && !isEditing && (
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => startEdit(entry)}
+                          className="p-1 text-zinc-500 hover:text-zinc-300 transition-colors"
+                          title="Edit note"
+                        >
+                          <Pencil className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteNote(entry.id)}
+                          disabled={isDeleting}
+                          className="p-1 text-zinc-500 hover:text-red-400 transition-colors disabled:opacity-50"
+                          title="Delete note"
+                        >
+                          {isDeleting
+                            ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            : <Trash2 className="w-3.5 h-3.5" />
+                          }
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  {isEditing ? (
+                    <div className="space-y-2">
+                      <textarea
+                        value={editText}
+                        onChange={(e) => setEditText(e.target.value)}
+                        rows={3}
+                        className="w-full px-3 py-2 bg-zinc-900/70 border border-zinc-600 text-sm text-white placeholder-zinc-500 resize-y focus:outline-none focus:ring-1 focus:ring-cyan-500/50 focus:border-cyan-500/50 transition-colors"
+                        autoFocus
+                      />
+                      <div className="flex items-center gap-2 justify-end">
+                        <button
+                          onClick={cancelEdit}
+                          className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-zinc-400 hover:text-white transition-colors"
+                        >
+                          <XCircle className="w-3.5 h-3.5" />
+                          Cancel
+                        </button>
+                        <button
+                          onClick={() => handleSaveEdit(entry.id)}
+                          disabled={!editText.trim() || savingEdit}
+                          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-cyan-600/20 text-cyan-400 hover:bg-cyan-600/30 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        >
+                          {savingEdit ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
+                          Save
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-zinc-200 whitespace-pre-wrap leading-relaxed">{entry.noteText}</p>
+                  )}
                 </div>
-                <p className="text-sm text-zinc-200 whitespace-pre-wrap leading-relaxed">{entry.noteText}</p>
-              </div>
-            ))
+              );
+            })
           )}
         </div>
 

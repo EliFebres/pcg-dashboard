@@ -13,7 +13,7 @@ export const SESSION_COOKIE = 'pcg_session';
 
 export const COOKIE_OPTIONS = {
   httpOnly: true,
-  secure: process.env.NODE_ENV === 'production',
+  secure: process.env.COOKIE_SECURE === 'true',
   sameSite: 'lax' as const,
   path: '/',
   maxAge: 60 * 60 * 24, // 24 hours in seconds
