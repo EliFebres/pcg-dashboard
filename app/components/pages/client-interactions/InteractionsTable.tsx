@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { FileText, Download, Check, X, ChevronUp, ChevronDown, ChevronsUpDown, Maximize2, Minimize2, Plus, DollarSign } from 'lucide-react';
+import { FileText, Download, Check, X, ChevronUp, ChevronDown, ChevronsUpDown, Maximize2, Minimize2, Plus } from 'lucide-react';
 import NotesModal from '../shared/NotesModal';
 import NNAModal from '../shared/NNAModal';
 import type { Engagement } from '@/app/lib/types/engagements';
@@ -63,14 +63,20 @@ const SortableHeader: React.FC<SortableHeaderProps> = ({ label, column, currentS
 
 interface InteractionsTableProps {
   engagements: Engagement[];
+  sortColumn: string | null;
+  sortDirection: 'asc' | 'desc' | null;
+  onSort: (column: string | null, direction: 'asc' | 'desc' | null) => void;
   onStatusChange: (engagementId: number, newStatus: string) => void;
   onNotesChange: (engagementId: number, notes: string) => void;
   onNNAChange: (engagementId: number, nna: number | undefined) => void;
   onRowClick: (engagement: Engagement) => void;
 }
 
-const InteractionsTable: React.FC<InteractionsTableProps> = ({ engagements, onStatusChange, onNotesChange, onNNAChange, onRowClick }) => {
-  const [sortConfig, setSortConfig] = useState<SortConfig>({ column: 'dateStarted', direction: 'desc' });
+const InteractionsTable: React.FC<InteractionsTableProps> = ({ engagements, sortColumn, sortDirection, onSort, onStatusChange, onNotesChange, onNNAChange, onRowClick }) => {
+  const sortConfig: SortConfig = useMemo(
+    () => ({ column: sortColumn as SortColumn, direction: sortDirection as SortDirection }),
+    [sortColumn, sortDirection]
+  );
   const [currentPage, setCurrentPage] = useState(1);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [openStatusDropdown, setOpenStatusDropdown] = useState<number | null>(null);
@@ -92,81 +98,28 @@ const InteractionsTable: React.FC<InteractionsTableProps> = ({ engagements, onSt
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Handle column sort
+  // Handle column sort — cycles asc → desc → null (reset), then notifies parent to re-fetch
   const handleSort = useCallback((column: SortColumn) => {
-    setSortConfig((prev) => {
-      if (prev.column === column) {
-        if (prev.direction === 'asc') return { column, direction: 'desc' };
-        if (prev.direction === 'desc') return { column: null, direction: null };
-      }
-      return { column, direction: 'asc' };
-    });
-  }, []);
+    if (sortConfig.column === column) {
+      if (sortConfig.direction === 'asc') onSort(column, 'desc');
+      else if (sortConfig.direction === 'desc') onSort(null, null);
+      else onSort(column, 'asc');
+    } else {
+      onSort(column, 'asc');
+    }
+  }, [sortConfig, onSort]);
 
-  // Sort engagements based on current sort config
-  const sortedEngagements = useMemo(() => {
-    if (!sortConfig.column || !sortConfig.direction) return engagements;
-
-    return [...engagements].sort((a, b) => {
-      const direction = sortConfig.direction === 'asc' ? 1 : -1;
-
-      switch (sortConfig.column) {
-        case 'externalClient': {
-          const aVal = a.externalClient ?? '';
-          const bVal = b.externalClient ?? '';
-          return aVal.localeCompare(bVal) * direction;
-        }
-        case 'internalClient':
-          return a.internalClient.name.localeCompare(b.internalClient.name) * direction;
-        case 'intakeType':
-          return a.intakeType.localeCompare(b.intakeType) * direction;
-        case 'type':
-          return a.type.localeCompare(b.type) * direction;
-        case 'teamMembers':
-          return (a.teamMembers.length - b.teamMembers.length) * direction;
-        case 'dateStarted': {
-          const aDate = new Date(a.dateStarted);
-          const bDate = new Date(b.dateStarted);
-          return (aDate.getTime() - bDate.getTime()) * direction;
-        }
-        case 'dateFinished': {
-          if (a.dateFinished === '—' && b.dateFinished === '—') return 0;
-          if (a.dateFinished === '—') return direction;
-          if (b.dateFinished === '—') return -direction;
-          const aDate = new Date(a.dateFinished);
-          const bDate = new Date(b.dateFinished);
-          return (aDate.getTime() - bDate.getTime()) * direction;
-        }
-        case 'portfolioLogged':
-          return ((a.portfolioLogged ? 1 : 0) - (b.portfolioLogged ? 1 : 0)) * direction;
-        case 'nna': {
-          const aNNA = a.nna || 0;
-          const bNNA = b.nna || 0;
-          return (aNNA - bNNA) * direction;
-        }
-        case 'status': {
-          const statusOrder: Record<string, number> = { 'In Progress': 0, 'Pending': 1, 'Completed': 2 };
-          const aOrder = statusOrder[a.status] ?? 3;
-          const bOrder = statusOrder[b.status] ?? 3;
-          return (aOrder - bOrder) * direction;
-        }
-        default:
-          return 0;
-      }
-    });
-  }, [engagements, sortConfig]);
-
-  // Pagination calculations
-  const totalPages = Math.ceil(sortedEngagements.length / pageSize);
+  // Pagination calculations — engagements already arrive sorted from server
+  const totalPages = Math.ceil(engagements.length / pageSize);
   const paginatedEngagements = useMemo(() => {
     const startIndex = (currentPage - 1) * pageSize;
-    return sortedEngagements.slice(startIndex, startIndex + pageSize);
-  }, [sortedEngagements, currentPage]);
+    return engagements.slice(startIndex, startIndex + pageSize);
+  }, [engagements, currentPage]);
 
-  // Reset to page 1 when data changes
+  // Reset to page 1 when data or sort changes
   useEffect(() => {
     setCurrentPage(1);
-  }, [engagements.length, sortConfig]);
+  }, [engagements.length, sortConfig.column, sortConfig.direction]);
 
   // Generate page numbers to display
   const getPageNumbers = (): (number | 'ellipsis')[] => {
@@ -471,7 +424,7 @@ const InteractionsTable: React.FC<InteractionsTableProps> = ({ engagements, onSt
           <h3 className="text-sm font-medium text-white">Interactions</h3>
           <div className="flex items-center gap-4">
             <p className="text-xs text-zinc-500">
-              Showing <span className="text-zinc-300 font-medium">{((currentPage - 1) * pageSize) + 1}–{Math.min(currentPage * pageSize, sortedEngagements.length)}</span> of <span className="text-zinc-300 font-medium">{sortedEngagements.length}</span>
+              Showing <span className="text-zinc-300 font-medium">{((currentPage - 1) * pageSize) + 1}–{Math.min(currentPage * pageSize, engagements.length)}</span> of <span className="text-zinc-300 font-medium">{engagements.length}</span>
             </p>
             <button className="flex items-center gap-1.5 px-2 py-1 text-xs text-zinc-400 hover:text-cyan-400 transition-colors" title="Download table data">
               <Download className="w-3.5 h-3.5" />
@@ -518,7 +471,7 @@ const InteractionsTable: React.FC<InteractionsTableProps> = ({ engagements, onSt
               <h3 className="text-sm font-medium text-white">Interactions</h3>
               <div className="flex items-center gap-4">
                 <p className="text-xs text-zinc-500">
-                  Showing <span className="text-zinc-300 font-medium">{((currentPage - 1) * pageSize) + 1}–{Math.min(currentPage * pageSize, sortedEngagements.length)}</span> of <span className="text-zinc-300 font-medium">{sortedEngagements.length}</span>
+                  Showing <span className="text-zinc-300 font-medium">{((currentPage - 1) * pageSize) + 1}–{Math.min(currentPage * pageSize, engagements.length)}</span> of <span className="text-zinc-300 font-medium">{engagements.length}</span>
                 </p>
                 <button className="flex items-center gap-1.5 px-2 py-1 text-xs text-zinc-400 hover:text-cyan-400 transition-colors" title="Download table data">
                   <Download className="w-3.5 h-3.5" />

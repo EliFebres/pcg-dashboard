@@ -41,29 +41,9 @@ export async function computeMetrics(filters: EngagementFilters): Promise<Dashbo
   const prevDates = getPreviousPeriodDates(period);
   const { whereClause: currWhere, params: currParams } = buildFilterClause({ ...filters, period });
 
-  // ---- Current period: client projects (IRQ/SRRF non-PCR) + GCG Ad-Hoc ----
-  const projectRows = await query<Record<string, unknown>>(`
-    SELECT
-      COUNT(*) FILTER (WHERE intake_type IN ('IRQ', 'SRRF') AND type != 'PCR')  AS project_count,
-      COUNT(*) FILTER (WHERE intake_type = 'IRQ'  AND type != 'PCR')            AS irq_count,
-      COUNT(*) FILTER (WHERE intake_type = 'SRRF' AND type != 'PCR')            AS srrf_count,
-      COUNT(*) FILTER (WHERE intake_type IN ('IRQ', 'SRRF') AND type != 'PCR')  AS eligible_count,
-      COUNT(*) FILTER (WHERE intake_type IN ('IRQ', 'SRRF') AND type != 'PCR'
-                         AND portfolio_logged = TRUE)                            AS portfolios_logged,
-      COUNT(*) FILTER (WHERE intake_type = 'GCG Ad-Hoc')                        AS adhoc_count,
-      COUNT(*) FILTER (WHERE intake_type = 'GCG Ad-Hoc' AND ad_hoc_channel = 'In-Person') AS adhoc_in_person,
-      COUNT(*) FILTER (WHERE intake_type = 'GCG Ad-Hoc' AND ad_hoc_channel = 'Email')     AS adhoc_email,
-      COUNT(*) FILTER (WHERE intake_type = 'GCG Ad-Hoc' AND ad_hoc_channel = 'Teams')     AS adhoc_teams,
-      COALESCE(SUM(nna), 0)                                                     AS total_nna,
-      COUNT(*) FILTER (WHERE nna > 0)                                           AS nna_project_count,
-      COUNT(*) FILTER (WHERE nna > 0 AND nna < 50000000)                        AS nna_tier1,
-      COUNT(*) FILTER (WHERE nna > 0 AND nna >= 50000000  AND nna < 200000000)  AS nna_tier2,
-      COUNT(*) FILTER (WHERE nna > 0 AND nna >= 200000000)                      AS nna_tier3
-    FROM engagements ${currWhere}
-  `, currParams);
+  // ---- Build all WHERE clauses before firing queries in parallel ----
 
-  // ---- Previous period: for change% calculations ----
-  // Build a base prev-period filter without the period constraint (we pass date range manually)
+  // Previous period
   const prevFilters = { ...filters, period: undefined };
   const { whereClause: baseWhere, params: baseParams } = buildFilterClause(prevFilters);
   const prevAndClause = baseWhere
@@ -71,38 +51,60 @@ export async function computeMetrics(filters: EngagementFilters): Promise<Dashbo
     : `WHERE date_started >= ? AND date_started <= ?`;
   const prevParams = [...baseParams, prevDates.start, prevDates.end];
 
-  const prevRows = await query<Record<string, unknown>>(`
-    SELECT
-      COUNT(*) FILTER (WHERE intake_type IN ('IRQ', 'SRRF') AND type != 'PCR') AS prev_projects,
-      COUNT(*) FILTER (WHERE intake_type = 'GCG Ad-Hoc')                       AS prev_adhoc,
-      COALESCE(SUM(nna), 0)                                                    AS prev_nna
-    FROM engagements ${prevAndClause}
-  `, prevParams);
-
-  // ---- In-progress count (respects all active filters except status) ----
+  // In-progress count + sparkline (share the same base filter)
   const inProgressFilters = { ...filters, status: undefined };
   const { whereClause: ipWhere, params: ipParams } = buildFilterClause(inProgressFilters);
   const inProgressAndClause = ipWhere
     ? `${ipWhere} AND status = 'In Progress'`
     : `WHERE status = 'In Progress'`;
-
-  const inProgressRows = await query<Record<string, unknown>>(`
-    SELECT COUNT(*) AS count FROM engagements ${inProgressAndClause}
-  `, ipParams);
-
-  // ---- Weekly in-progress sparkline (last 8 weeks, same filters) ----
   const sparklineAndClause = ipWhere
     ? `${ipWhere} AND date_started >= (CURRENT_DATE - INTERVAL '8 weeks')`
     : `WHERE date_started >= (CURRENT_DATE - INTERVAL '8 weeks')`;
 
-  const sparklineRows = await query<Record<string, unknown>>(`
-    SELECT
-      strftime(date_started, '%Y-W%W') AS week_key,
-      COUNT(*) FILTER (WHERE status = 'In Progress') AS in_progress_count
-    FROM engagements ${sparklineAndClause}
-    GROUP BY week_key
-    ORDER BY week_key
-  `, ipParams);
+  // ---- Fire all 4 queries in parallel — none depends on another's result ----
+  const [projectRows, prevRows, inProgressRows, sparklineRows] = await Promise.all([
+    // Current period: client projects (IRQ/SRRF non-PCR) + GCG Ad-Hoc
+    query<Record<string, unknown>>(`
+      SELECT
+        COUNT(*) FILTER (WHERE intake_type IN ('IRQ', 'SRRF') AND type != 'PCR')  AS project_count,
+        COUNT(*) FILTER (WHERE intake_type = 'IRQ'  AND type != 'PCR')            AS irq_count,
+        COUNT(*) FILTER (WHERE intake_type = 'SRRF' AND type != 'PCR')            AS srrf_count,
+        COUNT(*) FILTER (WHERE intake_type IN ('IRQ', 'SRRF') AND type != 'PCR')  AS eligible_count,
+        COUNT(*) FILTER (WHERE intake_type IN ('IRQ', 'SRRF') AND type != 'PCR'
+                           AND portfolio_logged = TRUE)                            AS portfolios_logged,
+        COUNT(*) FILTER (WHERE intake_type = 'GCG Ad-Hoc')                        AS adhoc_count,
+        COUNT(*) FILTER (WHERE intake_type = 'GCG Ad-Hoc' AND ad_hoc_channel = 'In-Person') AS adhoc_in_person,
+        COUNT(*) FILTER (WHERE intake_type = 'GCG Ad-Hoc' AND ad_hoc_channel = 'Email')     AS adhoc_email,
+        COUNT(*) FILTER (WHERE intake_type = 'GCG Ad-Hoc' AND ad_hoc_channel = 'Teams')     AS adhoc_teams,
+        COALESCE(SUM(nna), 0)                                                     AS total_nna,
+        COUNT(*) FILTER (WHERE nna > 0)                                           AS nna_project_count,
+        COUNT(*) FILTER (WHERE nna > 0 AND nna < 50000000)                        AS nna_tier1,
+        COUNT(*) FILTER (WHERE nna > 0 AND nna >= 50000000  AND nna < 200000000)  AS nna_tier2,
+        COUNT(*) FILTER (WHERE nna > 0 AND nna >= 200000000)                      AS nna_tier3
+      FROM engagements ${currWhere}
+    `, currParams),
+    // Previous period: for change% calculations
+    query<Record<string, unknown>>(`
+      SELECT
+        COUNT(*) FILTER (WHERE intake_type IN ('IRQ', 'SRRF') AND type != 'PCR') AS prev_projects,
+        COUNT(*) FILTER (WHERE intake_type = 'GCG Ad-Hoc')                       AS prev_adhoc,
+        COALESCE(SUM(nna), 0)                                                    AS prev_nna
+      FROM engagements ${prevAndClause}
+    `, prevParams),
+    // In-progress count (respects all active filters except status)
+    query<Record<string, unknown>>(`
+      SELECT COUNT(*) AS count FROM engagements ${inProgressAndClause}
+    `, ipParams),
+    // Weekly in-progress sparkline (last 8 weeks, same filters)
+    query<Record<string, unknown>>(`
+      SELECT
+        strftime(date_started, '%Y-W%W') AS week_key,
+        COUNT(*) FILTER (WHERE status = 'In Progress') AS in_progress_count
+      FROM engagements ${sparklineAndClause}
+      GROUP BY week_key
+      ORDER BY week_key
+    `, ipParams),
+  ]);
 
   // -------------------------------------------------------------------------
   // Compute metrics from query results
@@ -264,7 +266,7 @@ export async function computeContributionData(filters: EngagementFilters): Promi
 
   const rows = await query<Record<string, unknown>>(`
     SELECT
-      CAST(date_finished AS VARCHAR) AS finish_date,
+      date_finished AS finish_date,
       COUNT(*) FILTER (WHERE intake_type != 'GCG Ad-Hoc') AS project_count,
       COUNT(*) FILTER (WHERE intake_type = 'GCG Ad-Hoc')  AS ad_hoc_count
     FROM engagements ${dateFilter}

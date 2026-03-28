@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Building2, Download, User, Loader2, Inbox, Briefcase } from 'lucide-react';
 import MetricCards from '@/app/components/pages/client-interactions/MetricCards';
 import ContributionGraph from '@/app/components/pages/client-interactions/ContributionGraph';
@@ -110,6 +110,8 @@ export default function EngagementsDashboard() {
   const [intakeTypeFilter, setIntakeTypeFilter] = useState<string[]>([]);
   const [projectTypeFilter, setProjectTypeFilter] = useState<string[]>([]);
   const [period, setPeriod] = useState('1Y');
+  const [sortColumn, setSortColumn] = useState<string | null>('dateStarted');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc' | null>('desc');
 
   // Form state
   const [isNewInteractionOpen, setIsNewInteractionOpen] = useState(false);
@@ -151,6 +153,7 @@ export default function EngagementsDashboard() {
   const currentUser = user ? toDisplayName(user.firstName, user.lastName) : 'All Team Members';
 
   useEffect(() => {
+    const controller = new AbortController();
     const filters: EngagementFilters = {
       period,
       teamMember: teamMemberFilter !== 'All Team Members' ? teamMemberFilter : undefined,
@@ -159,22 +162,26 @@ export default function EngagementsDashboard() {
       projectTypes: projectTypeFilter.length > 0 ? projectTypeFilter : undefined,
       search: searchQuery || undefined,
       pageSize: 200,
+      sortColumn: sortColumn || undefined,
+      sortDirection: sortDirection || 'desc',
     };
 
     const delay = searchQuery ? 300 : 0;
     const id = setTimeout(async () => {
       setIsLoading(true);
       try {
-        setDashboardData(await getDashboardData(filters));
+        const data = await getDashboardData(filters, controller.signal);
+        setDashboardData(data);
       } catch (err) {
+        if ((err as Error).name === 'AbortError') return;
         console.error('Failed to load dashboard data:', err);
       } finally {
-        setIsLoading(false);
+        if (!controller.signal.aborted) setIsLoading(false);
       }
     }, delay);
 
-    return () => clearTimeout(id);
-  }, [period, teamMemberFilter, departmentFilter, intakeTypeFilter, projectTypeFilter, searchQuery]);
+    return () => { clearTimeout(id); controller.abort(); };
+  }, [period, teamMemberFilter, departmentFilter, intakeTypeFilter, projectTypeFilter, searchQuery, sortColumn, sortDirection]);
 
   // Re-fetch with current filters (used after mutations)
   const reloadData = useCallback(async () => {
@@ -186,21 +193,31 @@ export default function EngagementsDashboard() {
       projectTypes: projectTypeFilter.length > 0 ? projectTypeFilter : undefined,
       search: searchQuery || undefined,
       pageSize: 200,
+      sortColumn: sortColumn || undefined,
+      sortDirection: sortDirection || 'desc',
     };
     try {
       setDashboardData(await getDashboardData(filters));
     } catch (err) {
       console.error('Failed to reload dashboard data:', err);
     }
-  }, [period, teamMemberFilter, departmentFilter, intakeTypeFilter, projectTypeFilter, searchQuery]);
+  }, [period, teamMemberFilter, departmentFilter, intakeTypeFilter, projectTypeFilter, searchQuery, sortColumn, sortDirection]);
+
+  const handleSort = useCallback((column: string | null, direction: 'asc' | 'desc' | null) => {
+    setSortColumn(column);
+    setSortDirection(direction);
+  }, []);
 
   // -------------------------------------------------------------------------
   // Derived display data
   // -------------------------------------------------------------------------
-  const metricCards = dashboardData ? toMetricCards(dashboardData.metrics) : [];
-  const departments = dashboardData?.departments.departments ?? [];
-  const contributionWeeks = dashboardData?.contributionData.weeks ?? [];
-  const engagements = dashboardData?.engagements.engagements ?? [];
+  const metricCards = useMemo(
+    () => dashboardData ? toMetricCards(dashboardData.metrics) : [],
+    [dashboardData]
+  );
+  const departments = useMemo(() => dashboardData?.departments.departments ?? [], [dashboardData]);
+  const contributionWeeks = useMemo(() => dashboardData?.contributionData.weeks ?? [], [dashboardData]);
+  const engagements = useMemo(() => dashboardData?.engagements.engagements ?? [], [dashboardData]);
   const filterOptions = dashboardData?.filterOptions;
 
   // -------------------------------------------------------------------------
@@ -463,6 +480,9 @@ export default function EngagementsDashboard() {
 
             <InteractionsTable
               engagements={engagements}
+              sortColumn={sortColumn}
+              sortDirection={sortDirection}
+              onSort={handleSort}
               onStatusChange={handleStatusChange}
               onNotesChange={handleNotesChange}
               onNNAChange={handleNNAChange}

@@ -49,9 +49,14 @@ export async function getConnection(): Promise<DuckDBConnection> {
         )
       `);
       await conn.run(`CREATE SEQUENCE IF NOT EXISTS engagements_id_seq START 1`);
-      await conn.run(`CREATE INDEX IF NOT EXISTS idx_date_started ON engagements (date_started)`);
-      await conn.run(`CREATE INDEX IF NOT EXISTS idx_status       ON engagements (status)`);
-      await conn.run(`CREATE INDEX IF NOT EXISTS idx_department   ON engagements (department)`);
+      await conn.run(`CREATE INDEX IF NOT EXISTS idx_date_started    ON engagements (date_started)`);
+      await conn.run(`CREATE INDEX IF NOT EXISTS idx_status           ON engagements (status)`);
+      await conn.run(`CREATE INDEX IF NOT EXISTS idx_department       ON engagements (department)`);
+      await conn.run(`CREATE INDEX IF NOT EXISTS idx_date_finished    ON engagements (date_finished)`);
+      await conn.run(`CREATE INDEX IF NOT EXISTS idx_intake_type      ON engagements (intake_type)`);
+      await conn.run(`CREATE INDEX IF NOT EXISTS idx_started_status   ON engagements (date_started, status)`);
+      await conn.run(`CREATE INDEX IF NOT EXISTS idx_dept_started     ON engagements (internal_client_dept, date_started)`);
+      await conn.run(`CREATE INDEX IF NOT EXISTS idx_date_fin_started ON engagements (date_finished, date_started)`);
 
       return conn;
     })();

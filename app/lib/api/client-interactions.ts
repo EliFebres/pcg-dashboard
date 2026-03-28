@@ -123,7 +123,7 @@ export interface FilterOptions {
  * Fetches all dashboard data in a single call for initial page load.
  * Endpoint: POST /api/client-interactions/dashboard
  */
-export async function getDashboardData(filters: EngagementFilters = {}): Promise<DashboardData> {
+export async function getDashboardData(filters: EngagementFilters = {}, signal?: AbortSignal): Promise<DashboardData> {
   const response = await fetch(`${API_BASE_URL}/client-interactions/dashboard`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -140,6 +140,7 @@ export async function getDashboardData(filters: EngagementFilters = {}): Promise
       sortColumn: filters.sortColumn,
       sortDirection: filters.sortDirection || 'desc',
     }),
+    signal,
   });
   if (!response.ok) throw new Error('Failed to fetch dashboard data');
   return response.json();

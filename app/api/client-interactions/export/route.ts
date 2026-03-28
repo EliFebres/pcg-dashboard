@@ -24,8 +24,9 @@ export async function GET(req: NextRequest) {
     };
 
     const { whereClause, params } = buildFilterClause(filters);
+    const EXPORT_ROW_LIMIT = 10_000;
     const rows = await query<Record<string, unknown>>(
-      `SELECT * FROM engagements ${whereClause} ORDER BY date_started DESC`,
+      `SELECT * FROM engagements ${whereClause} ORDER BY date_started DESC LIMIT ${EXPORT_ROW_LIMIT}`,
       params
     );
 
