@@ -32,6 +32,7 @@ export interface EditingEngagement {
   data: InteractionFormData;
   originalDateStarted: string; // Preserve exact original string to avoid roundtrip changes
   originalDateFinished?: string; // Preserve exact original string to avoid roundtrip changes
+  version?: number; // Optimistic locking — sent back on save to detect concurrent edits
 }
 
 interface NewInteractionFormProps {

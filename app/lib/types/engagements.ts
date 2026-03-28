@@ -97,6 +97,7 @@ export interface Engagement {
   nna?: number; // Net New Assets - dollar amount of AUM moved into funds (optional)
   notes?: string; // Optional notes field (legacy — used by engagement form)
   noteCount?: number; // Number of entries in engagement_notes table (undefined when not loaded)
+  version?: number; // Optimistic locking counter — send back with PATCH to detect concurrent edits
   tickersMentioned?: string[]; // Tickers discussed during GCG Ad-Hoc interactions (used for Ticker Trends)
 }
 

@@ -1,7 +1,7 @@
 export const runtime = 'nodejs';
 
 import { NextRequest, NextResponse } from 'next/server';
-import { query, execute } from '@/app/lib/db';
+import { query } from '@/app/lib/db';
 import { rowToEngagement } from '@/app/lib/db/queries';
 import { toISODate } from '@/app/lib/db/dateUtils';
 
@@ -104,19 +104,37 @@ export async function PATCH(
       return NextResponse.json({ error: 'No fields to update' }, { status: 400 });
     }
 
+    // Always bump version for optimistic locking
+    setClauses.push('version = version + 1');
+
+    // If client sends version, enforce it to detect concurrent edits
+    const clientVersion = typeof body.version === 'number' ? body.version : null;
+    const whereClause = clientVersion !== null
+      ? `WHERE id = ? AND version = ?`
+      : `WHERE id = ?`;
     values.push(engagementId);
-    await execute(
-      `UPDATE engagements SET ${setClauses.join(', ')} WHERE id = ?`,
+    if (clientVersion !== null) values.push(clientVersion);
+
+    const updated = await query<Record<string, unknown>>(
+      `UPDATE engagements SET ${setClauses.join(', ')} ${whereClause} RETURNING id`,
       values
     );
+
+    if (updated.length === 0) {
+      const exists = await query<{ id: number }>(`SELECT id FROM engagements WHERE id = ?`, [engagementId]);
+      if (exists.length === 0) {
+        return NextResponse.json({ error: 'Engagement not found' }, { status: 404 });
+      }
+      return NextResponse.json(
+        { error: 'This engagement was modified by someone else. Refresh and try again.' },
+        { status: 409 }
+      );
+    }
 
     const rows = await query<Record<string, unknown>>(
       `SELECT * FROM engagements WHERE id = ?`,
       [engagementId]
     );
-    if (rows.length === 0) {
-      return NextResponse.json({ error: 'Engagement not found' }, { status: 404 });
-    }
     return NextResponse.json(rowToEngagement(rows[0]));
   } catch (err) {
     console.error('PATCH /api/client-interactions/engagements/[id] error:', err);

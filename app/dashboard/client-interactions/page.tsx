@@ -15,6 +15,7 @@ import {
   updateEngagementStatus,
   updateEngagementNNA,
   addEngagementNote,
+  ConflictError,
 } from '@/app/lib/api/client-interactions';
 import type { DashboardData, DashboardMetrics, EngagementFilters } from '@/app/lib/api/client-interactions';
 import type { EngagementMetric, Engagement } from '@/app/lib/types/engagements';
@@ -117,6 +118,8 @@ export default function EngagementsDashboard() {
   const [isNewInteractionOpen, setIsNewInteractionOpen] = useState(false);
   const [isBulkUploadOpen, setIsBulkUploadOpen] = useState(false);
   const [editingEngagement, setEditingEngagement] = useState<EditingEngagement | null>(null);
+  const [conflictError, setConflictError] = useState<string | null>(null);
+  const conflictTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Flip card state
   const [flippedCard, setFlippedCard] = useState<string | null>(null);
@@ -309,6 +312,7 @@ export default function EngagementsDashboard() {
       },
       originalDateStarted: engagement.dateStarted,
       originalDateFinished: engagement.dateFinished,
+      version: engagement.version,
     });
     setIsNewInteractionOpen(true);
   };
@@ -318,6 +322,7 @@ export default function EngagementsDashboard() {
     const dateFinishedChanged = editingEngagement?.data.dateFinished !== data.dateFinished;
     const originalDateStarted = editingEngagement?.originalDateStarted;
     const originalDateFinished = editingEngagement?.originalDateFinished;
+    const version = editingEngagement?.version;
 
     setEditingEngagement(null);
     try {
@@ -339,10 +344,17 @@ export default function EngagementsDashboard() {
         portfolio: data.portfolio,
         nna: data.nna ?? undefined,
         tickersMentioned: data.tickersMentioned?.length ? data.tickersMentioned : undefined,
+        version,
       });
       await reloadData();
     } catch (err) {
-      console.error('Failed to update engagement:', err);
+      if (err instanceof ConflictError) {
+        if (conflictTimeoutRef.current) clearTimeout(conflictTimeoutRef.current);
+        setConflictError(err.message);
+        conflictTimeoutRef.current = setTimeout(() => setConflictError(null), 6000);
+      } else {
+        console.error('Failed to update engagement:', err);
+      }
     }
   };
 
@@ -425,6 +437,13 @@ export default function EngagementsDashboard() {
         actionButtonLabel="+ New Interaction"
         onActionButtonClick={() => setIsNewInteractionOpen(true)}
       />
+
+      {conflictError && (
+        <div className="mx-6 mt-4 px-4 py-3 rounded-lg bg-amber-900/40 border border-amber-700/60 text-amber-300 text-sm flex items-center justify-between gap-4">
+          <span>{conflictError}</span>
+          <button onClick={() => setConflictError(null)} className="text-amber-400 hover:text-amber-200 flex-shrink-0">✕</button>
+        </div>
+      )}
 
       <div className="p-6 flex flex-col gap-6">
         {isLoading ? (

@@ -1,7 +1,7 @@
 export const runtime = 'nodejs';
 
 import { NextRequest, NextResponse } from 'next/server';
-import { query, execute } from '@/app/lib/db';
+import { query } from '@/app/lib/db';
 import { verifyJWT, SESSION_COOKIE } from '@/app/lib/auth/jwt';
 import type { NoteEntry } from '@/app/lib/types/engagements';
 
@@ -42,26 +42,20 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'noteText is required.' }, { status: 400 });
     }
 
-    const rows = await query<Record<string, unknown>>(
-      `SELECT * FROM engagement_notes WHERE id = ?`,
-      [id]
+    // Atomic ownership check + update: if author_id doesn't match, 0 rows returned
+    const updated = await query<Record<string, unknown>>(
+      `UPDATE engagement_notes SET note_text = ? WHERE id = ? AND author_id = ? RETURNING *`,
+      [noteText.trim(), id, payload.sub]
     );
-    if (rows.length === 0) {
-      return NextResponse.json({ error: 'Note not found.' }, { status: 404 });
-    }
-    if (rows[0].author_id !== payload.sub) {
+
+    if (updated.length === 0) {
+      const exists = await query(`SELECT id FROM engagement_notes WHERE id = ?`, [id]);
+      if (exists.length === 0) {
+        return NextResponse.json({ error: 'Note not found.' }, { status: 404 });
+      }
       return NextResponse.json({ error: 'You can only edit your own notes.' }, { status: 403 });
     }
 
-    await execute(
-      `UPDATE engagement_notes SET note_text = ? WHERE id = ?`,
-      [noteText.trim(), id]
-    );
-
-    const updated = await query<Record<string, unknown>>(
-      `SELECT * FROM engagement_notes WHERE id = ?`,
-      [id]
-    );
     return NextResponse.json(rowToNoteEntry(updated[0]));
   } catch (err) {
     console.error('PATCH .../notes/:noteId error:', err);
@@ -84,21 +78,23 @@ export async function DELETE(req: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'Invalid or expired session.' }, { status: 401 });
     }
 
-    const { id: engagementId, noteId } = await params;
+    const { noteId } = await params;
     const id = Number(noteId);
 
-    const rows = await query<Record<string, unknown>>(
-      `SELECT * FROM engagement_notes WHERE id = ?`,
-      [id]
+    // Atomic ownership check + delete: if author_id doesn't match, 0 rows returned
+    const deleted = await query(
+      `DELETE FROM engagement_notes WHERE id = ? AND author_id = ? RETURNING id`,
+      [id, payload.sub]
     );
-    if (rows.length === 0) {
-      return NextResponse.json({ error: 'Note not found.' }, { status: 404 });
-    }
-    if (rows[0].author_id !== payload.sub) {
+
+    if (deleted.length === 0) {
+      const exists = await query(`SELECT id FROM engagement_notes WHERE id = ?`, [id]);
+      if (exists.length === 0) {
+        return NextResponse.json({ error: 'Note not found.' }, { status: 404 });
+      }
       return NextResponse.json({ error: 'You can only delete your own notes.' }, { status: 403 });
     }
 
-    await execute(`DELETE FROM engagement_notes WHERE id = ?`, [id]);
     return new NextResponse(null, { status: 204 });
   } catch (err) {
     console.error('DELETE .../notes/:noteId error:', err);

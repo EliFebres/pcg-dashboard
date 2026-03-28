@@ -58,6 +58,10 @@ export async function getConnection(): Promise<DuckDBConnection> {
       await conn.run(`CREATE INDEX IF NOT EXISTS idx_dept_started     ON engagements (internal_client_dept, date_started)`);
       await conn.run(`CREATE INDEX IF NOT EXISTS idx_date_fin_started ON engagements (date_finished, date_started)`);
 
+      // Optimistic locking: version counter — incremented on every update.
+      // Allows concurrent edits to detect conflicts instead of silently overwriting each other.
+      await conn.run(`ALTER TABLE engagements ADD COLUMN IF NOT EXISTS version INTEGER DEFAULT 1`);
+
       // Engagement notes — append-only log with author attribution
       await conn.run(`CREATE SEQUENCE IF NOT EXISTS engagement_notes_id_seq START 1`);
       await conn.run(`

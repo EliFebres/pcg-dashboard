@@ -83,47 +83,54 @@ export async function POST(req: NextRequest) {
     });
   }
 
-  // Commit — insert all valid rows
+  // Commit — insert all valid rows atomically
   try {
-    for (const row of validRows) {
-      const seqRows = await query<Record<string, unknown>>(
-        `SELECT nextval('engagements_id_seq') AS nextval`
-      );
-      const id = Number(seqRows[0].nextval);
+    await execute(`BEGIN`);
+    try {
+      for (const row of validRows) {
+        const seqRows = await query<Record<string, unknown>>(
+          `SELECT nextval('engagements_id_seq') AS nextval`
+        );
+        const id = Number(seqRows[0].nextval);
 
-      await execute(
-        `INSERT INTO engagements (
-          id, external_client, internal_client_name, internal_client_dept,
-          intake_type, ad_hoc_channel, type, team_members, department,
-          date_started, date_finished, status, portfolio_logged, portfolio,
-          nna, notes, tickers_mentioned
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [
-          id,
-          row.externalClient ?? null,
-          row.internalClientName,
-          row.internalClientDept,
-          row.intakeType,
-          row.adHocChannel ?? null,
-          row.type,
-          JSON.stringify(row.teamMembers),
-          row.department,
-          row.dateStarted,
-          row.dateFinished ?? null,
-          row.status,
-          row.portfolioLogged,
-          null, // portfolio holdings not included in bulk upload
-          row.nna ?? null,
-          row.notes ?? null,
-          row.tickersMentioned.length > 0 ? JSON.stringify(row.tickersMentioned) : null,
-        ]
-      );
+        await execute(
+          `INSERT INTO engagements (
+            id, external_client, internal_client_name, internal_client_dept,
+            intake_type, ad_hoc_channel, type, team_members, department,
+            date_started, date_finished, status, portfolio_logged, portfolio,
+            nna, notes, tickers_mentioned
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [
+            id,
+            row.externalClient ?? null,
+            row.internalClientName,
+            row.internalClientDept,
+            row.intakeType,
+            row.adHocChannel ?? null,
+            row.type,
+            JSON.stringify(row.teamMembers),
+            row.department,
+            row.dateStarted,
+            row.dateFinished ?? null,
+            row.status,
+            row.portfolioLogged,
+            null, // portfolio holdings not included in bulk upload
+            row.nna ?? null,
+            row.notes ?? null,
+            row.tickersMentioned.length > 0 ? JSON.stringify(row.tickersMentioned) : null,
+          ]
+        );
+      }
+      await execute(`COMMIT`);
+    } catch (err) {
+      await execute(`ROLLBACK`);
+      throw err;
     }
 
     return NextResponse.json({ inserted: validRows.length, warnings }, { status: 201 });
   } catch (err) {
     console.error('Bulk insert error:', err);
-    return NextResponse.json({ error: 'Database insert failed. No rows were saved.' }, { status: 500 });
+    return NextResponse.json({ error: 'Import failed. No rows were saved.' }, { status: 500 });
   }
 }
 

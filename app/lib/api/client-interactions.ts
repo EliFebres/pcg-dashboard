@@ -23,6 +23,14 @@ import type {
 
 const API_BASE_URL = '/api';
 
+/** Thrown when a PATCH is rejected because another user edited the same engagement. */
+export class ConflictError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'ConflictError';
+  }
+}
+
 // =============================================================================
 // TYPESCRIPT INTERFACES
 // =============================================================================
@@ -260,6 +268,10 @@ export async function updateEngagement(
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(updates),
   });
+  if (response.status === 409) {
+    const data = await response.json();
+    throw new ConflictError(data.error ?? 'This engagement was modified by someone else. Refresh and try again.');
+  }
   if (!response.ok) throw new Error('Failed to update engagement');
   return response.json();
 }
