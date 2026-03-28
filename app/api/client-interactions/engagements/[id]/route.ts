@@ -152,7 +152,7 @@ export async function DELETE(
   }
   try {
     const { id } = await params;
-    await execute(`DELETE FROM engagements WHERE id = ?`, [Number(id)]);
+    await query(`DELETE FROM engagements WHERE id = ?`, [Number(id)]);
     return new Response(null, { status: 204 });
   } catch (err) {
     console.error('DELETE /api/client-interactions/engagements/[id] error:', err);
