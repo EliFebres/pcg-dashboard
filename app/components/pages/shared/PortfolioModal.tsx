@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { X, Briefcase, Plus, Trash2, ClipboardPaste } from 'lucide-react';
+import { X, Briefcase, Plus, Trash2, ClipboardPaste, Download } from 'lucide-react';
 import { AssetClass, ConstituentType, PortfolioHolding } from '@/app/lib/types/engagements';
 
 interface PortfolioModalProps {
@@ -276,11 +276,20 @@ const PortfolioModal: React.FC<PortfolioModalProps> = ({
         >
           {/* Paste hint */}
           <div className="mb-4 p-3 bg-zinc-800/30 border border-zinc-700/30 rounded-lg">
-            <div className="flex items-center gap-2 text-xs text-zinc-400">
-              <ClipboardPaste className="w-4 h-4" />
-              <span>
-                Paste from Excel: columns should be Identifier, Constituent Type, Asset Class, Weight
-              </span>
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2 text-xs text-zinc-400">
+                <ClipboardPaste className="w-4 h-4 flex-shrink-0" />
+                <span>Paste from Excel: columns should be Identifier, Constituent Type, Asset Class, Weight</span>
+              </div>
+              <a
+                href="/api/client-interactions/engagements/portfolio-template"
+                download
+                className="flex-shrink-0 flex items-center gap-1 text-xs text-zinc-500 hover:text-cyan-400 transition-colors"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <Download className="w-3.5 h-3.5" />
+                Template
+              </a>
             </div>
           </div>
 

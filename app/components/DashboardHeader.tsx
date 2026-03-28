@@ -47,6 +47,8 @@ interface DashboardHeaderProps {
   className?: string;
   actionButtonLabel?: string;
   onActionButtonClick?: () => void;
+  secondaryActionButtonLabel?: string;
+  onSecondaryActionButtonClick?: () => void;
 }
 
 // Dropdown component for filters
@@ -299,6 +301,8 @@ export default function DashboardHeader({
   className = '',
   actionButtonLabel,
   onActionButtonClick,
+  secondaryActionButtonLabel,
+  onSecondaryActionButtonClick,
 }: DashboardHeaderProps) {
   const [filtersExpanded, setFiltersExpanded] = useState(false);
   const collapseTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -439,15 +443,25 @@ export default function DashboardHeader({
             )}
           </div>
 
-          {actionButtonLabel && onActionButtonClick && (
+          {(actionButtonLabel || secondaryActionButtonLabel) && (
             <>
               <div className="flex-1" />
-              <button
-                onClick={onActionButtonClick}
-                className="flex items-center gap-1.5 px-3 py-2 bg-gradient-to-r from-blue-600 to-cyan-500 text-white text-sm font-medium hover:from-blue-500 hover:to-cyan-400 transition-all rounded-[6px]"
-              >
-                {actionButtonLabel}
-              </button>
+              {secondaryActionButtonLabel && onSecondaryActionButtonClick && (
+                <button
+                  onClick={onSecondaryActionButtonClick}
+                  className="flex items-center gap-1.5 px-3 py-2 bg-zinc-800/80 border border-zinc-700/50 text-white text-sm font-medium hover:bg-zinc-700/80 transition-all rounded-[6px]"
+                >
+                  {secondaryActionButtonLabel}
+                </button>
+              )}
+              {actionButtonLabel && onActionButtonClick && (
+                <button
+                  onClick={onActionButtonClick}
+                  className="flex items-center gap-1.5 px-3 py-2 bg-gradient-to-r from-blue-600 to-cyan-500 text-white text-sm font-medium hover:from-blue-500 hover:to-cyan-400 transition-all rounded-[6px]"
+                >
+                  {actionButtonLabel}
+                </button>
+              )}
             </>
           )}
         </div>

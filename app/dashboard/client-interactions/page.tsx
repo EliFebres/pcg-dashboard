@@ -7,6 +7,7 @@ import ContributionGraph from '@/app/components/pages/client-interactions/Contri
 import DepartmentChart from '@/app/components/pages/client-interactions/DepartmentChart';
 import InteractionsTable from '@/app/components/pages/client-interactions/InteractionsTable';
 import NewInteractionForm, { InteractionFormData, EditingEngagement } from '@/app/components/pages/client-interactions/NewInteractionForm';
+import BulkUploadModal from '@/app/components/pages/client-interactions/BulkUploadModal';
 import {
   getDashboardData,
   createEngagement,
@@ -112,6 +113,7 @@ export default function EngagementsDashboard() {
 
   // Form state
   const [isNewInteractionOpen, setIsNewInteractionOpen] = useState(false);
+  const [isBulkUploadOpen, setIsBulkUploadOpen] = useState(false);
   const [editingEngagement, setEditingEngagement] = useState<EditingEngagement | null>(null);
 
   // Flip card state
@@ -341,6 +343,11 @@ export default function EngagementsDashboard() {
         onUpdate={handleUpdateInteraction}
         editingEngagement={editingEngagement}
       />
+      <BulkUploadModal
+        isOpen={isBulkUploadOpen}
+        onClose={() => setIsBulkUploadOpen(false)}
+        onImportComplete={reloadData}
+      />
 
       <DashboardHeader
         title="Client Interactions"
@@ -393,6 +400,8 @@ export default function EngagementsDashboard() {
         ]}
         period={period}
         onPeriodChange={(v: string) => handleFilterChange(setPeriod, v)}
+        secondaryActionButtonLabel="↑ Bulk Upload"
+        onSecondaryActionButtonClick={() => setIsBulkUploadOpen(true)}
         actionButtonLabel="+ New Interaction"
         onActionButtonClick={() => setIsNewInteractionOpen(true)}
       />
