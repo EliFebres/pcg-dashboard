@@ -180,30 +180,3 @@ export interface TrendsFilterState {
   department: string;
   period: string;
 }
-
-// API Response types (for future FastAPI integration)
-export interface PortfolioMetricsResponse {
-  equityMetrics: PortfolioMetric[];
-  fixedIncomeMetrics: PortfolioMetric[];
-}
-
-export interface BenchmarkComparisonResponse {
-  comparisons: BenchmarkComparison[];
-}
-
-export interface HotTickersResponse {
-  tickers: HotTicker[];
-}
-
-export interface PopularDFATickersResponse {
-  tickers: PopularDFATicker[];
-}
-
-export interface TickerTrendsResponse {
-  trends: TickerTrend[];
-}
-
-export interface LoggedPortfoliosResponse {
-  portfolios: LoggedPortfolio[];
-  total: number;
-}

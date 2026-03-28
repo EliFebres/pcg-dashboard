@@ -67,8 +67,9 @@ function buildCsv(engagements: Engagement[]): string {
     e.notes || '',
   ]);
 
+  const sanitizeCsvCell = (v: string) => /^[=+\-@]/.test(v) ? `\t${v}` : v;
   const csvLine = (cells: unknown[]) =>
-    cells.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',');
+    cells.map(c => `"${sanitizeCsvCell(String(c)).replace(/"/g, '""')}"`).join(',');
 
   return [headers.join(','), ...rows.map(csvLine)].join('\n');
 }

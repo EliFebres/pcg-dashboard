@@ -91,23 +91,3 @@ export interface Engagement {
 export interface ContributionData {
   weeks: DayData[][];
 }
-
-// API Response types (for future FastAPI integration)
-export interface EngagementsResponse {
-  engagements: Engagement[];
-  total: number;
-  page: number;
-  pageSize: number;
-}
-
-export interface MetricsResponse {
-  metrics: EngagementMetric[];
-}
-
-export interface DepartmentBreakdownResponse {
-  departments: DepartmentData[];
-}
-
-export interface ContributionDataResponse {
-  data: ContributionData;
-}

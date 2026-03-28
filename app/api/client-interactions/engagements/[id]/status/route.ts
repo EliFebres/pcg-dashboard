@@ -19,6 +19,11 @@ export async function PATCH(
     const engagementId = Number(id);
     const { status } = await req.json();
 
+    const VALID_STATUSES = ['Pending', 'In Progress', 'Completed'];
+    if (!status || !VALID_STATUSES.includes(status)) {
+      return NextResponse.json({ error: 'Invalid status value' }, { status: 400 });
+    }
+
     const todayISO = new Date().toISOString().split('T')[0];
     const dateFinishedISO = status === 'Completed' ? todayISO : null;
 

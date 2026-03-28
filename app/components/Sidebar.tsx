@@ -107,7 +107,6 @@ export default function Sidebar({ className = '' }: SidebarProps) {
           className="w-full flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-zinc-800/50 transition-colors cursor-pointer"
           onClick={() => {
             // TODO: Open user profile menu/modal
-            console.log('User profile clicked');
           }}
         >
           {/* Profile Picture */}

@@ -5,8 +5,8 @@ A Next.js dashboard application for tracking client interactions, portfolio tren
 ## Features
 
 ### Authentication
-- Login/signup with email and password (bcrypt-hashed)
-- JWT session cookies (24-hour expiration)
+- Login/signup with email and password (scrypt-hashed via Node.js crypto)
+- JWT session cookies (24-hour expiration, httpOnly, sameSite: lax)
 - First registered user is automatically granted admin status
 - Subsequent users start as **pending** and must be approved by an admin before they can log in
 
@@ -47,20 +47,23 @@ A Next.js dashboard application for tracking client interactions, portfolio tren
 - **Tailwind CSS 4** for styling
 - **DuckDB 1.5.1** (Node API) for data persistence
 - **Jose 6.2.2** for JWT authentication
-- **bcryptjs** for password hashing
 - **Recharts 3.7.0** for data visualization
 - **Lucide React** for icons
 
 ## Environment Variables
 
-Create a `.env.local` file in the project root:
+Copy `.env.example` to `.env.local` and fill in all values:
 
 ```bash
 # Absolute path to the folder where DuckDB database files will be stored
 DUCKDB_DIR=./data
 
 # 32+ character hex string used to sign JWT session tokens
+# Generate: node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 JWT_SECRET=your_jwt_secret_here
+
+# Absolute path where database backups will be stored (used by db:backup / db:restore)
+BACKUP_DIR=/path/to/backups
 ```
 
 When `DUCKDB_DIR` is set, the app reads from and writes to real DuckDB databases. If it is unset, the app falls back to in-memory mock data (read-only).
@@ -71,8 +74,8 @@ When `DUCKDB_DIR` is set, the app reads from and writes to real DuckDB databases
 # Install dependencies
 npm install
 
-# Set up environment variables (see above)
-cp .env.local.example .env.local  # or create manually
+# Set up environment variables
+cp .env.example .env.local  # then edit .env.local with your values
 
 # Initialize the database and populate with mock data
 npm run seed:mock
@@ -93,6 +96,30 @@ Open [http://localhost:3000](http://localhost:3000) and sign up — the first ac
 | `npm run lint` | Run ESLint |
 | `npm run seed` | Create DuckDB schema only (no data) |
 | `npm run seed:mock` | Create schema and populate with ~500 mock engagements |
+| `npm run db:backup` | Back up both databases to a timestamped folder in `BACKUP_DIR` |
+| `npm run db:restore` | Restore databases from the most recent backup (see options below) |
+
+### Restore options
+
+```bash
+npm run db:restore                                    # most recent backup, both DBs
+npm run db:restore -- --backup 2026-03-27_02-00-00   # specific backup
+npm run db:restore -- --db engagements               # engagements DB only
+npm run db:restore -- --db users                     # users DB only
+npm run db:restore -- --yes                          # skip confirmation prompt
+```
+
+**Stop the app server before restoring.** DuckDB requires exclusive write access.
+
+### Automated weekly backups (Windows Task Scheduler)
+
+1. Open **Task Scheduler** → *Create Basic Task*
+2. Trigger: **Weekly**, Sunday at **2:00 AM**
+3. Action: Start a program
+   - Program: `cmd.exe`
+   - Arguments: `/c "cd /d D:\path\to\pcg-dashboard && npm run db:backup >> D:\path\to\backups\backup.log 2>&1"`
+
+The 8 most recent backups are kept automatically (~2 months of history).
 
 ## Project Structure
 
@@ -120,9 +147,11 @@ app/
     ├── data/               # Mock data generation utilities
     ├── db/                 # DuckDB connection and query functions
     └── types/              # TypeScript interfaces
-middleware.ts               # Route protection and auth enforcement
+middleware.ts               # Route protection (pages + API) and auth enforcement
 scripts/
-└── seed-db.ts              # Database seeding script
+├── seed-db.ts              # Database seeding script
+├── backup-db.ts            # Database backup script
+└── restore-db.ts           # Database restore script
 ```
 
 ## Design

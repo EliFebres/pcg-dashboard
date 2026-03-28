@@ -25,9 +25,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid email address.' }, { status: 400 });
     }
 
-    // Validate password length
-    if (password.length < 8) {
-      return NextResponse.json({ error: 'Password must be at least 8 characters.' }, { status: 400 });
+    // Validate password strength
+    if (password.length < 10) {
+      return NextResponse.json({ error: 'Password must be at least 10 characters.' }, { status: 400 });
+    }
+    if (!/[a-zA-Z]/.test(password) || !/[0-9]/.test(password)) {
+      return NextResponse.json({ error: 'Password must contain at least one letter and one number.' }, { status: 400 });
     }
 
     // Validate passwords match

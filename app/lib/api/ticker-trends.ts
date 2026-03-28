@@ -311,15 +311,6 @@ const mockHotTickers: HotTicker[] = [
 export async function getHotTickers(filters?: HotTickersFilters): Promise<HotTickersResponse> {
   if (SIMULATED_DELAY) await delay(SIMULATED_DELAY);
 
-  // In production, this would be:
-  // const params = new URLSearchParams();
-  // if (filters?.department) params.set('department', filters.department);
-  // if (filters?.period) params.set('period', filters.period);
-  // const response = await fetch(`${API_BASE_URL}/ticker-trends/hot-tickers?${params}`);
-  // return response.json();
-
-  // Mock implementation - return static data
-  // In production, filtering would be done server-side
   return {
     tickers: mockHotTickers,
     total: mockHotTickers.length,
@@ -357,16 +348,6 @@ export async function updateHotTickerType(
 ): Promise<{ success: boolean; ticker: string; type: TickerType }> {
   if (SIMULATED_DELAY) await delay(SIMULATED_DELAY);
 
-  // In production, this would be:
-  // const response = await fetch(`${API_BASE_URL}/ticker-trends/hot-tickers/${ticker}/type`, {
-  //   method: 'PATCH',
-  //   headers: { 'Content-Type': 'application/json' },
-  //   body: JSON.stringify({ type: newType }),
-  // });
-  // return response.json();
-
-  // Mock implementation - just return success
-  // In production, this would persist to the database
   return {
     success: true,
     ticker,
@@ -384,15 +365,6 @@ export async function updateHotTickerNotes(
 ): Promise<{ success: boolean; ticker: string; notes: string }> {
   if (SIMULATED_DELAY) await delay(SIMULATED_DELAY);
 
-  // In production, this would be:
-  // const response = await fetch(`${API_BASE_URL}/ticker-trends/hot-tickers/${ticker}/notes`, {
-  //   method: 'PATCH',
-  //   headers: { 'Content-Type': 'application/json' },
-  //   body: JSON.stringify({ notes }),
-  // });
-  // return response.json();
-
-  // Mock implementation - just return success
   return {
     success: true,
     ticker,
@@ -410,15 +382,6 @@ export async function updateHotTickerTalkingPoints(
 ): Promise<{ success: boolean; ticker: string; talkingPointsUrl: string }> {
   if (SIMULATED_DELAY) await delay(SIMULATED_DELAY);
 
-  // In production, this would be:
-  // const response = await fetch(`${API_BASE_URL}/ticker-trends/hot-tickers/${ticker}/talking-points`, {
-  //   method: 'PATCH',
-  //   headers: { 'Content-Type': 'application/json' },
-  //   body: JSON.stringify({ talkingPointsUrl }),
-  // });
-  // return response.json();
-
-  // Mock implementation - just return success
   return {
     success: true,
     ticker,
@@ -436,15 +399,6 @@ export async function updateHotTickerPCR(
 ): Promise<{ success: boolean; ticker: string; pcrUrl: string }> {
   if (SIMULATED_DELAY) await delay(SIMULATED_DELAY);
 
-  // In production, this would be:
-  // const response = await fetch(`${API_BASE_URL}/ticker-trends/hot-tickers/${ticker}/pcr`, {
-  //   method: 'PATCH',
-  //   headers: { 'Content-Type': 'application/json' },
-  //   body: JSON.stringify({ pcrUrl }),
-  // });
-  // return response.json();
-
-  // Mock implementation - just return success
   return {
     success: true,
     ticker,

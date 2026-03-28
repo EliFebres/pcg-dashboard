@@ -4,7 +4,9 @@ import { jwtVerify } from 'jose';
 const SESSION_COOKIE = 'pcg_session';
 
 function getSecret(): Uint8Array {
-  return new TextEncoder().encode(process.env.JWT_SECRET ?? '');
+  const secret = process.env.JWT_SECRET;
+  if (!secret) throw new Error('JWT_SECRET environment variable is not set');
+  return new TextEncoder().encode(secret);
 }
 
 export async function middleware(req: NextRequest) {
@@ -29,6 +31,16 @@ export async function middleware(req: NextRequest) {
     return NextResponse.redirect(new URL('/dashboard/client-interactions', req.url));
   }
 
+  // Protect API routes — return JSON 401/403 (no redirect)
+  if (pathname.startsWith('/api/')) {
+    if (!isAuthenticated) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    if (pathname.startsWith('/api/admin/') && !isAdmin) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+  }
+
   // Protect /dashboard/* — require active session
   if (pathname.startsWith('/dashboard/') && !isAuthenticated) {
     return NextResponse.redirect(new URL('/login', req.url));
@@ -48,5 +60,12 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/dashboard/:path*', '/admin/:path*', '/login', '/signup'],
+  matcher: [
+    '/dashboard/:path*',
+    '/admin/:path*',
+    '/login',
+    '/signup',
+    '/api/client-interactions/:path*',
+    '/api/admin/:path*',
+  ],
 };
