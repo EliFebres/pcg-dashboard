@@ -120,10 +120,10 @@ const internalClients = {
   'Michael Thompson': { name: 'Michael Thompson', gcgDepartment: 'Broker-Dealer' as const },
   'Jessica Williams': { name: 'Jessica Williams', gcgDepartment: 'Broker-Dealer' as const },
   'Daniel Park': { name: 'Daniel Park', gcgDepartment: 'Broker-Dealer' as const },
-  // Institution Team
-  'Christopher Lee': { name: 'Christopher Lee', gcgDepartment: 'Institution' as const },
-  'Rachel Goldman': { name: 'Rachel Goldman', gcgDepartment: 'Institution' as const },
-  'Andrew Mitchell': { name: 'Andrew Mitchell', gcgDepartment: 'Institution' as const },
+  // Institutional Team
+  'Christopher Lee': { name: 'Christopher Lee', gcgDepartment: 'Institutional' as const },
+  'Rachel Goldman': { name: 'Rachel Goldman', gcgDepartment: 'Institutional' as const },
+  'Andrew Mitchell': { name: 'Andrew Mitchell', gcgDepartment: 'Institutional' as const },
 };
 
 // External client companies for dummy data
@@ -158,7 +158,7 @@ export const teamMemberOffices: Record<string, 'Charlotte' | 'Austin'> = {
 
 const teamMembers = Object.keys(teamMemberOffices);
 const internalClientKeys = Object.keys(internalClients) as (keyof typeof internalClients)[];
-const departments: ('IAG' | 'Broker-Dealer' | 'Institution')[] = ['IAG', 'Broker-Dealer', 'Institution'];
+const departments: ('IAG' | 'Broker-Dealer' | 'Institutional')[] = ['IAG', 'Broker-Dealer', 'Institutional'];
 const projectTypes = ['Meeting', 'Follow-Up', 'Data Request', 'PCR'];
 const adHocProjectTypes = ['PCR', 'Follow-Up', 'Data Request', 'Other']; // Project types specific to GCG Ad-Hoc
 
@@ -168,24 +168,24 @@ function seededRandom(seed: number): number {
   return x - Math.floor(x);
 }
 
-// Weighted department selection: IAG 55%, Broker-Dealer 33%, Institution 12%
-function getWeightedDepartment(seed: number): 'IAG' | 'Broker-Dealer' | 'Institution' {
+// Weighted department selection: IAG 55%, Broker-Dealer 33%, Institutional 12%
+function getWeightedDepartment(seed: number): 'IAG' | 'Broker-Dealer' | 'Institutional' {
   const rand = seededRandom(seed);
   if (rand < 0.55) return 'IAG';
   if (rand < 0.88) return 'Broker-Dealer'; // 0.55 + 0.33 = 0.88
-  return 'Institution';
+  return 'Institutional';
 }
 
 // Get internal client from a specific department
-function getInternalClientByDepartment(dept: 'IAG' | 'Broker-Dealer' | 'Institution', seed: number): typeof internalClients[keyof typeof internalClients] {
+function getInternalClientByDepartment(dept: 'IAG' | 'Broker-Dealer' | 'Institutional', seed: number): typeof internalClients[keyof typeof internalClients] {
   const clientsByDept = internalClientKeys.filter(key => internalClients[key].gcgDepartment === dept);
   const selectedKey = clientsByDept[Math.floor(seededRandom(seed) * clientsByDept.length)];
   return internalClients[selectedKey];
 }
 
 // Generate NNA (Net New Assets) value based on department
-// IAG: averages ~$20M, Broker-Dealer/Institution: usually ~$100M, rare $1B (whales)
-function generateNNA(dept: 'IAG' | 'Broker-Dealer' | 'Institution', seed: number): number {
+// IAG: averages ~$20M, Broker-Dealer/Institutional: usually ~$100M, rare $1B (whales)
+function generateNNA(dept: 'IAG' | 'Broker-Dealer' | 'Institutional', seed: number): number {
   const rand = seededRandom(seed);
 
   if (dept === 'IAG') {
@@ -194,7 +194,7 @@ function generateNNA(dept: 'IAG' | 'Broker-Dealer' | 'Institution', seed: number
     const variance = rand * 45_000_000; // 0-45M variance
     return Math.round((base + variance) / 100_000) * 100_000; // Round to nearest 100k
   } else {
-    // Broker-Dealer and Institution: usually ~$100M, rare $1B whales
+    // Broker-Dealer and Institutional: usually ~$100M, rare $1B whales
     const isWhale = seededRandom(seed + 100) < 0.05; // 5% chance of whale
     if (isWhale) {
       // Whale: $500M to $1.5B

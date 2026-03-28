@@ -230,12 +230,12 @@ export default function EngagementsDashboard() {
     try {
       const newEngagement = await createEngagement({
         externalClient: data.externalClient ?? null,
-        internalClient: { name: data.internalClient, gcgDepartment: data.internalClientDept as 'IAG' | 'Broker-Dealer' | 'Institution' },
+        internalClient: { name: data.internalClient, gcgDepartment: data.internalClientDept as 'IAG' | 'Broker-Dealer' | 'Institutional' },
         intakeType: data.intakeType as 'IRQ' | 'SRRF' | 'GCG Ad-Hoc',
         adHocChannel: data.adHocChannel,
         type: data.projectType,
         teamMembers: data.teamMembers,
-        department: data.internalClientDept as 'IAG' | 'Broker-Dealer' | 'Institution',
+        department: data.internalClientDept as 'IAG' | 'Broker-Dealer' | 'Institutional',
         dateStarted: formatDisplayDate(data.dateStarted),
         dateFinished: '—',
         status: 'In Progress',
@@ -332,12 +332,12 @@ export default function EngagementsDashboard() {
     try {
       await updateEngagement(engagementId, {
         externalClient: data.externalClient ?? null,
-        internalClient: { name: data.internalClient, gcgDepartment: data.internalClientDept as 'IAG' | 'Broker-Dealer' | 'Institution' },
+        internalClient: { name: data.internalClient, gcgDepartment: data.internalClientDept as 'IAG' | 'Broker-Dealer' | 'Institutional' },
         intakeType: data.intakeType as 'IRQ' | 'SRRF' | 'GCG Ad-Hoc',
         adHocChannel: data.adHocChannel,
         type: data.projectType,
         teamMembers: data.teamMembers,
-        department: data.internalClientDept as 'IAG' | 'Broker-Dealer' | 'Institution',
+        department: data.internalClientDept as 'IAG' | 'Broker-Dealer' | 'Institutional',
         dateStarted: dateStartedChanged ? formatDisplayDate(data.dateStarted) : (originalDateStarted || undefined),
         dateFinished: dateFinishedChanged
           ? (data.dateFinished ? formatDisplayDate(data.dateFinished) : '—')

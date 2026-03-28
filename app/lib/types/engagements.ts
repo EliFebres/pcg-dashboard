@@ -43,7 +43,7 @@ export interface EngagementMetric {
   percent?: number; // Optional percentage for progress bar visualization
   sparklineData?: { value: number }[]; // Optional sparkline data for trend visualization
   pieData?: { name: string; value: number; color: string }[]; // Optional pie chart data for breakdown visualization
-  stackedBarData?: { month: string; IAG: number; 'Broker-Dealer': number; Institution: number }[]; // Optional stacked bar data
+  stackedBarData?: { month: string; IAG: number; 'Broker-Dealer': number; Institutional: number }[]; // Optional stacked bar data
   intakeBreakdown?: IntakeBreakdown[]; // Optional intake breakdown for GCG Ad-Hoc
   intakeSourceBreakdown?: IntakeSourceBreakdown; // Optional intake source breakdown for Client Projects
   nnaTiers?: NNATier[]; // Optional NNA distribution tiers
@@ -58,7 +58,7 @@ export interface DepartmentData {
 
 export interface InternalClient {
   name: string;
-  gcgDepartment: 'IAG' | 'Broker-Dealer' | 'Institution';
+  gcgDepartment: 'IAG' | 'Broker-Dealer' | 'Institutional';
 }
 
 export type AssetClass = 'Equity' | 'Fixed Income' | 'Alternatives' | 'Crypto' | 'Fund of Funds';

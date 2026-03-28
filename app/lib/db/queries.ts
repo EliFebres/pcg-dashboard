@@ -131,7 +131,7 @@ export function rowToEngagement(row: Record<string, unknown>): Engagement {
     externalClient: (row.external_client as string | null) ?? null,
     internalClient: {
       name: row.internal_client_name as string,
-      gcgDepartment: row.internal_client_dept as 'IAG' | 'Broker-Dealer' | 'Institution',
+      gcgDepartment: row.internal_client_dept as 'IAG' | 'Broker-Dealer' | 'Institutional',
     },
     intakeType: row.intake_type as 'IRQ' | 'SRRF' | 'GCG Ad-Hoc',
     adHocChannel: (row.ad_hoc_channel as string | undefined) as import('../types/engagements').GCGAdHocChannel | undefined,

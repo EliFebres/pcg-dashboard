@@ -13,7 +13,7 @@ import RichTextEditor from '@/app/components/ui/RichTextEditor';
 export interface InteractionFormData {
   externalClient: string | null;
   internalClient: string;
-  internalClientDept: 'IAG' | 'Broker-Dealer' | 'Institution' | '';
+  internalClientDept: 'IAG' | 'Broker-Dealer' | 'Institutional' | '';
   intakeType: 'IRQ' | 'SRRF' | 'GCG Ad-Hoc' | '';
   adHocChannel?: 'In-Person' | 'Email' | 'Teams';
   projectType: string;
@@ -44,7 +44,7 @@ interface NewInteractionFormProps {
   editingEngagement?: EditingEngagement | null;
 }
 
-const GCG_DEPARTMENTS = ['IAG', 'Broker-Dealer', 'Institution'] as const;
+const GCG_DEPARTMENTS = ['IAG', 'Broker-Dealer', 'Institutional'] as const;
 
 
 // Project types by intake
@@ -503,7 +503,7 @@ export default function NewInteractionForm({ isOpen, onClose, onSubmit, onUpdate
                                 type="button"
                                 onClick={() => {
                                   const client = gcgClients.find(c => c.name === name)!;
-                                  setFormData(prev => ({ ...prev, internalClient: name, internalClientDept: client.dept as 'IAG' | 'Broker-Dealer' | 'Institution' }));
+                                  setFormData(prev => ({ ...prev, internalClient: name, internalClientDept: client.dept as 'IAG' | 'Broker-Dealer' | 'Institutional' }));
                                   setInternalClientSearch('');
                                   setShowInternalClientDropdown(false);
                                 }}

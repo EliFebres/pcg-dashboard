@@ -24,7 +24,7 @@ export const STATIC_FILTER_OPTIONS: FilterOptions = {
   teamMemberGroups: [
     { label: 'Office', options: ['Austin Office', 'Charlotte Office'] },
   ],
-  departments: ['Broker-Dealer', 'IAG', 'Institution'],
+  departments: ['Broker-Dealer', 'IAG', 'Institutional'],
   intakeTypes: ['IRQ', 'SRRF', 'GCG Ad-Hoc'],
   projectTypes: ['Data Request', 'Follow-Up', 'Meeting', 'Other', 'PCR'],
   statuses: ['Completed', 'In Progress', 'Pending'],
@@ -221,14 +221,14 @@ export async function computeDepartmentBreakdown(filters: EngagementFilters): Pr
   const DEPT_COLORS: Record<string, string> = {
     IAG: '#a5f3fc',
     'Broker-Dealer': '#22d3ee',
-    Institution: '#0e7490',
+    Institutional: '#0e7490',
   };
 
   const total = rows.reduce((s, r) => s + Number(r.cnt), 0);
   const safeTotal = total || 1;
 
   // Ensure all three departments appear even if count is 0
-  const deptMap: Record<string, number> = { IAG: 0, 'Broker-Dealer': 0, Institution: 0 };
+  const deptMap: Record<string, number> = { IAG: 0, 'Broker-Dealer': 0, Institutional: 0 };
   rows.forEach(r => {
     const dept = r.dept as string;
     deptMap[dept] = Number(r.cnt);

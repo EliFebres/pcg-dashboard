@@ -198,7 +198,7 @@ export default function MetricCards({ metrics, flippedCard, onCardEnter, onCardL
                         />
                         <Bar dataKey="IAG" stackId="a" fill="#a5f3fc" radius={[0, 0, 0, 0]} isAnimationActive={true} animationDuration={700} />
                         <Bar dataKey="Broker-Dealer" stackId="a" fill="#22d3ee" radius={[0, 0, 0, 0]} isAnimationActive={true} animationDuration={700} />
-                        <Bar dataKey="Institution" stackId="a" fill="#0e7490" radius={[2, 2, 0, 0]} isAnimationActive={true} animationDuration={700} />
+                        <Bar dataKey="Institutional" stackId="a" fill="#0e7490" radius={[2, 2, 0, 0]} isAnimationActive={true} animationDuration={700} />
                       </BarChart>
                     </ResponsiveContainer>
                     </ClientOnlyChart>

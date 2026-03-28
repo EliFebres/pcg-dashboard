@@ -39,7 +39,7 @@ export class ConflictError extends Error {
 export interface EngagementFilters {
   search?: string;                 // Text search across multiple fields
   teamMember?: string;             // 'All Team Members', 'Austin Office', 'Charlotte Office', or member name
-  departments?: string[];          // Multi-select: ['IAG', 'Broker-Dealer', 'Institution']
+  departments?: string[];          // Multi-select: ['IAG', 'Broker-Dealer', 'Institutional']
   intakeTypes?: string[];          // Multi-select: ['IRQ', 'SRRF', 'GCG Ad-Hoc']
   projectTypes?: string[];         // Multi-select: ['Meeting', 'Follow-Up', 'Data Request', 'PCR', 'Other']
   period?: string;                 // '1W', '1M', '3M', '6M', 'YTD', '1Y', 'ALL'

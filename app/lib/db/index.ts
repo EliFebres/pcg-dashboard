@@ -94,6 +94,9 @@ export async function getConnection(): Promise<DuckDBConnection> {
           AND id NOT IN (SELECT DISTINCT engagement_id FROM engagement_notes)
       `);
 
+      // One-time migration: rename department value 'Institution' → 'Institutional'
+      await conn.run(`UPDATE engagements SET internal_client_dept = 'Institutional' WHERE internal_client_dept = 'Institution'`);
+
       return conn;
     })();
     g._engagementsConnectionPromise = p;

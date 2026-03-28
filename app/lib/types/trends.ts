@@ -111,7 +111,7 @@ export interface PortfolioReturns {
 
 export interface InternalClientInfo {
   name: string;
-  gcgDepartment: 'IAG' | 'Broker-Dealer' | 'Institution';
+  gcgDepartment: 'IAG' | 'Broker-Dealer' | 'Institutional';
 }
 
 export interface LoggedPortfolio {

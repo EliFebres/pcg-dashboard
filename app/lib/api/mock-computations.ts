@@ -251,10 +251,10 @@ export function getMockMetrics(filters: EngagementFilters): DashboardMetrics {
 
 export function getMockDepartmentBreakdown(filters: EngagementFilters): DepartmentBreakdown {
   const filtered = applyMockFilters(mockEngagements, filters);
-  const deptCounts: Record<string, number> = { IAG: 0, 'Broker-Dealer': 0, Institution: 0 };
+  const deptCounts: Record<string, number> = { IAG: 0, 'Broker-Dealer': 0, Institutional: 0 };
   filtered.forEach(e => { deptCounts[e.internalClient.gcgDepartment]++; });
   const total = filtered.length || 1;
-  const colors: Record<string, string> = { IAG: '#a5f3fc', 'Broker-Dealer': '#22d3ee', Institution: '#0e7490' };
+  const colors: Record<string, string> = { IAG: '#a5f3fc', 'Broker-Dealer': '#22d3ee', Institutional: '#0e7490' };
   return {
     departments: Object.entries(deptCounts).map(([name, count]) => ({
       name,
