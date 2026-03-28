@@ -12,7 +12,7 @@ const g = global as typeof globalThis & {
 
 export async function getConnection(): Promise<DuckDBConnection> {
   if (!g._engagementsConnectionPromise) {
-    g._engagementsConnectionPromise = (async () => {
+    const p = (async () => {
       const dbDir = process.env.DUCKDB_DIR;
       if (!dbDir) throw new Error('DUCKDB_DIR environment variable is not set');
 
@@ -60,7 +60,14 @@ export async function getConnection(): Promise<DuckDBConnection> {
 
       // Optimistic locking: version counter — incremented on every update.
       // Allows concurrent edits to detect conflicts instead of silently overwriting each other.
-      await conn.run(`ALTER TABLE engagements ADD COLUMN IF NOT EXISTS version INTEGER DEFAULT 1`);
+      // Use information_schema check instead of ALTER TABLE ADD COLUMN IF NOT EXISTS
+      // because older DuckDB versions don't support that syntax.
+      const versionCheck = await conn.runAndReadAll(
+        `SELECT column_name FROM information_schema.columns WHERE table_name = 'engagements' AND column_name = 'version'`
+      );
+      if (versionCheck.getRowObjects().length === 0) {
+        await conn.run(`ALTER TABLE engagements ADD COLUMN version INTEGER DEFAULT 1`);
+      }
 
       // Engagement notes — append-only log with author attribution
       await conn.run(`CREATE SEQUENCE IF NOT EXISTS engagement_notes_id_seq START 1`);
@@ -89,8 +96,12 @@ export async function getConnection(): Promise<DuckDBConnection> {
 
       return conn;
     })();
+    g._engagementsConnectionPromise = p;
+    // If bootstrap fails, clear the cached promise so the next request retries
+    // instead of permanently returning a rejected promise.
+    p.catch(() => { g._engagementsConnectionPromise = undefined; });
   }
-  return g._engagementsConnectionPromise;
+  return g._engagementsConnectionPromise!;
 }
 
 export async function query<T = Record<string, unknown>>(
