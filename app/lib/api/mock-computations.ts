@@ -336,7 +336,7 @@ export function getMockFilterOptions(): FilterOptions {
     teamMembers: ['All Team Members', 'Austin Office', 'Charlotte Office'],
     teamMemberGroups: [{ label: 'Office', options: ['Austin Office', 'Charlotte Office'] }],
     departments: Array.from(departments).sort(),
-    intakeTypes: Array.from(intakeTypes).sort(),
+    intakeTypes: ['IRQ', 'SRRF', 'GCG Ad-Hoc'].filter(t => intakeTypes.has(t)),
     projectTypes: Array.from(projectTypes).sort(),
     statuses: Array.from(statuses).sort(),
   };

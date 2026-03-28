@@ -25,7 +25,7 @@ export const STATIC_FILTER_OPTIONS: FilterOptions = {
     { label: 'Office', options: ['Austin Office', 'Charlotte Office'] },
   ],
   departments: ['Broker-Dealer', 'IAG', 'Institution'],
-  intakeTypes: ['GCG Ad-Hoc', 'IRQ', 'SRRF'],
+  intakeTypes: ['IRQ', 'SRRF', 'GCG Ad-Hoc'],
   projectTypes: ['Data Request', 'Follow-Up', 'Meeting', 'Other', 'PCR'],
   statuses: ['Completed', 'In Progress', 'Pending'],
 };
