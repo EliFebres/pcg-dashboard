@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, ReactNode } from 'react';
+import React, { useState, useEffect, useRef, ReactNode } from 'react';
 import { X, Plus, Loader2, Pencil, Trash2, Check, XCircle } from 'lucide-react';
 import { getEngagementNotes, addEngagementNote, updateEngagementNote, deleteEngagementNote } from '@/app/lib/api/client-interactions';
 import { useCurrentUser } from '@/app/lib/auth/context';
@@ -15,6 +15,7 @@ interface NotesModalProps {
   subtitle: ReactNode;
   engagementId: number;
   onNoteAdded?: () => void;
+  onNoteDeleted?: () => void;
 }
 
 function formatNoteDate(iso: string): string {
@@ -30,8 +31,10 @@ const NotesModal: React.FC<NotesModalProps> = ({
   subtitle,
   engagementId,
   onNoteAdded,
+  onNoteDeleted,
 }) => {
   const { user } = useCurrentUser();
+  const notesListRef = useRef<HTMLDivElement>(null);
   const [notes, setNotes] = useState<NoteEntry[]>([]);
   const [loading, setLoading] = useState(false);
   const [newText, setNewText] = useState('');
@@ -67,9 +70,12 @@ const NotesModal: React.FC<NotesModalProps> = ({
     setSaving(true);
     try {
       const entry = await addEngagementNote(engagementId, newText.trim());
-      setNotes(prev => [entry, ...prev]);
+      setNotes(prev => [...prev, entry]);
       setNewText('');
       onNoteAdded?.();
+      setTimeout(() => {
+        notesListRef.current?.scrollTo({ top: notesListRef.current.scrollHeight, behavior: 'smooth' });
+      }, 0);
     } catch (err) {
       console.error('Failed to add note:', err);
     } finally {
@@ -107,7 +113,7 @@ const NotesModal: React.FC<NotesModalProps> = ({
     try {
       await deleteEngagementNote(engagementId, noteId);
       setNotes(prev => prev.filter(n => n.id !== noteId));
-      onNoteAdded?.();
+      onNoteDeleted?.();
     } catch (err) {
       console.error('Failed to delete note:', err);
     } finally {
@@ -143,7 +149,7 @@ const NotesModal: React.FC<NotesModalProps> = ({
         </div>
 
         {/* Note history */}
-        <div className="relative z-10 flex-1 overflow-y-auto min-h-0 p-5 space-y-3">
+        <div ref={notesListRef} className="relative z-10 flex-1 overflow-y-auto min-h-0 p-5 space-y-3">
           {loading ? (
             <div className="flex items-center justify-center py-8">
               <Loader2 className="w-5 h-5 text-zinc-500 animate-spin" />

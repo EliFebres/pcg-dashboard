@@ -283,6 +283,10 @@ export default function EngagementsDashboard() {
     patchEngagements(e => ({ ...e, noteCount: (e.noteCount ?? 0) + 1 }), engagementId);
   };
 
+  const handleNoteDeleted = (engagementId: number) => {
+    patchEngagements(e => ({ ...e, noteCount: Math.max(0, (e.noteCount ?? 0) - 1) }), engagementId);
+  };
+
   const handleNNAChange = (engagementId: number, nna: number | undefined) => {
     patchEngagements(e => ({ ...e, nna }), engagementId);
     updateEngagementNNA(engagementId, nna).catch(console.error);
@@ -507,6 +511,7 @@ export default function EngagementsDashboard() {
               onSort={handleSort}
               onStatusChange={handleStatusChange}
               onNoteAdded={handleNoteAdded}
+              onNoteDeleted={handleNoteDeleted}
               onNNAChange={handleNNAChange}
               onRowClick={handleRowClick}
             />

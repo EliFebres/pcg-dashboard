@@ -68,11 +68,12 @@ interface InteractionsTableProps {
   onSort: (column: string | null, direction: 'asc' | 'desc' | null) => void;
   onStatusChange: (engagementId: number, newStatus: string) => void;
   onNoteAdded: (engagementId: number) => void;
+  onNoteDeleted: (engagementId: number) => void;
   onNNAChange: (engagementId: number, nna: number | undefined) => void;
   onRowClick: (engagement: Engagement) => void;
 }
 
-const InteractionsTable: React.FC<InteractionsTableProps> = ({ engagements, sortColumn, sortDirection, onSort, onStatusChange, onNoteAdded, onNNAChange, onRowClick }) => {
+const InteractionsTable: React.FC<InteractionsTableProps> = ({ engagements, sortColumn, sortDirection, onSort, onStatusChange, onNoteAdded, onNoteDeleted, onNNAChange, onRowClick }) => {
   const sortConfig: SortConfig = useMemo(
     () => ({ column: sortColumn as SortColumn, direction: sortDirection as SortDirection }),
     [sortColumn, sortDirection]
@@ -403,6 +404,11 @@ const InteractionsTable: React.FC<InteractionsTableProps> = ({ engagements, sort
         onNoteAdded={() => {
           if (notesModalEngagement) {
             onNoteAdded(notesModalEngagement.id);
+          }
+        }}
+        onNoteDeleted={() => {
+          if (notesModalEngagement) {
+            onNoteDeleted(notesModalEngagement.id);
           }
         }}
       />

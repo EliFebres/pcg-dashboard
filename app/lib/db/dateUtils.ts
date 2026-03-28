@@ -1,12 +1,31 @@
 /**
- * Converts a display date string ("Jan 15, 2025") or "—" to ISO date ("2025-01-15" or null).
+ * Converts a date string to ISO date ("2025-01-15" or null).
+ * Accepts YYYY-MM-DD (from <input type="date">) or display format ("Jan 15, 2025").
  * Used when writing to DuckDB.
  */
 export function toISODate(dateStr: string | null | undefined): string | null {
   if (!dateStr || dateStr === '—') return null;
-  const d = new Date(dateStr);
+  // Already ISO format — return directly to avoid UTC timezone shift.
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return dateStr;
+  // Display format fallback — parse as local midnight to avoid UTC shift.
+  const d = new Date(dateStr + ' 00:00:00');
   if (isNaN(d.getTime())) return null;
-  return d.toISOString().split('T')[0];
+  return localDateISO(d);
+}
+
+/**
+ * Returns today's date as a local YYYY-MM-DD string (no UTC shift).
+ */
+export function localTodayISO(): string {
+  return localDateISO(new Date());
+}
+
+/** Formats a Date as YYYY-MM-DD using local time. */
+function localDateISO(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
 }
 
 /**
@@ -29,21 +48,21 @@ export function getPeriodStartISO(period: string): string | null {
   const now = new Date();
   switch (period) {
     case '1W':
-      return new Date(now.getTime() - 7 * 86400000).toISOString().split('T')[0];
+      return localDateISO(new Date(now.getTime() - 7 * 86400000));
     case '1M':
-      return new Date(now.getFullYear(), now.getMonth() - 1, now.getDate()).toISOString().split('T')[0];
+      return localDateISO(new Date(now.getFullYear(), now.getMonth() - 1, now.getDate()));
     case '3M':
-      return new Date(now.getFullYear(), now.getMonth() - 3, now.getDate()).toISOString().split('T')[0];
+      return localDateISO(new Date(now.getFullYear(), now.getMonth() - 3, now.getDate()));
     case '6M':
-      return new Date(now.getFullYear(), now.getMonth() - 6, now.getDate()).toISOString().split('T')[0];
+      return localDateISO(new Date(now.getFullYear(), now.getMonth() - 6, now.getDate()));
     case 'YTD':
-      return new Date(now.getFullYear(), 0, 1).toISOString().split('T')[0];
+      return localDateISO(new Date(now.getFullYear(), 0, 1));
     case '1Y':
-      return new Date(now.getFullYear() - 1, now.getMonth(), now.getDate()).toISOString().split('T')[0];
+      return localDateISO(new Date(now.getFullYear() - 1, now.getMonth(), now.getDate()));
     case 'ALL':
       return null;
     default:
-      return new Date(now.getFullYear() - 1, now.getMonth(), now.getDate()).toISOString().split('T')[0];
+      return localDateISO(new Date(now.getFullYear() - 1, now.getMonth(), now.getDate()));
   }
 }
 
@@ -58,8 +77,8 @@ export function getPreviousPeriodDates(period: string): { start: string; end: st
       const prevEnd = new Date(currStart.getTime() - 86400000);
       const prevStart = new Date(prevEnd.getTime() - 7 * 86400000);
       return {
-        start: prevStart.toISOString().split('T')[0],
-        end: prevEnd.toISOString().split('T')[0],
+        start: localDateISO(prevStart),
+        end: localDateISO(prevEnd),
         label: 'vs prev week',
       };
     }
@@ -68,8 +87,8 @@ export function getPreviousPeriodDates(period: string): { start: string; end: st
       const prevEnd = new Date(currStart.getTime() - 86400000);
       const prevStart = new Date(now.getFullYear(), now.getMonth() - 2, now.getDate());
       return {
-        start: prevStart.toISOString().split('T')[0],
-        end: prevEnd.toISOString().split('T')[0],
+        start: localDateISO(prevStart),
+        end: localDateISO(prevEnd),
         label: 'vs prev month',
       };
     }
@@ -78,8 +97,8 @@ export function getPreviousPeriodDates(period: string): { start: string; end: st
       const prevEnd = new Date(currStart.getTime() - 86400000);
       const prevStart = new Date(now.getFullYear(), now.getMonth() - 6, now.getDate());
       return {
-        start: prevStart.toISOString().split('T')[0],
-        end: prevEnd.toISOString().split('T')[0],
+        start: localDateISO(prevStart),
+        end: localDateISO(prevEnd),
         label: 'vs prev 3M',
       };
     }
@@ -88,8 +107,8 @@ export function getPreviousPeriodDates(period: string): { start: string; end: st
       const prevEnd = new Date(currStart.getTime() - 86400000);
       const prevStart = new Date(now.getFullYear(), now.getMonth() - 12, now.getDate());
       return {
-        start: prevStart.toISOString().split('T')[0],
-        end: prevEnd.toISOString().split('T')[0],
+        start: localDateISO(prevStart),
+        end: localDateISO(prevEnd),
         label: 'vs prev 6M',
       };
     }
@@ -98,8 +117,8 @@ export function getPreviousPeriodDates(period: string): { start: string; end: st
       const prevEnd = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
       const prevStart = new Date(now.getFullYear() - 1, 0, 1);
       return {
-        start: prevStart.toISOString().split('T')[0],
-        end: prevEnd.toISOString().split('T')[0],
+        start: localDateISO(prevStart),
+        end: localDateISO(prevEnd),
         label: 'vs prev YTD',
       };
     }
@@ -111,8 +130,8 @@ export function getPreviousPeriodDates(period: string): { start: string; end: st
       const prevEnd = new Date(currStart.getTime() - 86400000);
       const prevStart = new Date(now.getFullYear() - 2, now.getMonth(), now.getDate());
       return {
-        start: prevStart.toISOString().split('T')[0],
-        end: prevEnd.toISOString().split('T')[0],
+        start: localDateISO(prevStart),
+        end: localDateISO(prevEnd),
         label: 'YoY',
       };
     }

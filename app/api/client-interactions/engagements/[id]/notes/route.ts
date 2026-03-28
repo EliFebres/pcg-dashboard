@@ -19,7 +19,7 @@ function rowToNoteEntry(row: Record<string, unknown>): NoteEntry {
 }
 
 // GET /api/client-interactions/engagements/:id/notes
-// Returns all note entries for an engagement, newest first.
+// Returns all note entries for an engagement, oldest first.
 export async function GET(req: NextRequest, { params }: RouteParams) {
   if (!process.env.DUCKDB_DIR) {
     return NextResponse.json({ error: 'Database not configured.' }, { status: 503 });
@@ -35,7 +35,7 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
     const engagementId = Number(id);
 
     const rows = await query<Record<string, unknown>>(
-      `SELECT * FROM engagement_notes WHERE engagement_id = ? ORDER BY created_at DESC`,
+      `SELECT * FROM engagement_notes WHERE engagement_id = ? ORDER BY created_at ASC`,
       [engagementId]
     );
 
