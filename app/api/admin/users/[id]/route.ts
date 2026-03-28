@@ -40,12 +40,29 @@ export async function PATCH(
     const body = await req.json();
     const { status, role } = body;
 
-    // Safety: block self-deactivation and self-demotion
+    // Identify the founding account (earliest created_at) — their admin can only be
+    // removed by themselves, not by any other admin.
+    const founderRows = await queryUsers<{ id: string }>(
+      'SELECT id FROM users ORDER BY created_at ASC LIMIT 1'
+    );
+    const founderId = (founderRows[0] as Record<string, unknown>)?.id as string | undefined;
+    const isTargetFounder = founderId !== undefined && id === founderId;
+    const isRequesterFounder = founderId !== undefined && payload.sub === founderId;
+
+    // Block any admin from removing the founder's admin privileges (except the founder themselves)
+    if (role === 'user' && isTargetFounder && !isRequesterFounder) {
+      return NextResponse.json(
+        { error: 'The founding account\'s admin privileges can only be removed by the account holder.' },
+        { status: 403 }
+      );
+    }
+
+    // Safety: block self-deactivation; block self-demotion unless the requester is the founder
     if (payload.sub === id) {
       if (status === 'inactive') {
         return NextResponse.json({ error: 'You cannot deactivate your own account.' }, { status: 400 });
       }
-      if (role === 'user') {
+      if (role === 'user' && !isRequesterFounder) {
         return NextResponse.json({ error: 'You cannot remove admin from your own account.' }, { status: 400 });
       }
     }

@@ -128,6 +128,12 @@ export default function AdminUsersPage() {
 
   const isSelf = (id: string) => currentUser?.id === id;
 
+  // Founding account = earliest createdAt; their admin can only be removed by themselves
+  const founderId = users.length > 0
+    ? users.reduce((a, b) => a.createdAt < b.createdAt ? a : b).id
+    : null;
+  const currentIsFounder = currentUser?.id === founderId;
+
   return (
     <div className="px-6 py-6">
       {/* Header */}
@@ -171,6 +177,7 @@ export default function AdminUsersPage() {
               {users.map(u => {
                 const self = isSelf(u.id);
                 const busy = actionLoading === u.id;
+                const isFounder = u.id === founderId;
                 return (
                   <tr key={u.id} className="hover:bg-zinc-800/20 transition-colors">
                     <td className="px-4 py-3">
@@ -235,8 +242,13 @@ export default function AdminUsersPage() {
                           <ActionButton
                             variant="removeAdmin"
                             onClick={() => patch(u.id, { role: 'user' })}
-                            disabled={busy || self}
-                            title={self ? 'Cannot remove admin from your own account' : undefined}
+                            disabled={busy || (isFounder && !currentIsFounder) || (self && !isFounder)}
+                            title={
+                              isFounder && !currentIsFounder
+                                ? 'Only the account holder can remove their own admin privileges'
+                                : self ? 'Cannot remove admin from your own account'
+                                : undefined
+                            }
                           >
                             <ShieldOff className="w-3 h-3" />
                             Remove Admin
