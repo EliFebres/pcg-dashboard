@@ -12,7 +12,7 @@ const g = global as typeof globalThis & {
 
 export async function getConnection(): Promise<DuckDBConnection> {
   if (!g._engagementsConnectionPromise) {
-    g._engagementsConnectionPromise = (async () => {
+    const p = (async () => {
       const dbDir = process.env.DUCKDB_DIR;
       if (!dbDir) throw new Error('DUCKDB_DIR environment variable is not set');
 
@@ -58,10 +58,53 @@ export async function getConnection(): Promise<DuckDBConnection> {
       await conn.run(`CREATE INDEX IF NOT EXISTS idx_dept_started     ON engagements (internal_client_dept, date_started)`);
       await conn.run(`CREATE INDEX IF NOT EXISTS idx_date_fin_started ON engagements (date_finished, date_started)`);
 
+      // Optimistic locking: version counter — incremented on every update.
+      // Allows concurrent edits to detect conflicts instead of silently overwriting each other.
+      // Use information_schema check instead of ALTER TABLE ADD COLUMN IF NOT EXISTS
+      // because older DuckDB versions don't support that syntax.
+      const versionCheck = await conn.runAndReadAll(
+        `SELECT column_name FROM information_schema.columns WHERE table_name = 'engagements' AND column_name = 'version'`
+      );
+      if (versionCheck.getRowObjects().length === 0) {
+        await conn.run(`ALTER TABLE engagements ADD COLUMN version INTEGER DEFAULT 1`);
+      }
+
+      // Engagement notes — append-only log with author attribution
+      await conn.run(`CREATE SEQUENCE IF NOT EXISTS engagement_notes_id_seq START 1`);
+      await conn.run(`
+        CREATE TABLE IF NOT EXISTS engagement_notes (
+          id            INTEGER     PRIMARY KEY DEFAULT nextval('engagement_notes_id_seq'),
+          engagement_id INTEGER     NOT NULL,
+          note_text     VARCHAR     NOT NULL,
+          author_name   VARCHAR     NOT NULL,
+          author_id     VARCHAR     NOT NULL,
+          created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
+        )
+      `);
+      await conn.run(`CREATE INDEX IF NOT EXISTS idx_engagement_notes_engagement_id ON engagement_notes (engagement_id)`);
+
+      // One-time migration: copy legacy free-text notes into the new log table.
+      // Guard: only migrate engagements that have no entries yet, so re-runs are safe.
+      await conn.run(`
+        INSERT INTO engagement_notes (engagement_id, note_text, author_name, author_id, created_at)
+        SELECT id, notes, 'Imported Note', 'system', now()
+        FROM engagements
+        WHERE notes IS NOT NULL
+          AND notes != ''
+          AND id NOT IN (SELECT DISTINCT engagement_id FROM engagement_notes)
+      `);
+
+      // One-time migration: rename department value 'Institution' → 'Institutional'
+      await conn.run(`UPDATE engagements SET internal_client_dept = 'Institutional' WHERE internal_client_dept = 'Institution'`);
+
       return conn;
     })();
+    g._engagementsConnectionPromise = p;
+    // If bootstrap fails, clear the cached promise so the next request retries
+    // instead of permanently returning a rejected promise.
+    p.catch(() => { g._engagementsConnectionPromise = undefined; });
   }
-  return g._engagementsConnectionPromise;
+  return g._engagementsConnectionPromise!;
 }
 
 export async function query<T = Record<string, unknown>>(

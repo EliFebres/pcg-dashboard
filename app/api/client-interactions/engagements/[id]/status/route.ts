@@ -2,7 +2,7 @@ export const runtime = 'nodejs';
 
 import { NextRequest, NextResponse } from 'next/server';
 import { execute, query } from '@/app/lib/db';
-import { toDisplayDate } from '@/app/lib/db/dateUtils';
+import { toDisplayDate, localTodayISO } from '@/app/lib/db/dateUtils';
 
 // PATCH /api/client-interactions/engagements/:id/status
 // Body: { status: string }
@@ -24,7 +24,7 @@ export async function PATCH(
       return NextResponse.json({ error: 'Invalid status value' }, { status: 400 });
     }
 
-    const todayISO = new Date().toISOString().split('T')[0];
+    const todayISO = localTodayISO();
     const dateFinishedISO = status === 'Completed' ? todayISO : null;
 
     await execute(

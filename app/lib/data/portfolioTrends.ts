@@ -87,7 +87,7 @@ export const loggedPortfolios: LoggedPortfolio[] = [
   {
     id: 3,
     externalClient: 'Northern Trust Wealth',
-    internalClient: { name: 'Christopher Lee', gcgDepartment: 'Institution' },
+    internalClient: { name: 'Christopher Lee', gcgDepartment: 'Institutional' },
     loggedBy: 'Mike R.',
     loggedAt: 'Jan 10, 2026',
     dataAsOf: 'Dec 31, 2025',
@@ -197,7 +197,7 @@ export const loggedPortfolios: LoggedPortfolio[] = [
   {
     id: 6,
     externalClient: 'Goldman Sachs PWM',
-    internalClient: { name: 'Rachel Goldman', gcgDepartment: 'Institution' },
+    internalClient: { name: 'Rachel Goldman', gcgDepartment: 'Institutional' },
     loggedBy: 'David L.',
     loggedAt: 'Jan 3, 2026',
     dataAsOf: 'Dec 31, 2025',
@@ -307,7 +307,7 @@ export const loggedPortfolios: LoggedPortfolio[] = [
   {
     id: 9,
     externalClient: 'LPL Financial',
-    internalClient: { name: 'Andrew Mitchell', gcgDepartment: 'Institution' },
+    internalClient: { name: 'Andrew Mitchell', gcgDepartment: 'Institutional' },
     loggedBy: 'Mike R.',
     loggedAt: 'Dec 15, 2025',
     dataAsOf: 'Nov 30, 2025',

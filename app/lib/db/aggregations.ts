@@ -24,7 +24,7 @@ export const STATIC_FILTER_OPTIONS: FilterOptions = {
   teamMemberGroups: [
     { label: 'Office', options: ['Austin Office', 'Charlotte Office'] },
   ],
-  departments: ['Broker-Dealer', 'IAG', 'Institution'],
+  departments: ['Broker-Dealer', 'IAG', 'Institutional'],
   intakeTypes: ['IRQ', 'SRRF', 'GCG Ad-Hoc'],
   projectTypes: ['Data Request', 'Follow-Up', 'Meeting', 'Other', 'PCR'],
   statuses: ['Completed', 'In Progress', 'Pending'],
@@ -221,14 +221,14 @@ export async function computeDepartmentBreakdown(filters: EngagementFilters): Pr
   const DEPT_COLORS: Record<string, string> = {
     IAG: '#a5f3fc',
     'Broker-Dealer': '#22d3ee',
-    Institution: '#0e7490',
+    Institutional: '#0e7490',
   };
 
   const total = rows.reduce((s, r) => s + Number(r.cnt), 0);
   const safeTotal = total || 1;
 
   // Ensure all three departments appear even if count is 0
-  const deptMap: Record<string, number> = { IAG: 0, 'Broker-Dealer': 0, Institution: 0 };
+  const deptMap: Record<string, number> = { IAG: 0, 'Broker-Dealer': 0, Institutional: 0 };
   rows.forEach(r => {
     const dept = r.dept as string;
     deptMap[dept] = Number(r.cnt);
@@ -266,12 +266,12 @@ export async function computeContributionData(filters: EngagementFilters): Promi
 
   const rows = await query<Record<string, unknown>>(`
     SELECT
-      date_finished AS finish_date,
+      CAST(date_finished AS VARCHAR) AS finish_date,
       COUNT(*) FILTER (WHERE intake_type != 'GCG Ad-Hoc') AS project_count,
       COUNT(*) FILTER (WHERE intake_type = 'GCG Ad-Hoc')  AS ad_hoc_count
     FROM engagements ${dateFilter}
-    GROUP BY date_finished
-    ORDER BY date_finished
+    GROUP BY CAST(date_finished AS VARCHAR)
+    ORDER BY finish_date
   `, [...params, heatmapStartISO]);
 
   // Build a lookup map from ISO date string to counts
@@ -350,7 +350,9 @@ export async function computeEngagementsList(filters: EngagementFilters): Promis
       params
     ),
     query<Record<string, unknown>>(
-      `SELECT * FROM engagements ${whereClause}
+      `SELECT *,
+         (SELECT COUNT(*) FROM engagement_notes WHERE engagement_id = engagements.id) AS note_count
+       FROM engagements ${whereClause}
        ORDER BY ${sortCol} ${sortDir} NULLS LAST
        LIMIT ? OFFSET ?`,
       [...params, pageSize, offset]

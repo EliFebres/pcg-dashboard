@@ -10,15 +10,16 @@ A Next.js dashboard application for tracking client interactions, portfolio tren
 - First registered user is automatically granted admin status
 - Subsequent users start as **pending** and must be approved by an admin before they can log in
 
-### Admin Dashboard (`/admin/users`)
-- View all registered users with their team, office, and status
-- Approve pending users, deactivate active users
-- Promote users to admin or demote admins to standard users
+### Admin Dashboard
+- **`/admin/users`** — View all registered users with their team, office, and status; approve pending users, deactivate active users, promote/demote admin role
+- **`/admin/team-members`** — Manage the team member directory used throughout the dashboard (name, team, office, status; link to user account)
 
 ### Client Interactions Dashboard
 - Track and manage client engagements (IRQ, SRRF, GCG Ad-Hoc) with full CRUD support
 - Create, edit, and delete engagements via modal forms
+- **Bulk upload** — import engagements from Excel (.xlsx) or CSV; preview before committing
 - Inline edits for status, NNA (Net New Assets), and notes
+- **Rich text notes** — TipTap-powered editor with per-note author attribution and delete support
 - GitHub-style contribution heatmap showing daily activity over time
 - Department breakdown bar chart
 - Metric cards: Client Projects, GCG Ad-Hoc, In Progress, and NNA — all with period-over-period change
@@ -28,14 +29,14 @@ A Next.js dashboard application for tracking client interactions, portfolio tren
 - Text search across clients, intake type, and project type
 - CSV export
 
-### Portfolio Trends Dashboard
+### Portfolio Trends Dashboard *(currently inactive)*
 - Portfolio construction insights and client analytics
 - Style Map and Profitability Map visualizations
 - Benchmark comparison vs MSCI ACWI IMI
 - Equity and Fixed Income metrics
 - Logged Portfolios table with expandable position details and fullscreen view
 
-### Ticker Trends Dashboard
+### Ticker Trends Dashboard *(currently inactive)*
 - Hot Tickers & DFA Competitors comparison table with inline editing (type, notes, talking points, PCR links)
 - Most Popular DFA Tickers ranking
 - Ticker Adoption Trend chart over time
@@ -48,6 +49,9 @@ A Next.js dashboard application for tracking client interactions, portfolio tren
 - **DuckDB 1.5.1** (Node API) for data persistence
 - **Jose 6.2.2** for JWT authentication
 - **Recharts 3.7.0** for data visualization
+- **TipTap 3.21** for rich text note editing
+- **ExcelJS 4.4** for Excel bulk upload parsing
+- **DomPurify 3.3** for rich text HTML sanitization
 - **Lucide React** for icons
 
 ## Environment Variables
@@ -125,33 +129,45 @@ The 8 most recent backups are kept automatically (~2 months of history).
 
 ```
 app/
-├── api/                    # Next.js route handlers (server-side)
-│   ├── auth/               # Login, signup, logout, /me
-│   ├── client-interactions/ # Engagement CRUD + dashboard aggregations
-│   └── admin/              # User management endpoints
-├── admin/users/            # Admin user management page
-├── login/                  # Login page
-├── signup/                 # Registration/access request page
+├── api/                         # Next.js route handlers (server-side)
+│   ├── auth/                    # Login, signup, logout, /me
+│   ├── client-interactions/     # Engagement CRUD, dashboard aggregations, bulk upload, export
+│   ├── admin/                   # User and team member management endpoints
+│   └── team-members/            # Public team member directory endpoint
+├── admin/
+│   ├── users/                   # Admin user management page
+│   └── team-members/            # Admin team member directory page
+├── login/                       # Login page
+├── signup/                      # Registration/access request page
 ├── dashboard/
-│   ├── client-interactions/ # Client interaction tracking
+│   ├── client-interactions/     # Client interaction tracking (active)
 │   └── trends/
-│       ├── portfolio-trends/ # Portfolio analytics
-│       └── ticker-trends/    # Ticker analytics
-├── components/             # Shared UI components
-│   ├── Sidebar.tsx         # Navigation sidebar with dropdown support
-│   ├── DashboardHeader.tsx # Reusable header with filters
-│   └── ClientOnlyChart.tsx # SSR-safe chart wrapper
+│       ├── portfolio-trends/    # Portfolio analytics (inactive)
+│       └── ticker-trends/       # Ticker analytics (inactive)
+├── components/
+│   ├── AppShell.tsx             # Root app shell with sidebar and auth provider
+│   ├── Sidebar.tsx              # Navigation sidebar with collapsible sections
+│   ├── DashboardHeader.tsx      # Reusable header with filters and period selector
+│   ├── ClientOnlyChart.tsx      # SSR-safe chart wrapper for Recharts
+│   ├── pages/
+│   │   ├── client-interactions/ # MetricCards, ContributionGraph, DepartmentChart, InteractionsTable, NewInteractionForm, BulkUploadModal
+│   │   ├── shared/              # NNAModal, NotesModal, LinkModal, PortfolioModal, GlassSelect
+│   │   └── ticker-trends/       # HotTickersTable, FundFrequencyCard, RequestBreakdownChart
+│   └── ui/
+│       ├── RichTextEditor.tsx   # TipTap-based rich text input
+│       └── RichTextDisplay.tsx  # Sanitized HTML renderer for rich text
 └── lib/
-    ├── api/                # Client-side API fetch functions
-    ├── auth/               # JWT helpers and AuthContext
-    ├── data/               # Mock data generation utilities
-    ├── db/                 # DuckDB connection and query functions
-    └── types/              # TypeScript interfaces
-middleware.ts               # Route protection (pages + API) and auth enforcement
+    ├── api/                     # Client-side API fetch functions
+    ├── auth/                    # JWT helpers, password utilities, and AuthContext
+    ├── bulk-upload/             # Excel/CSV parser and row validator
+    ├── data/                    # Mock data generation utilities (fallback)
+    ├── db/                      # DuckDB connection, queries, aggregations, date utils
+    └── types/                   # TypeScript interfaces
+middleware.ts                    # Route protection — redirects unauthenticated users and blocks API access without a valid JWT
 scripts/
-├── seed-db.ts              # Database seeding script
-├── backup-db.ts            # Database backup script
-└── restore-db.ts           # Database restore script
+├── seed-db.ts                   # Database schema creation and optional mock data seeding
+├── backup-db.ts                 # Database backup script
+└── restore-db.ts                # Database restore script
 ```
 
 ## Design

@@ -43,7 +43,7 @@ export interface EngagementMetric {
   percent?: number; // Optional percentage for progress bar visualization
   sparklineData?: { value: number }[]; // Optional sparkline data for trend visualization
   pieData?: { name: string; value: number; color: string }[]; // Optional pie chart data for breakdown visualization
-  stackedBarData?: { month: string; IAG: number; 'Broker-Dealer': number; Institution: number }[]; // Optional stacked bar data
+  stackedBarData?: { month: string; IAG: number; 'Broker-Dealer': number; Institutional: number }[]; // Optional stacked bar data
   intakeBreakdown?: IntakeBreakdown[]; // Optional intake breakdown for GCG Ad-Hoc
   intakeSourceBreakdown?: IntakeSourceBreakdown; // Optional intake source breakdown for Client Projects
   nnaTiers?: NNATier[]; // Optional NNA distribution tiers
@@ -58,7 +58,7 @@ export interface DepartmentData {
 
 export interface InternalClient {
   name: string;
-  gcgDepartment: 'IAG' | 'Broker-Dealer' | 'Institution';
+  gcgDepartment: 'IAG' | 'Broker-Dealer' | 'Institutional';
 }
 
 export type AssetClass = 'Equity' | 'Fixed Income' | 'Alternatives' | 'Crypto' | 'Fund of Funds';
@@ -69,6 +69,15 @@ export interface PortfolioHolding {
   constituentType: ConstituentType;
   assetClass: AssetClass;
   weight: number; // Normalized weight (0-1, sums to 1)
+}
+
+export interface NoteEntry {
+  id: number;
+  engagementId: number;
+  noteText: string;
+  authorName: string;
+  authorId: string;
+  createdAt: string; // ISO string
 }
 
 export interface Engagement {
@@ -86,7 +95,9 @@ export interface Engagement {
   portfolioLogged: boolean;
   portfolio?: PortfolioHolding[]; // Optional client portfolio holdings
   nna?: number; // Net New Assets - dollar amount of AUM moved into funds (optional)
-  notes?: string; // Optional notes field
+  notes?: string; // Optional notes field (legacy — used by engagement form)
+  noteCount?: number; // Number of entries in engagement_notes table (undefined when not loaded)
+  version?: number; // Optimistic locking counter — send back with PATCH to detect concurrent edits
   tickersMentioned?: string[]; // Tickers discussed during GCG Ad-Hoc interactions (used for Ticker Trends)
 }
 

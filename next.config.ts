@@ -5,6 +5,7 @@ const nextConfig: NextConfig = {
   logging: {
     browserToTerminal: false,
   },
+  devIndicators: false,
 };
 
 export default nextConfig;

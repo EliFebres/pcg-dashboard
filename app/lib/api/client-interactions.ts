@@ -13,6 +13,7 @@
 
 import type {
   Engagement,
+  NoteEntry,
   DayData,
   DepartmentData,
   IntakeBreakdown,
@@ -22,6 +23,14 @@ import type {
 
 const API_BASE_URL = '/api';
 
+/** Thrown when a PATCH is rejected because another user edited the same engagement. */
+export class ConflictError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'ConflictError';
+  }
+}
+
 // =============================================================================
 // TYPESCRIPT INTERFACES
 // =============================================================================
@@ -30,7 +39,7 @@ const API_BASE_URL = '/api';
 export interface EngagementFilters {
   search?: string;                 // Text search across multiple fields
   teamMember?: string;             // 'All Team Members', 'Austin Office', 'Charlotte Office', or member name
-  departments?: string[];          // Multi-select: ['IAG', 'Broker-Dealer', 'Institution']
+  departments?: string[];          // Multi-select: ['IAG', 'Broker-Dealer', 'Institutional']
   intakeTypes?: string[];          // Multi-select: ['IRQ', 'SRRF', 'GCG Ad-Hoc']
   projectTypes?: string[];         // Multi-select: ['Meeting', 'Follow-Up', 'Data Request', 'PCR', 'Other']
   period?: string;                 // '1W', '1M', '3M', '6M', 'YTD', '1Y', 'ALL'
@@ -259,6 +268,10 @@ export async function updateEngagement(
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(updates),
   });
+  if (response.status === 409) {
+    const data = await response.json();
+    throw new ConflictError(data.error ?? 'This engagement was modified by someone else. Refresh and try again.');
+  }
   if (!response.ok) throw new Error('Failed to update engagement');
   return response.json();
 }
@@ -299,20 +312,53 @@ export async function updateEngagementNNA(
 }
 
 /**
- * Optimized endpoint for quick notes updates.
- * Endpoint: PATCH /api/client-interactions/engagements/:id/notes
+ * Fetches all note entries for an engagement, newest first.
+ * Endpoint: GET /api/client-interactions/engagements/:id/notes
  */
-export async function updateEngagementNotes(
-  id: number,
-  notes: string
-): Promise<{ id: number; notes: string }> {
+export async function getEngagementNotes(id: number): Promise<NoteEntry[]> {
+  const response = await fetch(`${API_BASE_URL}/client-interactions/engagements/${id}/notes`);
+  if (!response.ok) throw new Error('Failed to fetch notes');
+  const data = await response.json();
+  return data.notes as NoteEntry[];
+}
+
+/**
+ * Appends a new note entry to an engagement, attributed to the logged-in user.
+ * Endpoint: POST /api/client-interactions/engagements/:id/notes
+ */
+export async function addEngagementNote(id: number, noteText: string): Promise<NoteEntry> {
   const response = await fetch(`${API_BASE_URL}/client-interactions/engagements/${id}/notes`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ noteText }),
+  });
+  if (!response.ok) throw new Error('Failed to add note');
+  return response.json();
+}
+
+/**
+ * Updates the text of an existing note. Only the note's author may edit it.
+ * Endpoint: PATCH /api/client-interactions/engagements/:id/notes/:noteId
+ */
+export async function updateEngagementNote(engagementId: number, noteId: number, noteText: string): Promise<NoteEntry> {
+  const response = await fetch(`${API_BASE_URL}/client-interactions/engagements/${engagementId}/notes/${noteId}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ notes: notes || null }),
+    body: JSON.stringify({ noteText }),
   });
-  if (!response.ok) throw new Error('Failed to update notes');
+  if (!response.ok) throw new Error('Failed to update note');
   return response.json();
+}
+
+/**
+ * Deletes a note. Only the note's author may delete it.
+ * Endpoint: DELETE /api/client-interactions/engagements/:id/notes/:noteId
+ */
+export async function deleteEngagementNote(engagementId: number, noteId: number): Promise<void> {
+  const response = await fetch(`${API_BASE_URL}/client-interactions/engagements/${engagementId}/notes/${noteId}`, {
+    method: 'DELETE',
+  });
+  if (!response.ok) throw new Error('Failed to delete note');
 }
 
 /**

@@ -14,7 +14,8 @@ import {
   updateEngagement,
   updateEngagementStatus,
   updateEngagementNNA,
-  updateEngagementNotes,
+  addEngagementNote,
+  ConflictError,
 } from '@/app/lib/api/client-interactions';
 import type { DashboardData, DashboardMetrics, EngagementFilters } from '@/app/lib/api/client-interactions';
 import type { EngagementMetric, Engagement } from '@/app/lib/types/engagements';
@@ -117,6 +118,8 @@ export default function EngagementsDashboard() {
   const [isNewInteractionOpen, setIsNewInteractionOpen] = useState(false);
   const [isBulkUploadOpen, setIsBulkUploadOpen] = useState(false);
   const [editingEngagement, setEditingEngagement] = useState<EditingEngagement | null>(null);
+  const [conflictError, setConflictError] = useState<string | null>(null);
+  const conflictTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Flip card state
   const [flippedCard, setFlippedCard] = useState<string | null>(null);
@@ -225,22 +228,26 @@ export default function EngagementsDashboard() {
   // -------------------------------------------------------------------------
   const handleNewInteraction = async (data: InteractionFormData) => {
     try {
-      await createEngagement({
+      const newEngagement = await createEngagement({
         externalClient: data.externalClient ?? null,
-        internalClient: { name: data.internalClient, gcgDepartment: data.internalClientDept as 'IAG' | 'Broker-Dealer' | 'Institution' },
+        internalClient: { name: data.internalClient, gcgDepartment: data.internalClientDept as 'IAG' | 'Broker-Dealer' | 'Institutional' },
         intakeType: data.intakeType as 'IRQ' | 'SRRF' | 'GCG Ad-Hoc',
         adHocChannel: data.adHocChannel,
         type: data.projectType,
         teamMembers: data.teamMembers,
-        department: data.internalClientDept as 'IAG' | 'Broker-Dealer' | 'Institution',
+        department: data.internalClientDept as 'IAG' | 'Broker-Dealer' | 'Institutional',
         dateStarted: formatDisplayDate(data.dateStarted),
         dateFinished: '—',
         status: 'In Progress',
         portfolioLogged: data.portfolioLogged,
+        portfolio: data.portfolio,
         nna: data.nna || undefined,
         notes: data.notes?.trim() || undefined,
         tickersMentioned: data.tickersMentioned?.length ? data.tickersMentioned : undefined,
       });
+      if (data.notes?.trim()) {
+        await addEngagementNote(newEngagement.id, data.notes.trim());
+      }
       await reloadData();
     } catch (err) {
       console.error('Failed to create engagement:', err);
@@ -272,9 +279,12 @@ export default function EngagementsDashboard() {
     updateEngagementStatus(engagementId, newStatus).catch(console.error);
   };
 
-  const handleNotesChange = (engagementId: number, notes: string) => {
-    patchEngagements(e => ({ ...e, notes: notes.trim() || undefined }), engagementId);
-    updateEngagementNotes(engagementId, notes).catch(console.error);
+  const handleNoteAdded = (engagementId: number) => {
+    patchEngagements(e => ({ ...e, noteCount: (e.noteCount ?? 0) + 1 }), engagementId);
+  };
+
+  const handleNoteDeleted = (engagementId: number) => {
+    patchEngagements(e => ({ ...e, noteCount: Math.max(0, (e.noteCount ?? 0) - 1) }), engagementId);
   };
 
   const handleNNAChange = (engagementId: number, nna: number | undefined) => {
@@ -306,6 +316,7 @@ export default function EngagementsDashboard() {
       },
       originalDateStarted: engagement.dateStarted,
       originalDateFinished: engagement.dateFinished,
+      version: engagement.version,
     });
     setIsNewInteractionOpen(true);
   };
@@ -315,17 +326,18 @@ export default function EngagementsDashboard() {
     const dateFinishedChanged = editingEngagement?.data.dateFinished !== data.dateFinished;
     const originalDateStarted = editingEngagement?.originalDateStarted;
     const originalDateFinished = editingEngagement?.originalDateFinished;
+    const version = editingEngagement?.version;
 
     setEditingEngagement(null);
     try {
       await updateEngagement(engagementId, {
         externalClient: data.externalClient ?? null,
-        internalClient: { name: data.internalClient, gcgDepartment: data.internalClientDept as 'IAG' | 'Broker-Dealer' | 'Institution' },
+        internalClient: { name: data.internalClient, gcgDepartment: data.internalClientDept as 'IAG' | 'Broker-Dealer' | 'Institutional' },
         intakeType: data.intakeType as 'IRQ' | 'SRRF' | 'GCG Ad-Hoc',
         adHocChannel: data.adHocChannel,
         type: data.projectType,
         teamMembers: data.teamMembers,
-        department: data.internalClientDept as 'IAG' | 'Broker-Dealer' | 'Institution',
+        department: data.internalClientDept as 'IAG' | 'Broker-Dealer' | 'Institutional',
         dateStarted: dateStartedChanged ? formatDisplayDate(data.dateStarted) : (originalDateStarted || undefined),
         dateFinished: dateFinishedChanged
           ? (data.dateFinished ? formatDisplayDate(data.dateFinished) : '—')
@@ -336,10 +348,17 @@ export default function EngagementsDashboard() {
         portfolio: data.portfolio,
         nna: data.nna ?? undefined,
         tickersMentioned: data.tickersMentioned?.length ? data.tickersMentioned : undefined,
+        version,
       });
       await reloadData();
     } catch (err) {
-      console.error('Failed to update engagement:', err);
+      if (err instanceof ConflictError) {
+        if (conflictTimeoutRef.current) clearTimeout(conflictTimeoutRef.current);
+        setConflictError(err.message);
+        conflictTimeoutRef.current = setTimeout(() => setConflictError(null), 6000);
+      } else {
+        console.error('Failed to update engagement:', err);
+      }
     }
   };
 
@@ -423,6 +442,13 @@ export default function EngagementsDashboard() {
         onActionButtonClick={() => setIsNewInteractionOpen(true)}
       />
 
+      {conflictError && (
+        <div className="mx-6 mt-4 px-4 py-3 rounded-lg bg-amber-900/40 border border-amber-700/60 text-amber-300 text-sm flex items-center justify-between gap-4">
+          <span>{conflictError}</span>
+          <button onClick={() => setConflictError(null)} className="text-amber-400 hover:text-amber-200 flex-shrink-0">✕</button>
+        </div>
+      )}
+
       <div className="p-6 flex flex-col gap-6">
         {isLoading ? (
           <div className="flex-1 flex items-center justify-center">
@@ -484,7 +510,8 @@ export default function EngagementsDashboard() {
               sortDirection={sortDirection}
               onSort={handleSort}
               onStatusChange={handleStatusChange}
-              onNotesChange={handleNotesChange}
+              onNoteAdded={handleNoteAdded}
+              onNoteDeleted={handleNoteDeleted}
               onNNAChange={handleNNAChange}
               onRowClick={handleRowClick}
             />

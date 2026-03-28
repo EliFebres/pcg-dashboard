@@ -64,7 +64,7 @@ export async function GET() {
     }
   };
 
-  addValidation('C', '"IAG,Broker-Dealer,Institution"');
+  addValidation('C', '"IAG,Broker-Dealer,Institutional"');
   addValidation('D', '"IRQ,SRRF,GCG Ad-Hoc"');
   addValidation('E', '"In-Person,Email,Teams"');
   addValidation('F', '"Meeting,Follow-Up,Data Request,PCR,Other"');
@@ -111,7 +111,7 @@ export async function GET() {
     {
       externalClient: '',
       internalClientName: 'Chris B.',
-      internalClientDept: 'Institution',
+      internalClientDept: 'Institutional',
       intakeType: 'GCG Ad-Hoc',
       adHocChannel: 'Teams',
       type: 'Meeting',
@@ -148,7 +148,7 @@ export async function GET() {
   const refData: [string, string][] = [
     ['External Client', 'Name of the external client/fund. Leave blank for GCG Ad-Hoc rows.'],
     ['Internal Client Name', 'Required. Name of the internal contact (e.g. "Sarah K.")'],
-    ['Internal Client Dept', 'Required. IAG | Broker-Dealer | Institution'],
+    ['Internal Client Dept', 'Required. IAG | Broker-Dealer | Institutional'],
     ['Intake Type', 'Required. IRQ | SRRF | GCG Ad-Hoc'],
     ['Ad-Hoc Channel', 'Required only for GCG Ad-Hoc rows. In-Person | Email | Teams'],
     ['Project Type', 'Required. Meeting | Follow-Up | Data Request | PCR | Other'],

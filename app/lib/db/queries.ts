@@ -131,7 +131,7 @@ export function rowToEngagement(row: Record<string, unknown>): Engagement {
     externalClient: (row.external_client as string | null) ?? null,
     internalClient: {
       name: row.internal_client_name as string,
-      gcgDepartment: row.internal_client_dept as 'IAG' | 'Broker-Dealer' | 'Institution',
+      gcgDepartment: row.internal_client_dept as 'IAG' | 'Broker-Dealer' | 'Institutional',
     },
     intakeType: row.intake_type as 'IRQ' | 'SRRF' | 'GCG Ad-Hoc',
     adHocChannel: (row.ad_hoc_channel as string | undefined) as import('../types/engagements').GCGAdHocChannel | undefined,
@@ -147,6 +147,8 @@ export function rowToEngagement(row: Record<string, unknown>): Engagement {
       : undefined,
     nna: row.nna != null ? Number(row.nna) : undefined,
     notes: (row.notes as string | undefined) || undefined,
+    noteCount: Number(row.note_count ?? 0),
+    version: Number(row.version ?? 1),
     tickersMentioned: row.tickers_mentioned
       ? (JSON.parse(row.tickers_mentioned as string) as string[])
       : undefined,

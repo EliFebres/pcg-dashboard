@@ -325,7 +325,7 @@ export async function getTickerTrendsFilterOptions(): Promise<FilterOptions> {
   if (SIMULATED_DELAY) await delay(SIMULATED_DELAY);
 
   return {
-    departments: ['All Departments', 'IAG', 'Broker-Dealer', 'Institution'],
+    departments: ['All Departments', 'IAG', 'Broker-Dealer', 'Institutional'],
     periods: ['1M', '3M', '6M', '1Y', 'YTD', 'All'],
   };
 }

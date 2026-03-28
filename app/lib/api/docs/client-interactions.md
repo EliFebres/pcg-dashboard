@@ -84,7 +84,7 @@ Fetch all dashboard data in a single optimized call. This is the primary endpoin
 |-------|------|----------|-------------|
 | `period` | string | No | Time period: `1W`, `1M`, `3M`, `6M`, `YTD`, `1Y`, `ALL`. Default: `1Y` |
 | `team_member` | string | No | Filter by team member name or office (`Austin Office`, `Charlotte Office`) |
-| `departments` | string[] | No | Multi-select: `IAG`, `Broker-Dealer`, `Institution` |
+| `departments` | string[] | No | Multi-select: `IAG`, `Broker-Dealer`, `Institutional` |
 | `intake_types` | string[] | No | Multi-select: `IRQ`, `SRRF`, `GCG Ad-Hoc` |
 | `project_types` | string[] | No | Multi-select: `Meeting`, `Follow-Up`, `Data Request`, `PCR`, `Other` |
 | `search` | string | No | Text search across client names, types, departments |
@@ -147,7 +147,7 @@ Fetch all dashboard data in a single optimized call. This is the primary endpoin
     "departments": [
       { "name": "IAG", "value": 55, "count": 135, "color": "#a5f3fc" },
       { "name": "Broker-Dealer", "value": 33, "count": 81, "color": "#22d3ee" },
-      { "name": "Institution", "value": 12, "count": 29, "color": "#0e7490" }
+      { "name": "Institutional", "value": 12, "count": 29, "color": "#0e7490" }
     ],
     "total": 245
   },
@@ -194,7 +194,7 @@ Fetch all dashboard data in a single optimized call. This is the primary endpoin
     "team_member_groups": [
       { "label": "Office", "options": ["Austin Office", "Charlotte Office"] }
     ],
-    "departments": ["Broker-Dealer", "IAG", "Institution"],
+    "departments": ["Broker-Dealer", "IAG", "Institutional"],
     "intake_types": ["GCG Ad-Hoc", "SRRF", "IRQ"],
     "project_types": ["Data Request", "Follow-Up", "Meeting", "Other", "PCR"],
     "statuses": ["Completed", "In Progress", "On Hold"]
@@ -335,7 +335,7 @@ Fetch department breakdown for the chart.
   "departments": [
     { "name": "IAG", "value": 55, "count": 135, "color": "#a5f3fc" },
     { "name": "Broker-Dealer", "value": 33, "count": 81, "color": "#22d3ee" },
-    { "name": "Institution", "value": 12, "count": 29, "color": "#0e7490" }
+    { "name": "Institutional", "value": 12, "count": 29, "color": "#0e7490" }
   ],
   "total": 245
 }
@@ -664,7 +664,7 @@ ID,External Client,Internal Client,Department,Intake Type,Ad Hoc Channel,Type,Te
 | Field | Type | Description |
 |-------|------|-------------|
 | `name` | string | Contact name |
-| `gcg_department` | string | `IAG`, `Broker-Dealer`, or `Institution` |
+| `gcg_department` | string | `IAG`, `Broker-Dealer`, or `Institutional` |
 
 ### PortfolioHolding
 
