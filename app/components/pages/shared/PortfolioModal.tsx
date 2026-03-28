@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { X, Briefcase, Plus, Trash2, ClipboardPaste } from 'lucide-react';
-import { AssetClass, PortfolioHolding } from '@/app/lib/types/engagements';
+import { AssetClass, ConstituentType, PortfolioHolding } from '@/app/lib/types/engagements';
 
 interface PortfolioModalProps {
   isOpen: boolean;
@@ -14,11 +14,13 @@ interface PortfolioModalProps {
 interface EditableHolding {
   id: string;
   identifier: string;
+  constituentType: ConstituentType | '';
   assetClass: AssetClass | '';
   weight: string;
 }
 
-const ASSET_CLASSES: AssetClass[] = ['Equity', 'Fixed Income', 'Alternatives'];
+const ASSET_CLASSES: AssetClass[] = ['Equity', 'Fixed Income', 'Alternatives', 'Crypto', 'Fund of Funds'];
+const CONSTITUENT_TYPES: ConstituentType[] = ['Portfolio', 'Morningstar-Fund', 'Security', 'Index'];
 
 // Fallback for environments where crypto.randomUUID isn't available
 const generateId = (): string => {
@@ -31,6 +33,7 @@ const generateId = (): string => {
 const createEmptyRow = (): EditableHolding => ({
   id: generateId(),
   identifier: '',
+  constituentType: '',
   assetClass: '',
   weight: '',
 });
@@ -54,6 +57,7 @@ const PortfolioModal: React.FC<PortfolioModalProps> = ({
           currentPortfolio.map((h) => ({
             id: generateId(),
             identifier: h.identifier,
+            constituentType: h.constituentType,
             assetClass: h.assetClass,
             weight: (h.weight * 100).toFixed(2), // Convert to percentage for display
           }))
@@ -81,7 +85,7 @@ const PortfolioModal: React.FC<PortfolioModalProps> = ({
 
       // Check if we should auto-add a new row
       const lastRow = updated[updated.length - 1];
-      const isLastRowComplete = lastRow.identifier.trim() && lastRow.assetClass && lastRow.weight.trim();
+      const isLastRowComplete = lastRow.identifier.trim() && lastRow.constituentType && lastRow.assetClass && lastRow.weight.trim();
 
       if (isLastRowComplete) {
         return [...updated, createEmptyRow()];
@@ -102,6 +106,16 @@ const PortfolioModal: React.FC<PortfolioModalProps> = ({
     });
   };
 
+  // Parse constituent type from string
+  const parseConstituentType = (value: string): ConstituentType | '' => {
+    const normalized = value.trim().toLowerCase().replace(/\s+/g, '');
+    if (normalized === 'portfolio') return 'Portfolio';
+    if (normalized === 'morningstar-fund' || normalized === 'morningstarfund') return 'Morningstar-Fund';
+    if (normalized === 'security') return 'Security';
+    if (normalized === 'index') return 'Index';
+    return '';
+  };
+
   // Parse asset class from string (handles variations)
   const parseAssetClass = (value: string): AssetClass | '' => {
     const normalized = value.trim().toLowerCase();
@@ -113,6 +127,12 @@ const PortfolioModal: React.FC<PortfolioModalProps> = ({
     }
     if (normalized === 'alternatives' || normalized === 'alt' || normalized === 'alts' || normalized === 'alternative') {
       return 'Alternatives';
+    }
+    if (normalized === 'crypto' || normalized === 'cryptocurrency') {
+      return 'Crypto';
+    }
+    if (normalized === 'fundoffunds' || normalized === 'fof' || normalized === 'fund of funds') {
+      return 'Fund of Funds';
     }
     return '';
   };
@@ -140,11 +160,16 @@ const PortfolioModal: React.FC<PortfolioModalProps> = ({
 
       if (parts.length >= 1) {
         const identifier = parts[0] || '';
-        const assetClassStr = parts[1] || '';
-        const weightStr = parts[2] || '';
+        const constituentTypeStr = parts[1] || '';
+        const assetClassStr = parts[2] || '';
+        const weightStr = parts[3] || '';
 
+        const constituentType = parseConstituentType(constituentTypeStr);
         const assetClass = parseAssetClass(assetClassStr);
 
+        if (constituentTypeStr && !constituentType) {
+          errors.push(`Row ${index + 1}: Unknown constituent type "${constituentTypeStr}"`);
+        }
         if (assetClassStr && !assetClass) {
           errors.push(`Row ${index + 1}: Unknown asset class "${assetClassStr}"`);
         }
@@ -152,6 +177,7 @@ const PortfolioModal: React.FC<PortfolioModalProps> = ({
         newHoldings.push({
           id: generateId(),
           identifier,
+          constituentType,
           assetClass,
           weight: weightStr.replace('%', '').trim(),
         });
@@ -175,7 +201,7 @@ const PortfolioModal: React.FC<PortfolioModalProps> = ({
   // Normalize weights to sum to 1
   const normalizeWeights = (rawHoldings: EditableHolding[]): PortfolioHolding[] => {
     const validHoldings = rawHoldings.filter(
-      (h) => h.identifier.trim() && h.assetClass && h.weight
+      (h) => h.identifier.trim() && h.constituentType && h.assetClass && h.weight
     );
 
     if (validHoldings.length === 0) return [];
@@ -187,6 +213,7 @@ const PortfolioModal: React.FC<PortfolioModalProps> = ({
 
     return validHoldings.map((h, i) => ({
       identifier: h.identifier.trim().toUpperCase(),
+      constituentType: h.constituentType as ConstituentType,
       assetClass: h.assetClass as AssetClass,
       weight: weights[i] / sum, // Normalize to sum to 1
     }));
@@ -230,7 +257,7 @@ const PortfolioModal: React.FC<PortfolioModalProps> = ({
           <div>
             <h2 className="text-base font-medium text-white">Client Portfolio</h2>
             <p className="text-xs text-zinc-400 mt-0.5">
-              Add holdings with identifier, asset class, and weight
+              Add holdings with identifier, constituent type, asset class, and weight
             </p>
           </div>
           <button
@@ -252,7 +279,7 @@ const PortfolioModal: React.FC<PortfolioModalProps> = ({
             <div className="flex items-center gap-2 text-xs text-zinc-400">
               <ClipboardPaste className="w-4 h-4" />
               <span>
-                Paste from Excel: columns should be Identifier, Asset Class, Weight (tab or comma separated)
+                Paste from Excel: columns should be Identifier, Constituent Type, Asset Class, Weight
               </span>
             </div>
           </div>
@@ -266,16 +293,11 @@ const PortfolioModal: React.FC<PortfolioModalProps> = ({
           {/* Table */}
           <div className="border border-zinc-700/50 rounded-lg overflow-hidden">
             {/* Header */}
-            <div className="grid grid-cols-[1fr_1fr_100px_40px] gap-2 px-3 py-2 bg-zinc-800/50 border-b border-zinc-700/50">
-              <div className="text-xs font-medium text-zinc-400 uppercase tracking-wider">
-                Identifier
-              </div>
-              <div className="text-xs font-medium text-zinc-400 uppercase tracking-wider">
-                Asset Class
-              </div>
-              <div className="text-xs font-medium text-zinc-400 uppercase tracking-wider">
-                Weight
-              </div>
+            <div className="grid grid-cols-[1fr_1fr_1fr_100px_40px] gap-2 px-3 py-2 bg-zinc-800/50 border-b border-zinc-700/50">
+              <div className="text-xs font-medium text-zinc-400 uppercase tracking-wider">Identifier</div>
+              <div className="text-xs font-medium text-zinc-400 uppercase tracking-wider">Constituent Type</div>
+              <div className="text-xs font-medium text-zinc-400 uppercase tracking-wider">Asset Class</div>
+              <div className="text-xs font-medium text-zinc-400 uppercase tracking-wider">Weight</div>
               <div></div>
             </div>
 
@@ -284,7 +306,7 @@ const PortfolioModal: React.FC<PortfolioModalProps> = ({
               {holdings.map((holding) => (
                 <div
                   key={holding.id}
-                  className="grid grid-cols-[1fr_1fr_100px_40px] gap-2 px-3 py-2 items-center"
+                  className="grid grid-cols-[1fr_1fr_1fr_100px_40px] gap-2 px-3 py-2 items-center"
                 >
                   <input
                     type="text"
@@ -296,19 +318,27 @@ const PortfolioModal: React.FC<PortfolioModalProps> = ({
                     className="w-full px-2 py-1.5 bg-zinc-800/50 border border-zinc-700/50 rounded text-sm text-white placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-cyan-500/50 focus:border-cyan-500/50 transition-colors font-mono"
                   />
                   <select
+                    value={holding.constituentType}
+                    onChange={(e) =>
+                      updateHolding(holding.id, 'constituentType', e.target.value)
+                    }
+                    className="w-full px-2 py-1.5 bg-zinc-800/50 border border-zinc-700/50 rounded text-sm text-white focus:outline-none focus:ring-1 focus:ring-cyan-500/50 focus:border-cyan-500/50 transition-colors appearance-none cursor-pointer"
+                  >
+                    <option value="" className="bg-zinc-800">Select...</option>
+                    {CONSTITUENT_TYPES.map((ct) => (
+                      <option key={ct} value={ct} className="bg-zinc-800">{ct}</option>
+                    ))}
+                  </select>
+                  <select
                     value={holding.assetClass}
                     onChange={(e) =>
                       updateHolding(holding.id, 'assetClass', e.target.value)
                     }
                     className="w-full px-2 py-1.5 bg-zinc-800/50 border border-zinc-700/50 rounded text-sm text-white focus:outline-none focus:ring-1 focus:ring-cyan-500/50 focus:border-cyan-500/50 transition-colors appearance-none cursor-pointer"
                   >
-                    <option value="" className="bg-zinc-800">
-                      Select...
-                    </option>
+                    <option value="" className="bg-zinc-800">Select...</option>
                     {ASSET_CLASSES.map((ac) => (
-                      <option key={ac} value={ac} className="bg-zinc-800">
-                        {ac}
-                      </option>
+                      <option key={ac} value={ac} className="bg-zinc-800">{ac}</option>
                     ))}
                   </select>
                   <div className="relative">
@@ -361,9 +391,10 @@ const PortfolioModal: React.FC<PortfolioModalProps> = ({
                 {previewNormalized.map((h, i) => (
                   <div
                     key={i}
-                    className="grid grid-cols-[1fr_1fr_80px] gap-2 text-sm"
+                    className="grid grid-cols-[1fr_1fr_1fr_80px] gap-2 text-sm"
                   >
                     <span className="font-mono text-white">{h.identifier}</span>
+                    <span className="text-zinc-400">{h.constituentType}</span>
                     <span className="text-zinc-400">{h.assetClass}</span>
                     <span className="font-mono text-cyan-400 text-right">
                       {(h.weight * 100).toFixed(2)}%

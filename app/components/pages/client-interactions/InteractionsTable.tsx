@@ -487,7 +487,7 @@ const InteractionsTable: React.FC<InteractionsTableProps> = ({ engagements, onSt
           </div>
         </div>
 
-        <div className="relative z-10 flex-1 overflow-auto min-h-0">
+        <div className="relative z-10 flex-1 overflow-auto min-h-0 scrollbar-thin">
           <table className="w-full">
             {renderTableHeader()}
             <tbody className="divide-y divide-zinc-800/50">
@@ -535,7 +535,7 @@ const InteractionsTable: React.FC<InteractionsTableProps> = ({ engagements, onSt
             </div>
 
             {/* Table content */}
-            <div className="relative z-10 flex-1 overflow-auto min-h-0">
+            <div className="relative z-10 flex-1 overflow-auto min-h-0 scrollbar-thin">
               <table className="w-full">
                 <thead className="sticky top-0 bg-zinc-800 z-10">
                   <tr>

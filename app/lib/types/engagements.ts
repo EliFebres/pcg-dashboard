@@ -61,10 +61,12 @@ export interface InternalClient {
   gcgDepartment: 'IAG' | 'Broker-Dealer' | 'Institution';
 }
 
-export type AssetClass = 'Equity' | 'Fixed Income' | 'Alternatives';
+export type AssetClass = 'Equity' | 'Fixed Income' | 'Alternatives' | 'Crypto' | 'Fund of Funds';
+export type ConstituentType = 'Portfolio' | 'Morningstar-Fund' | 'Security' | 'Index';
 
 export interface PortfolioHolding {
   identifier: string; // Ticker, ISIN, or CUSIP
+  constituentType: ConstituentType;
   assetClass: AssetClass;
   weight: number; // Normalized weight (0-1, sums to 1)
 }

@@ -47,6 +47,7 @@ function generatePortfolio(seed: number): PortfolioHolding[] {
 
     holdings.push({
       identifier: ticker,
+      constituentType: 'Security',
       assetClass,
       weight: rawWeights[i] / totalWeight, // Normalized weight
     });
