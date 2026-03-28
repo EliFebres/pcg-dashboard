@@ -14,6 +14,7 @@ import {
   updateEngagement,
   updateEngagementStatus,
   updateEngagementNNA,
+  addEngagementNote,
 } from '@/app/lib/api/client-interactions';
 import type { DashboardData, DashboardMetrics, EngagementFilters } from '@/app/lib/api/client-interactions';
 import type { EngagementMetric, Engagement } from '@/app/lib/types/engagements';
@@ -224,7 +225,7 @@ export default function EngagementsDashboard() {
   // -------------------------------------------------------------------------
   const handleNewInteraction = async (data: InteractionFormData) => {
     try {
-      await createEngagement({
+      const newEngagement = await createEngagement({
         externalClient: data.externalClient ?? null,
         internalClient: { name: data.internalClient, gcgDepartment: data.internalClientDept as 'IAG' | 'Broker-Dealer' | 'Institution' },
         intakeType: data.intakeType as 'IRQ' | 'SRRF' | 'GCG Ad-Hoc',
@@ -241,6 +242,9 @@ export default function EngagementsDashboard() {
         notes: data.notes?.trim() || undefined,
         tickersMentioned: data.tickersMentioned?.length ? data.tickersMentioned : undefined,
       });
+      if (data.notes?.trim()) {
+        await addEngagementNote(newEngagement.id, data.notes.trim());
+      }
       await reloadData();
     } catch (err) {
       console.error('Failed to create engagement:', err);
