@@ -1,10 +1,15 @@
 export const runtime = 'nodejs';
 
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/app/lib/db';
+import { requireAuth, teamConstraint } from '@/app/lib/auth/require-auth';
 import { engagements as mockEngagements } from '@/app/lib/data/engagements';
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const auth = await requireAuth(req);
+  if (auth.error) return auth.error;
+  const sc = teamConstraint(auth.payload);
+
   try {
     if (!process.env.DUCKDB_DIR) {
       // Mock fallback: derive unique clients from in-memory mock data
@@ -18,10 +23,14 @@ export async function GET() {
       return NextResponse.json({ clients });
     }
 
+    const teamClause = sc.team ? 'WHERE team = ?' : '';
+    const teamParams = sc.team ? [sc.team] : [];
     const rows = await query<{ name: string; dept: string }>(
       `SELECT DISTINCT internal_client_name AS name, internal_client_dept AS dept
        FROM engagements
-       ORDER BY internal_client_name ASC`
+       ${teamClause}
+       ORDER BY internal_client_name ASC`,
+      teamParams
     );
     return NextResponse.json({ clients: rows });
   } catch (err) {

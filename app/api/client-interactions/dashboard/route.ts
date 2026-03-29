@@ -9,20 +9,25 @@ import {
   STATIC_FILTER_OPTIONS,
 } from '@/app/lib/db/aggregations';
 import { getMockFilterOptions } from '@/app/lib/api/mock-computations';
+import { requireAuth, teamConstraint } from '@/app/lib/auth/require-auth';
 import type { EngagementFilters } from '@/app/lib/api/client-interactions';
 
 // POST /api/client-interactions/dashboard
 // Body: EngagementFilters (camelCase)
 // Returns all dashboard data in a single parallel request for fast initial page load.
 export async function POST(req: NextRequest) {
+  const auth = await requireAuth(req);
+  if (auth.error) return auth.error;
+  const sc = teamConstraint(auth.payload);
+
   try {
     const filters: EngagementFilters = await req.json();
 
     const [metrics, departments, contributionData, engagements] = await Promise.all([
-      computeMetrics(filters),
-      computeDepartmentBreakdown(filters),
-      computeContributionData(filters),
-      computeEngagementsList(filters),
+      computeMetrics(filters, sc),
+      computeDepartmentBreakdown(filters, sc),
+      computeContributionData(filters, sc),
+      computeEngagementsList(filters, sc),
     ]);
 
     return NextResponse.json({

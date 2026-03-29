@@ -2,6 +2,7 @@ export const runtime = 'nodejs';
 
 import { NextRequest, NextResponse } from 'next/server';
 import { execute, query } from '@/app/lib/db';
+import { requireAuth, teamConstraint } from '@/app/lib/auth/require-auth';
 import { toDisplayDate, localTodayISO } from '@/app/lib/db/dateUtils';
 
 // PATCH /api/client-interactions/engagements/:id/status
@@ -14,6 +15,10 @@ export async function PATCH(
   if (!process.env.DUCKDB_DIR) {
     return NextResponse.json({ error: 'Database not configured.' }, { status: 503 });
   }
+  const auth = await requireAuth(req);
+  if (auth.error) return auth.error;
+  const sc = teamConstraint(auth.payload);
+
   try {
     const { id } = await params;
     const engagementId = Number(id);
@@ -26,10 +31,12 @@ export async function PATCH(
 
     const todayISO = localTodayISO();
     const dateFinishedISO = status === 'Completed' ? todayISO : null;
+    const teamClause = sc.team ? 'AND team = ?' : '';
+    const teamParams = sc.team ? [sc.team] : [];
 
     await execute(
-      `UPDATE engagements SET status = ?, date_finished = ? WHERE id = ?`,
-      [status, dateFinishedISO, engagementId]
+      `UPDATE engagements SET status = ?, date_finished = ? WHERE id = ? ${teamClause}`,
+      [status, dateFinishedISO, engagementId, ...teamParams]
     );
 
     // Verify the row exists

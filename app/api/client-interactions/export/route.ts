@@ -3,12 +3,17 @@ export const runtime = 'nodejs';
 import { NextRequest } from 'next/server';
 import { query } from '@/app/lib/db';
 import { buildFilterClause, rowToEngagement } from '@/app/lib/db/queries';
+import { requireAuth, teamConstraint } from '@/app/lib/auth/require-auth';
 import type { EngagementFilters } from '@/app/lib/api/client-interactions';
 import type { Engagement } from '@/app/lib/types/engagements';
 
 // GET /api/client-interactions/export
 // Same query params as the engagements list route (no pagination — exports all matching rows)
 export async function GET(req: NextRequest) {
+  const auth = await requireAuth(req);
+  if (auth.error) return auth.error;
+  const sc = teamConstraint(auth.payload);
+
   try {
     const sp = req.nextUrl.searchParams;
     const filters: EngagementFilters = {
@@ -23,7 +28,7 @@ export async function GET(req: NextRequest) {
       projectTypes: sp.getAll('project_types').filter(Boolean),
     };
 
-    const { whereClause, params } = buildFilterClause(filters);
+    const { whereClause, params } = buildFilterClause(filters, '', sc);
     const EXPORT_ROW_LIMIT = 10_000;
     const rows = await query<Record<string, unknown>>(
       `SELECT * FROM engagements ${whereClause} ORDER BY date_started DESC LIMIT ${EXPORT_ROW_LIMIT}`,

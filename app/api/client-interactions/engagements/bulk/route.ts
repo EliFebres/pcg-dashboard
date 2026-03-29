@@ -1,7 +1,8 @@
 export const runtime = 'nodejs';
 
 import { NextRequest, NextResponse } from 'next/server';
-import { query, execute } from '@/app/lib/db';
+import { executeTransaction } from '@/app/lib/db';
+import { requireAuth } from '@/app/lib/auth/require-auth';
 import { parseUploadedFile } from '@/app/lib/bulk-upload/parser';
 import { validateRows } from '@/app/lib/bulk-upload/validator';
 import type { ParsedRow } from '@/app/lib/bulk-upload/parser';
@@ -16,6 +17,8 @@ export async function POST(req: NextRequest) {
       { status: 503 }
     );
   }
+  const auth = await requireAuth(req);
+  if (auth.error) return auth.error;
 
   const commit = req.nextUrl.searchParams.get('commit') === 'true';
 
@@ -85,21 +88,20 @@ export async function POST(req: NextRequest) {
 
   // Commit — insert all valid rows atomically
   try {
-    await execute(`BEGIN`);
-    try {
+    await executeTransaction(async (conn) => {
       for (const row of validRows) {
-        const seqRows = await query<Record<string, unknown>>(
+        const seqResult = await conn.runAndReadAll(
           `SELECT nextval('engagements_id_seq') AS nextval`
         );
-        const id = Number(seqRows[0].nextval);
+        const id = Number(seqResult.getRowObjects()[0].nextval);
 
-        await execute(
+        await conn.run(
           `INSERT INTO engagements (
             id, external_client, internal_client_name, internal_client_dept,
             intake_type, ad_hoc_channel, type, team_members, department,
             date_started, date_finished, status, portfolio_logged, portfolio,
-            nna, notes, tickers_mentioned
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            nna, notes, tickers_mentioned, team
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           [
             id,
             row.externalClient ?? null,
@@ -118,14 +120,11 @@ export async function POST(req: NextRequest) {
             row.nna ?? null,
             row.notes ?? null,
             row.tickersMentioned.length > 0 ? JSON.stringify(row.tickersMentioned) : null,
+            auth.payload.team,
           ]
         );
       }
-      await execute(`COMMIT`);
-    } catch (err) {
-      await execute(`ROLLBACK`);
-      throw err;
-    }
+    });
 
     return NextResponse.json({ inserted: validRows.length, warnings }, { status: 201 });
   } catch (err) {

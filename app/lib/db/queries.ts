@@ -38,17 +38,29 @@ export const SORT_COLUMN_MAP: Record<string, string> = {
   intakeType: 'intake_type',
 };
 
+export interface ServerConstraints {
+  team?: string;
+}
+
 /**
  * Builds a parameterized WHERE clause from EngagementFilters.
  * All user-supplied values go through params — no string interpolation of user data.
+ * serverConstraints are enforced server-side and cannot be overridden by clients.
  */
 export function buildFilterClause(
   filters: EngagementFilters,
-  tableAlias = ''
+  tableAlias = '',
+  serverConstraints: ServerConstraints = {}
 ): { whereClause: string; params: unknown[] } {
   const col = (c: string) => (tableAlias ? `${tableAlias}.${c}` : c);
   const conditions: string[] = [];
   const params: unknown[] = [];
+
+  // Server-enforced team isolation — applied before all client filters
+  if (serverConstraints.team) {
+    conditions.push(`${col('team')} = ?`);
+    params.push(serverConstraints.team);
+  }
 
   // Period filter: applies to date_started
   if (filters.period) {

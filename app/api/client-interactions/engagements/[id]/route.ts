@@ -3,18 +3,25 @@ export const runtime = 'nodejs';
 import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/app/lib/db';
 import { rowToEngagement } from '@/app/lib/db/queries';
+import { requireAuth, teamConstraint } from '@/app/lib/auth/require-auth';
 import { toISODate } from '@/app/lib/db/dateUtils';
 
 // GET /api/client-interactions/engagements/:id
 export async function GET(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const auth = await requireAuth(req);
+  if (auth.error) return auth.error;
+  const sc = teamConstraint(auth.payload);
+
   try {
     const { id } = await params;
+    const teamClause = sc.team ? 'AND team = ?' : '';
+    const teamParams = sc.team ? [sc.team] : [];
     const rows = await query<Record<string, unknown>>(
-      `SELECT * FROM engagements WHERE id = ?`,
-      [Number(id)]
+      `SELECT * FROM engagements WHERE id = ? ${teamClause}`,
+      [Number(id), ...teamParams]
     );
     if (rows.length === 0) {
       return NextResponse.json({ error: 'Engagement not found' }, { status: 404 });
@@ -35,6 +42,10 @@ export async function PATCH(
   if (!process.env.DUCKDB_DIR) {
     return NextResponse.json({ error: 'Database not configured. Set DUCKDB_PATH to enable write operations.' }, { status: 503 });
   }
+  const auth = await requireAuth(req);
+  if (auth.error) return auth.error;
+  const sc = teamConstraint(auth.payload);
+
   try {
     const { id } = await params;
     const engagementId = Number(id);
@@ -109,11 +120,13 @@ export async function PATCH(
 
     // If client sends version, enforce it to detect concurrent edits
     const clientVersion = typeof body.version === 'number' ? body.version : null;
+    const teamClause = sc.team ? 'AND team = ?' : '';
     const whereClause = clientVersion !== null
-      ? `WHERE id = ? AND version = ?`
-      : `WHERE id = ?`;
+      ? `WHERE id = ? AND version = ? ${teamClause}`
+      : `WHERE id = ? ${teamClause}`;
     values.push(engagementId);
     if (clientVersion !== null) values.push(clientVersion);
+    if (sc.team) values.push(sc.team);
 
     const updated = await query<Record<string, unknown>>(
       `UPDATE engagements SET ${setClauses.join(', ')} ${whereClause} RETURNING id`,
@@ -144,15 +157,21 @@ export async function PATCH(
 
 // DELETE /api/client-interactions/engagements/:id
 export async function DELETE(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   if (!process.env.DUCKDB_DIR) {
     return NextResponse.json({ error: 'Database not configured. Set DUCKDB_PATH to enable write operations.' }, { status: 503 });
   }
+  const auth = await requireAuth(req);
+  if (auth.error) return auth.error;
+  const sc = teamConstraint(auth.payload);
+
   try {
     const { id } = await params;
-    await query(`DELETE FROM engagements WHERE id = ?`, [Number(id)]);
+    const teamClause = sc.team ? 'AND team = ?' : '';
+    const teamParams = sc.team ? [sc.team] : [];
+    await query(`DELETE FROM engagements WHERE id = ? ${teamClause}`, [Number(id), ...teamParams]);
     return new Response(null, { status: 204 });
   } catch (err) {
     console.error('DELETE /api/client-interactions/engagements/[id] error:', err);

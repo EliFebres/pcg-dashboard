@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { query, execute } from '@/app/lib/db';
 import { buildFilterClause, rowToEngagement } from '@/app/lib/db/queries';
 import { computeEngagementsList } from '@/app/lib/db/aggregations';
+import { requireAuth, teamConstraint } from '@/app/lib/auth/require-auth';
 import { toISODate } from '@/app/lib/db/dateUtils';
 import type { EngagementFilters } from '@/app/lib/api/client-interactions';
 
@@ -11,6 +12,10 @@ import type { EngagementFilters } from '@/app/lib/api/client-interactions';
 // Query params: page, page_size, period, search, team_member, status,
 //               sort_column, sort_direction, departments[], intake_types[], project_types[]
 export async function GET(req: NextRequest) {
+  const auth = await requireAuth(req);
+  if (auth.error) return auth.error;
+  const sc = teamConstraint(auth.payload);
+
   try {
     const sp = req.nextUrl.searchParams;
     const filters: EngagementFilters = {
@@ -27,7 +32,7 @@ export async function GET(req: NextRequest) {
       projectTypes: sp.getAll('project_types').filter(Boolean),
     };
 
-    const result = await computeEngagementsList(filters);
+    const result = await computeEngagementsList(filters, sc);
     return NextResponse.json(result);
   } catch (err) {
     console.error('GET /api/client-interactions/engagements error:', err);
@@ -41,6 +46,9 @@ export async function POST(req: NextRequest) {
   if (!process.env.DUCKDB_DIR) {
     return NextResponse.json({ error: 'Database not configured. Set DUCKDB_PATH to enable write operations.' }, { status: 503 });
   }
+  const auth = await requireAuth(req);
+  if (auth.error) return auth.error;
+
   try {
     const body = await req.json();
 
@@ -57,8 +65,8 @@ export async function POST(req: NextRequest) {
         id, external_client, internal_client_name, internal_client_dept,
         intake_type, ad_hoc_channel, type, team_members, department,
         date_started, date_finished, status, portfolio_logged, portfolio,
-        nna, notes, tickers_mentioned
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        nna, notes, tickers_mentioned, team
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         id,
         body.externalClient ?? null,
@@ -77,6 +85,7 @@ export async function POST(req: NextRequest) {
         body.nna ?? null,
         body.notes ?? null,
         body.tickersMentioned ? JSON.stringify(body.tickersMentioned) : null,
+        auth.payload.team,
       ]
     );
 

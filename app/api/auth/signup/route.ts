@@ -91,6 +91,7 @@ export async function POST(req: NextRequest) {
       lastName: lastName.trim(),
       role: 'admin',
       status: 'active',
+      team: team,
     });
 
     const rows = await queryUsers('SELECT * FROM users WHERE id = ?', [id]);
