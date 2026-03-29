@@ -14,6 +14,7 @@ import {
   getMockFilterOptions,
 } from '../api/mock-computations';
 import { buildFilterClause, rowToEngagement, SORT_COLUMN_MAP } from './queries';
+import type { ServerConstraints } from './queries';
 import { getPreviousPeriodDates, getPeriodStartISO } from './dateUtils';
 import type { EngagementFilters, DashboardMetrics, DepartmentBreakdown, ContributionDataResponse, EngagementsResponse, FilterOptions } from '../api/client-interactions';
 import type { DayData } from '../types/engagements';
@@ -34,18 +35,18 @@ export const STATIC_FILTER_OPTIONS: FilterOptions = {
 // METRICS
 // =============================================================================
 
-export async function computeMetrics(filters: EngagementFilters): Promise<DashboardMetrics> {
+export async function computeMetrics(filters: EngagementFilters, serverConstraints: ServerConstraints = {}): Promise<DashboardMetrics> {
   if (!process.env.DUCKDB_DIR) return getMockMetrics(filters);
 
   const period = filters.period || '1Y';
   const prevDates = getPreviousPeriodDates(period);
-  const { whereClause: currWhere, params: currParams } = buildFilterClause({ ...filters, period });
+  const { whereClause: currWhere, params: currParams } = buildFilterClause({ ...filters, period }, '', serverConstraints);
 
   // ---- Build all WHERE clauses before firing queries in parallel ----
 
   // Previous period
   const prevFilters = { ...filters, period: undefined };
-  const { whereClause: baseWhere, params: baseParams } = buildFilterClause(prevFilters);
+  const { whereClause: baseWhere, params: baseParams } = buildFilterClause(prevFilters, '', serverConstraints);
   const prevAndClause = baseWhere
     ? `${baseWhere} AND date_started >= ? AND date_started <= ?`
     : `WHERE date_started >= ? AND date_started <= ?`;
@@ -53,7 +54,7 @@ export async function computeMetrics(filters: EngagementFilters): Promise<Dashbo
 
   // In-progress count + sparkline (share the same base filter)
   const inProgressFilters = { ...filters, status: undefined };
-  const { whereClause: ipWhere, params: ipParams } = buildFilterClause(inProgressFilters);
+  const { whereClause: ipWhere, params: ipParams } = buildFilterClause(inProgressFilters, '', serverConstraints);
   const inProgressAndClause = ipWhere
     ? `${ipWhere} AND status = 'In Progress'`
     : `WHERE status = 'In Progress'`;
@@ -207,10 +208,10 @@ export async function computeMetrics(filters: EngagementFilters): Promise<Dashbo
 // DEPARTMENT BREAKDOWN
 // =============================================================================
 
-export async function computeDepartmentBreakdown(filters: EngagementFilters): Promise<DepartmentBreakdown> {
+export async function computeDepartmentBreakdown(filters: EngagementFilters, serverConstraints: ServerConstraints = {}): Promise<DepartmentBreakdown> {
   if (!process.env.DUCKDB_DIR) return getMockDepartmentBreakdown(filters);
 
-  const { whereClause, params } = buildFilterClause(filters);
+  const { whereClause, params } = buildFilterClause(filters, '', serverConstraints);
 
   const rows = await query<Record<string, unknown>>(`
     SELECT internal_client_dept AS dept, COUNT(*) AS cnt
@@ -249,12 +250,12 @@ export async function computeDepartmentBreakdown(filters: EngagementFilters): Pr
 // CONTRIBUTION (HEATMAP) DATA
 // =============================================================================
 
-export async function computeContributionData(filters: EngagementFilters): Promise<ContributionDataResponse> {
+export async function computeContributionData(filters: EngagementFilters, serverConstraints: ServerConstraints = {}): Promise<ContributionDataResponse> {
   if (!process.env.DUCKDB_DIR) return getMockContributionData(filters);
 
   // Apply all filters EXCEPT period — heatmap always shows a rolling 104-week window
   const heatmapFilters = { ...filters, period: undefined };
-  const { whereClause, params } = buildFilterClause(heatmapFilters);
+  const { whereClause, params } = buildFilterClause(heatmapFilters, '', serverConstraints);
 
   const heatmapStart = new Date();
   heatmapStart.setDate(heatmapStart.getDate() - 104 * 7);
@@ -333,10 +334,10 @@ export async function computeContributionData(filters: EngagementFilters): Promi
 // ENGAGEMENTS LIST (paginated)
 // =============================================================================
 
-export async function computeEngagementsList(filters: EngagementFilters): Promise<EngagementsResponse> {
+export async function computeEngagementsList(filters: EngagementFilters, serverConstraints: ServerConstraints = {}): Promise<EngagementsResponse> {
   if (!process.env.DUCKDB_DIR) return getMockEngagementsList(filters);
 
-  const { whereClause, params } = buildFilterClause(filters);
+  const { whereClause, params } = buildFilterClause(filters, '', serverConstraints);
   const page = filters.page || 1;
   const pageSize = filters.pageSize || 50;
   const offset = (page - 1) * pageSize;

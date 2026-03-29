@@ -43,6 +43,7 @@ export async function POST(req: NextRequest) {
       lastName: user.lastName,
       role: user.role,
       status: user.status,
+      team: user.team,
     });
 
     const response = NextResponse.json({ user }, { status: 200 });

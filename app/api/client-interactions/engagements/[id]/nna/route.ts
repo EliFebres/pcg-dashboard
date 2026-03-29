@@ -2,6 +2,7 @@ export const runtime = 'nodejs';
 
 import { NextRequest, NextResponse } from 'next/server';
 import { execute } from '@/app/lib/db';
+import { requireAuth, teamConstraint } from '@/app/lib/auth/require-auth';
 
 // PATCH /api/client-interactions/engagements/:id/nna
 // Body: { nna: number | null }
@@ -12,6 +13,10 @@ export async function PATCH(
   if (!process.env.DUCKDB_DIR) {
     return NextResponse.json({ error: 'Database not configured.' }, { status: 503 });
   }
+  const auth = await requireAuth(req);
+  if (auth.error) return auth.error;
+  const sc = teamConstraint(auth.payload);
+
   try {
     const { id } = await params;
     const engagementId = Number(id);
@@ -23,9 +28,12 @@ export async function PATCH(
       }
     }
 
+    const teamClause = sc.team ? 'AND team = ?' : '';
+    const teamParams = sc.team ? [sc.team] : [];
+
     await execute(
-      `UPDATE engagements SET nna = ? WHERE id = ?`,
-      [nna ?? null, engagementId]
+      `UPDATE engagements SET nna = ? WHERE id = ? ${teamClause}`,
+      [nna ?? null, engagementId, ...teamParams]
     );
 
     return NextResponse.json({ id: engagementId, nna: nna ?? undefined });

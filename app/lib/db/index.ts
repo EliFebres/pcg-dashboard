@@ -10,6 +10,34 @@ const g = global as typeof globalThis & {
   _engagementsConnectionPromise?: Promise<DuckDBConnection>;
 };
 
+// Write serializer — ensures all DuckDB write operations execute one at a time,
+// preventing concurrent write conflicts on the single-file DuckDB database.
+let _writeQueue: Promise<unknown> = Promise.resolve();
+
+export function serializedWrite<T>(fn: () => Promise<T>): Promise<T> {
+  const result = _writeQueue.then(fn);
+  _writeQueue = result.then(() => {}, () => {}); // keep queue alive on errors
+  return result;
+}
+
+// Use for multi-statement transactions. Wraps the callback in a single serialized
+// block so no other write can interleave between BEGIN and COMMIT.
+export async function executeTransaction(
+  fn: (conn: DuckDBConnection) => Promise<void>
+): Promise<void> {
+  return serializedWrite(async () => {
+    const conn = await getConnection();
+    await conn.run('BEGIN');
+    try {
+      await fn(conn);
+      await conn.run('COMMIT');
+    } catch (err) {
+      await conn.run('ROLLBACK');
+      throw err;
+    }
+  });
+}
+
 export async function getConnection(): Promise<DuckDBConnection> {
   if (!g._engagementsConnectionPromise) {
     const p = (async () => {
@@ -97,6 +125,17 @@ export async function getConnection(): Promise<DuckDBConnection> {
       // One-time migration: rename department value 'Institution' → 'Institutional'
       await conn.run(`UPDATE engagements SET internal_client_dept = 'Institutional' WHERE internal_client_dept = 'Institution'`);
 
+      // One-time migration: add team column for team-based data isolation
+      const teamCheck = await conn.runAndReadAll(
+        `SELECT column_name FROM information_schema.columns WHERE table_name = 'engagements' AND column_name = 'team'`
+      );
+      if (teamCheck.getRowObjects().length === 0) {
+        await conn.run(`ALTER TABLE engagements ADD COLUMN team VARCHAR`);
+        // All existing rows are PCG data — backfill accordingly
+        await conn.run(`UPDATE engagements SET team = 'Portfolio Consulting Group' WHERE team IS NULL`);
+        await conn.run(`CREATE INDEX IF NOT EXISTS idx_team ON engagements (team)`);
+      }
+
       return conn;
     })();
     g._engagementsConnectionPromise = p;
@@ -123,6 +162,8 @@ export async function execute(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   params: any[] = []
 ): Promise<void> {
-  const conn = await getConnection();
-  await conn.run(sql, params.length ? params : undefined);
+  return serializedWrite(async () => {
+    const conn = await getConnection();
+    await conn.run(sql, params.length ? params : undefined);
+  });
 }
