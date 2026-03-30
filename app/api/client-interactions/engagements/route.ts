@@ -7,6 +7,7 @@ import { computeEngagementsList } from '@/app/lib/db/aggregations';
 import { requireAuth, teamConstraint } from '@/app/lib/auth/require-auth';
 import { toISODate } from '@/app/lib/db/dateUtils';
 import type { EngagementFilters } from '@/app/lib/api/client-interactions';
+import { emitEngagementChange } from '@/app/lib/events';
 
 // GET /api/client-interactions/engagements
 // Query params: page, page_size, period, search, team_member, status,
@@ -65,8 +66,8 @@ export async function POST(req: NextRequest) {
         id, external_client, internal_client_name, internal_client_dept,
         intake_type, ad_hoc_channel, type, team_members, department,
         date_started, date_finished, status, portfolio_logged, portfolio,
-        nna, notes, tickers_mentioned, team
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        nna, notes, tickers_mentioned, team, created_by_id, created_by_name
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         id,
         body.externalClient ?? null,
@@ -86,6 +87,8 @@ export async function POST(req: NextRequest) {
         body.notes ?? null,
         body.tickersMentioned ? JSON.stringify(body.tickersMentioned) : null,
         auth.payload.team,
+        auth.payload.sub,
+        `${auth.payload.firstName} ${auth.payload.lastName}`,
       ]
     );
 
@@ -94,6 +97,7 @@ export async function POST(req: NextRequest) {
       [id]
     );
 
+    emitEngagementChange('created');
     return NextResponse.json(rowToEngagement(rows[0]), { status: 201 });
   } catch (err) {
     console.error('POST /api/client-interactions/engagements error:', err);

@@ -12,6 +12,7 @@ import {
   getDashboardData,
   createEngagement,
   updateEngagement,
+  deleteEngagement,
   updateEngagementStatus,
   updateEngagementNNA,
   addEngagementNote,
@@ -207,6 +208,16 @@ export default function EngagementsDashboard() {
     }
   }, [period, teamMemberFilter, departmentFilter, intakeTypeFilter, projectTypeFilter, searchQuery, sortColumn, sortDirection]);
 
+  // SSE connection — reloads dashboard whenever any user mutates an engagement
+  useEffect(() => {
+    const es = new EventSource('/api/client-interactions/events');
+    es.onmessage = (e) => {
+      if (e.data !== 'connected') reloadData();
+    };
+    es.onerror = () => es.close();
+    return () => es.close();
+  }, [reloadData]);
+
   const handleSort = useCallback((column: string | null, direction: 'asc' | 'desc' | null) => {
     setSortColumn(column);
     setSortDirection(direction);
@@ -318,6 +329,7 @@ export default function EngagementsDashboard() {
       originalDateStarted: engagement.dateStarted,
       originalDateFinished: engagement.dateFinished,
       version: engagement.version,
+      createdById: engagement.createdById,
     });
     setEditingEngagementNoteCount(engagement.noteCount ?? 0);
     setIsNewInteractionOpen(true);
@@ -370,6 +382,11 @@ export default function EngagementsDashboard() {
     setEditingEngagementNoteCount(0);
   };
 
+  const handleDelete = async (id: number) => {
+    await deleteEngagement(id);
+    await reloadData();
+  };
+
   // -------------------------------------------------------------------------
   // Render
   // -------------------------------------------------------------------------
@@ -380,6 +397,7 @@ export default function EngagementsDashboard() {
         onClose={handleCloseForm}
         onSubmit={handleNewInteraction}
         onUpdate={handleUpdateInteraction}
+        onDelete={handleDelete}
         editingEngagement={editingEngagement}
         initialNoteCount={editingEngagementNoteCount}
         onNoteAdded={handleNoteAdded}

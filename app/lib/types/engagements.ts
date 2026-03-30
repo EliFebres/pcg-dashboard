@@ -99,6 +99,8 @@ export interface Engagement {
   noteCount?: number; // Number of entries in engagement_notes table (undefined when not loaded)
   version?: number; // Optimistic locking counter — send back with PATCH to detect concurrent edits
   tickersMentioned?: string[]; // Tickers discussed during GCG Ad-Hoc interactions (used for Ticker Trends)
+  createdById?: string; // User ID of the person who created this engagement
+  createdByName?: string; // Display name of the creator
 }
 
 export interface ContributionData {

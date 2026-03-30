@@ -143,16 +143,13 @@ export async function computeMetrics(filters: EngagementFilters, serverConstrain
     ? Math.round(((totalNNA - prevNNA) / prevNNA) * 100)
     : totalNNA > 0 ? 100 : 0;
 
-  // Build sparkline: fill any gaps with stable values
+  // Build sparkline: weekly in-progress start counts, gap-filled with 0
   const sparklineValues = sparklineRows.map(r => ({ value: Number(r.in_progress_count ?? 0) }));
   while (sparklineValues.length < 8) {
-    sparklineValues.unshift({ value: Math.max(inProgressCount - 3, 0) });
-  }
-  if (sparklineValues.length > 0) {
-    sparklineValues[sparklineValues.length - 1] = { value: inProgressCount };
+    sparklineValues.unshift({ value: 0 });
   }
   const inProgressChange = sparklineValues.length >= 2
-    ? inProgressCount - sparklineValues[sparklineValues.length - 2].value
+    ? sparklineValues[sparklineValues.length - 1].value - sparklineValues[sparklineValues.length - 2].value
     : 0;
 
   const INTAKE_COLORS: Record<string, string> = {

@@ -34,6 +34,7 @@ export interface EditingEngagement {
   originalDateStarted: string; // Preserve exact original string to avoid roundtrip changes
   originalDateFinished?: string; // Preserve exact original string to avoid roundtrip changes
   version?: number; // Optimistic locking — sent back on save to detect concurrent edits
+  createdById?: string; // User ID of the creator — used to determine delete permission
 }
 
 interface NewInteractionFormProps {
@@ -41,6 +42,7 @@ interface NewInteractionFormProps {
   onClose: () => void;
   onSubmit: (data: InteractionFormData) => void;
   onUpdate?: (id: number, data: InteractionFormData) => void;
+  onDelete?: (id: number) => void;
   editingEngagement?: EditingEngagement | null;
   initialNoteCount?: number;
   onNoteAdded?: (engagementId: number) => void;
@@ -101,7 +103,7 @@ const formatNNADisplay = (value: number | null): string => {
   return `$${value.toLocaleString()}`;
 };
 
-export default function NewInteractionForm({ isOpen, onClose, onSubmit, onUpdate, editingEngagement, initialNoteCount, onNoteAdded, onNoteDeleted }: NewInteractionFormProps) {
+export default function NewInteractionForm({ isOpen, onClose, onSubmit, onUpdate, onDelete, editingEngagement, initialNoteCount, onNoteAdded, onNoteDeleted }: NewInteractionFormProps) {
   const isEditMode = !!editingEngagement;
   const { user: currentUser } = useCurrentUser();
 
@@ -134,6 +136,7 @@ export default function NewInteractionForm({ isOpen, onClose, onSubmit, onUpdate
   const [isNotesModalOpen, setIsNotesModalOpen] = useState(false);
   const [localNoteCount, setLocalNoteCount] = useState(initialNoteCount ?? 0);
   const [tickerInput, setTickerInput] = useState('');
+  const [deleteConfirm, setDeleteConfirm] = useState(false);
   const internalClientRef = useRef<HTMLDivElement>(null);
   const [teamMembersByOffice, setTeamMembersByOffice] = useState<Record<string, TeamMember[]>>({});
 
@@ -737,7 +740,26 @@ export default function NewInteractionForm({ isOpen, onClose, onSubmit, onUpdate
 
           {/* Footer */}
           <div className="px-6 py-4 border-t border-zinc-800 bg-zinc-900/80">
-            <div className="flex items-center justify-end gap-3">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                {isEditMode && onDelete && (currentUser?.role === 'admin' || currentUser?.id === editingEngagement?.createdById) && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!deleteConfirm) { setDeleteConfirm(true); return; }
+                      onDelete(editingEngagement!.id);
+                      onClose();
+                    }}
+                    onBlur={() => setDeleteConfirm(false)}
+                    className={deleteConfirm
+                      ? 'px-4 py-2 text-sm font-medium bg-red-600 text-white rounded-lg hover:bg-red-500 transition-colors'
+                      : 'px-4 py-2 text-sm font-medium text-red-400 hover:text-red-300 transition-colors'}
+                  >
+                    {deleteConfirm ? 'Confirm Delete' : 'Delete'}
+                  </button>
+                )}
+              </div>
+              <div className="flex items-center gap-3">
               <button
                 type="button"
                 onClick={onClose}
@@ -752,6 +774,7 @@ export default function NewInteractionForm({ isOpen, onClose, onSubmit, onUpdate
               >
                 {isEditMode ? 'Save Changes' : 'Create Interaction'}
               </button>
+              </div>
             </div>
           </div>
         </div>
