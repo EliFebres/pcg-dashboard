@@ -136,6 +136,15 @@ export async function getConnection(): Promise<DuckDBConnection> {
         await conn.run(`CREATE INDEX IF NOT EXISTS idx_team ON engagements (team)`);
       }
 
+      // One-time migration: add creator tracking columns
+      const creatorCheck = await conn.runAndReadAll(
+        `SELECT column_name FROM information_schema.columns WHERE table_name = 'engagements' AND column_name = 'created_by_id'`
+      );
+      if (creatorCheck.getRowObjects().length === 0) {
+        await conn.run(`ALTER TABLE engagements ADD COLUMN created_by_id VARCHAR`);
+        await conn.run(`ALTER TABLE engagements ADD COLUMN created_by_name VARCHAR`);
+      }
+
       return conn;
     })();
     g._engagementsConnectionPromise = p;

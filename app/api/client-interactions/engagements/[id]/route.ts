@@ -5,6 +5,7 @@ import { query } from '@/app/lib/db';
 import { rowToEngagement } from '@/app/lib/db/queries';
 import { requireAuth, teamConstraint } from '@/app/lib/auth/require-auth';
 import { toISODate } from '@/app/lib/db/dateUtils';
+import { emitEngagementChange } from '@/app/lib/events';
 
 // GET /api/client-interactions/engagements/:id
 export async function GET(
@@ -148,6 +149,7 @@ export async function PATCH(
       `SELECT * FROM engagements WHERE id = ?`,
       [engagementId]
     );
+    emitEngagementChange('updated');
     return NextResponse.json(rowToEngagement(rows[0]));
   } catch (err) {
     console.error('PATCH /api/client-interactions/engagements/[id] error:', err);
@@ -169,9 +171,26 @@ export async function DELETE(
 
   try {
     const { id } = await params;
+    const engagementId = Number(id);
+
+    // Non-admins can only delete engagements they created
+    if (auth.payload.role !== 'admin') {
+      const rows = await query<{ created_by_id: string | null }>(
+        `SELECT created_by_id FROM engagements WHERE id = ?`,
+        [engagementId]
+      );
+      if (rows.length === 0) {
+        return NextResponse.json({ error: 'Engagement not found' }, { status: 404 });
+      }
+      if (rows[0].created_by_id !== auth.payload.sub) {
+        return NextResponse.json({ error: 'Not authorized to delete this engagement' }, { status: 403 });
+      }
+    }
+
     const teamClause = sc.team ? 'AND team = ?' : '';
     const teamParams = sc.team ? [sc.team] : [];
-    await query(`DELETE FROM engagements WHERE id = ? ${teamClause}`, [Number(id), ...teamParams]);
+    await query(`DELETE FROM engagements WHERE id = ? ${teamClause}`, [engagementId, ...teamParams]);
+    emitEngagementChange('deleted');
     return new Response(null, { status: 204 });
   } catch (err) {
     console.error('DELETE /api/client-interactions/engagements/[id] error:', err);
