@@ -86,7 +86,7 @@ Fetch all dashboard data in a single optimized call. This is the primary endpoin
 | `team_member` | string | No | Filter by team member name or office (`Austin Office`, `Charlotte Office`) |
 | `departments` | string[] | No | Multi-select: `IAG`, `Broker-Dealer`, `Institutional` |
 | `intake_types` | string[] | No | Multi-select: `IRQ`, `SRRF`, `GCG Ad-Hoc` |
-| `project_types` | string[] | No | Multi-select: `Meeting`, `Data Request`, `PCR`, `Other` |
+| `project_types` | string[] | No | Multi-select: `Meeting`, `Discovery Meeting`, `Data Request`, `PCR`, `Other` |
 | `search` | string | No | Text search across client names, types, departments |
 | `status` | string | No | Filter by status: `In Progress`, `Pending`, `Completed` |
 | `page` | number | No | Page number for engagements (default: 1) |
@@ -196,7 +196,7 @@ Fetch all dashboard data in a single optimized call. This is the primary endpoin
     ],
     "departments": ["Broker-Dealer", "IAG", "Institutional"],
     "intake_types": ["GCG Ad-Hoc", "SRRF", "IRQ"],
-    "project_types": ["Data Request", "Meeting", "Other", "PCR"],
+    "project_types": ["Data Request", "Discovery Meeting", "Meeting", "Other", "PCR"],
     "statuses": ["Completed", "In Progress", "On Hold"]
   }
 }
@@ -417,7 +417,7 @@ Create a new engagement.
 | `internal_client` | object | **Yes** | `{ name: string, gcg_department: string }` |
 | `intake_type` | string | **Yes** | `IRQ`, `SRRF`, or `GCG Ad-Hoc` |
 | `ad_hoc_channel` | string \| null | Conditional | Required if `intake_type` is `GCG Ad-Hoc`: `In-Person`, `Email`, `Teams` |
-| `type` | string | **Yes** | `Meeting`, `Data Request`, `PCR`, `Other` |
+| `type` | string | **Yes** | `Meeting`, `Discovery Meeting`, `Data Request`, `PCR`, `Other` |
 | `team_members` | string[] | **Yes** | Array of team member names |
 | `date_started` | string | **Yes** | Formatted date: `"Jan 28, 2025"` |
 | `date_finished` | string | **Yes** | Formatted date or `"—"` if not finished |
@@ -647,7 +647,7 @@ ID,External Client,Internal Client,Department,Intake Type,Ad Hoc Channel,Type,Te
 | `internal_client` | InternalClient | GCG contact/relationship owner |
 | `intake_type` | string | `IRQ`, `SRRF`, or `GCG Ad-Hoc` |
 | `ad_hoc_channel` | string \| null | `In-Person`, `Email`, or `Teams` (only for GCG Ad-Hoc) |
-| `type` | string | Project type: `Meeting`, `Data Request`, `PCR`, `Other` |
+| `type` | string | Project type: `Meeting`, `Discovery Meeting`, `Data Request`, `PCR`, `Other` |
 | `team_members` | string[] | Array of team member names |
 | `department` | string | Derived from `internal_client.gcg_department` |
 | `date_started` | string | Formatted date (e.g., `"Jan 15, 2025"`) |

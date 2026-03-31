@@ -20,7 +20,7 @@ export interface ValidationResult {
 
 const VALID_INTAKE_TYPES = ['IRQ', 'SRRF', 'GCG Ad-Hoc'];
 const VALID_AD_HOC_CHANNELS = ['In-Person', 'Email', 'Teams'];
-const VALID_PROJECT_TYPES = ['Meeting', 'Data Request', 'PCR', 'Other'];
+const VALID_PROJECT_TYPES = ['Meeting', 'Discovery Meeting', 'Data Request', 'PCR', 'Other'];
 const VALID_DEPARTMENTS = ['IAG', 'Broker-Dealer', 'Institutional'];
 const VALID_STATUSES = ['In Progress', 'Awaiting Meeting', 'Follow Up', 'Completed'];
 const VALID_INTERNAL_CLIENT_DEPTS = ['IAG', 'Broker-Dealer', 'Institutional'];
@@ -114,6 +114,9 @@ function normalizeProjectType(value: string): string | null {
   // Common aliases
   const aliases: Record<string, string> = {
     'meeting': 'Meeting',
+    'discoverymeet': 'Discovery Meeting',
+    'discoverym': 'Discovery Meeting',
+    'discovery': 'Discovery Meeting',
     'datarequest': 'Data Request',
     'data': 'Data Request',
     'pcr': 'PCR',

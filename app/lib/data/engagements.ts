@@ -159,8 +159,8 @@ export const teamMemberOffices: Record<string, 'Charlotte' | 'Austin'> = {
 const teamMembers = Object.keys(teamMemberOffices);
 const internalClientKeys = Object.keys(internalClients) as (keyof typeof internalClients)[];
 const departments: ('IAG' | 'Broker-Dealer' | 'Institutional')[] = ['IAG', 'Broker-Dealer', 'Institutional'];
-const projectTypes = ['Meeting', 'Data Request', 'PCR'];
-const adHocProjectTypes = ['PCR', 'Data Request', 'Other']; // Project types specific to GCG Ad-Hoc
+const projectTypes = ['Meeting', 'Discovery Meeting', 'Data Request', 'PCR'];
+const adHocProjectTypes = ['PCR', 'Discovery Meeting', 'Data Request', 'Other']; // Project types specific to GCG Ad-Hoc
 
 // Seeded random for consistent data generation
 function seededRandom(seed: number): number {
