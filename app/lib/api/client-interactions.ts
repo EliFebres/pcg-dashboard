@@ -43,7 +43,7 @@ export interface EngagementFilters {
   intakeTypes?: string[];          // Multi-select: ['IRQ', 'SRRF', 'GCG Ad-Hoc']
   projectTypes?: string[];         // Multi-select: ['Meeting', 'Follow-Up', 'Data Request', 'PCR', 'Other']
   period?: string;                 // '1W', '1M', '3M', '6M', 'YTD', '1Y', 'ALL'
-  status?: string;                 // 'In Progress', 'Pending', 'Completed'
+  status?: string;                 // 'In Progress', 'Awaiting Meeting', 'Follow Up', 'Completed'
   page?: number;                   // Pagination: page number (1-indexed)
   pageSize?: number;               // Pagination: items per page (default 50)
   sortColumn?: string;             // Column to sort by

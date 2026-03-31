@@ -22,7 +22,7 @@ const VALID_INTAKE_TYPES = ['IRQ', 'SRRF', 'GCG Ad-Hoc'];
 const VALID_AD_HOC_CHANNELS = ['In-Person', 'Email', 'Teams'];
 const VALID_PROJECT_TYPES = ['Meeting', 'Follow-Up', 'Data Request', 'PCR', 'Other'];
 const VALID_DEPARTMENTS = ['IAG', 'Broker-Dealer', 'Institutional'];
-const VALID_STATUSES = ['Pending', 'In Progress', 'Completed'];
+const VALID_STATUSES = ['In Progress', 'Awaiting Meeting', 'Follow Up', 'Completed'];
 const VALID_INTERNAL_CLIENT_DEPTS = ['IAG', 'Broker-Dealer', 'Institutional'];
 
 // Fuzzy normalize for enum matching — case-insensitive, strip spaces/hyphens
@@ -74,13 +74,16 @@ const STATUS_ALIASES: Record<string, string> = {
   'in-progress': 'In Progress',
   'active': 'In Progress',
   'open': 'In Progress',
-  'pending': 'Pending',
-  'waiting': 'Pending',
   'completed': 'Completed',
   'done': 'Completed',
   'finished': 'Completed',
   'closed': 'Completed',
-  'complete': 'Completed',
+  'pending': 'Awaiting Meeting',
+  'waiting': 'Awaiting Meeting',
+  'awaitingmeeting': 'Awaiting Meeting',
+  'followup': 'Follow Up',
+  'follow-up': 'Follow Up',
+
 };
 
 function normalizeStatus(value: string): string | null {

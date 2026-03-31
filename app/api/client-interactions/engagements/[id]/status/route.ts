@@ -8,7 +8,7 @@ import { emitEngagementChange } from '@/app/lib/events';
 
 // PATCH /api/client-interactions/engagements/:id/status
 // Body: { status: string }
-// Auto-sets date_finished to today when status becomes "Completed"; clears it otherwise.
+// Auto-sets date_finished to today when status becomes "Complete"; clears it otherwise.
 export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -25,7 +25,7 @@ export async function PATCH(
     const engagementId = Number(id);
     const { status } = await req.json();
 
-    const VALID_STATUSES = ['Pending', 'In Progress', 'Completed'];
+    const VALID_STATUSES = ['In Progress', 'Awaiting Meeting', 'Follow Up', 'Completed'];
     if (!status || !VALID_STATUSES.includes(status)) {
       return NextResponse.json({ error: 'Invalid status value' }, { status: 400 });
     }

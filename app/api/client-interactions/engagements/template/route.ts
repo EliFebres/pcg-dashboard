@@ -68,7 +68,7 @@ export async function GET() {
   addValidation('D', '"IRQ,SRRF,GCG Ad-Hoc"');
   addValidation('E', '"In-Person,Email,Teams"');
   addValidation('F', '"Meeting,Follow-Up,Data Request,PCR,Other"');
-  addValidation('J', '"Pending,In Progress,Completed"');
+  addValidation('J', '"In Progress,Awaiting Meeting,Follow Up,Completed"');
 
   // Date format for date columns
   for (let i = 2; i <= 1001; i++) {
@@ -154,8 +154,8 @@ export async function GET() {
     ['Project Type', 'Required. Meeting | Follow-Up | Data Request | PCR | Other'],
     ['Team Members', 'Optional. Comma-separated names, e.g. "Eli F., Sarah K."'],
     ['Date Started', 'Required. Format: YYYY-MM-DD or M/D/YYYY'],
-    ['Date Finished', 'Leave blank for Pending / In Progress rows.'],
-    ['Status', 'Required. Pending | In Progress | Completed'],
+    ['Date Finished', 'Leave blank for In Progress / Awaiting rows.'],
+    ['Status', 'Required. In Progress | Awaiting Meeting | Follow Up | Completed'],
     ['NNA ($M)', 'Optional. Net New Assets in millions. "120" = $120M.'],
     ['Notes', 'Optional. Free text.'],
     ['Tickers Mentioned', 'Optional. Comma-separated tickers (GCG Ad-Hoc). E.g. "DFAC, VTI"'],
