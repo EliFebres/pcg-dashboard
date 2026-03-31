@@ -124,6 +124,9 @@ const internalClients = {
   'Christopher Lee': { name: 'Christopher Lee', gcgDepartment: 'Institutional' as const },
   'Rachel Goldman': { name: 'Rachel Goldman', gcgDepartment: 'Institutional' as const },
   'Andrew Mitchell': { name: 'Andrew Mitchell', gcgDepartment: 'Institutional' as const },
+  // Retirement Group Team
+  'Patricia Evans': { name: 'Patricia Evans', gcgDepartment: 'Retirement Group' as const },
+  'Steven Nguyen': { name: 'Steven Nguyen', gcgDepartment: 'Retirement Group' as const },
 };
 
 // External client companies for dummy data
@@ -158,7 +161,7 @@ export const teamMemberOffices: Record<string, 'Charlotte' | 'Austin'> = {
 
 const teamMembers = Object.keys(teamMemberOffices);
 const internalClientKeys = Object.keys(internalClients) as (keyof typeof internalClients)[];
-const departments: ('IAG' | 'Broker-Dealer' | 'Institutional')[] = ['IAG', 'Broker-Dealer', 'Institutional'];
+const departments: ('IAG' | 'Broker-Dealer' | 'Institutional' | 'Retirement Group')[] = ['IAG', 'Broker-Dealer', 'Institutional', 'Retirement Group'];
 const projectTypes = ['Meeting', 'Discovery Meeting', 'Data Request', 'PCR'];
 const adHocProjectTypes = ['PCR', 'Discovery Meeting', 'Data Request', 'Other']; // Project types specific to GCG Ad-Hoc
 
@@ -168,16 +171,17 @@ function seededRandom(seed: number): number {
   return x - Math.floor(x);
 }
 
-// Weighted department selection: IAG 55%, Broker-Dealer 33%, Institutional 12%
-function getWeightedDepartment(seed: number): 'IAG' | 'Broker-Dealer' | 'Institutional' {
+// Weighted department selection: IAG 50%, Broker-Dealer 30%, Institutional 11%, Retirement Group 9%
+function getWeightedDepartment(seed: number): 'IAG' | 'Broker-Dealer' | 'Institutional' | 'Retirement Group' {
   const rand = seededRandom(seed);
-  if (rand < 0.55) return 'IAG';
-  if (rand < 0.88) return 'Broker-Dealer'; // 0.55 + 0.33 = 0.88
-  return 'Institutional';
+  if (rand < 0.50) return 'IAG';
+  if (rand < 0.80) return 'Broker-Dealer'; // 0.50 + 0.30 = 0.80
+  if (rand < 0.91) return 'Institutional'; // 0.80 + 0.11 = 0.91
+  return 'Retirement Group';
 }
 
 // Get internal client from a specific department
-function getInternalClientByDepartment(dept: 'IAG' | 'Broker-Dealer' | 'Institutional', seed: number): typeof internalClients[keyof typeof internalClients] {
+function getInternalClientByDepartment(dept: 'IAG' | 'Broker-Dealer' | 'Institutional' | 'Retirement Group', seed: number): typeof internalClients[keyof typeof internalClients] {
   const clientsByDept = internalClientKeys.filter(key => internalClients[key].gcgDepartment === dept);
   const selectedKey = clientsByDept[Math.floor(seededRandom(seed) * clientsByDept.length)];
   return internalClients[selectedKey];

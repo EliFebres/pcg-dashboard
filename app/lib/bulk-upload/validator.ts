@@ -21,9 +21,9 @@ export interface ValidationResult {
 const VALID_INTAKE_TYPES = ['IRQ', 'SRRF', 'GCG Ad-Hoc'];
 const VALID_AD_HOC_CHANNELS = ['In-Person', 'Email', 'Teams'];
 const VALID_PROJECT_TYPES = ['Meeting', 'Discovery Meeting', 'Data Request', 'PCR', 'Other'];
-const VALID_DEPARTMENTS = ['IAG', 'Broker-Dealer', 'Institutional'];
+const VALID_DEPARTMENTS = ['IAG', 'Broker-Dealer', 'Institutional', 'Retirement Group'];
 const VALID_STATUSES = ['In Progress', 'Awaiting Meeting', 'Follow Up', 'Completed'];
-const VALID_INTERNAL_CLIENT_DEPTS = ['IAG', 'Broker-Dealer', 'Institutional'];
+const VALID_INTERNAL_CLIENT_DEPTS = ['IAG', 'Broker-Dealer', 'Institutional', 'Retirement Group'];
 
 // Fuzzy normalize for enum matching — case-insensitive, strip spaces/hyphens
 function normalize(s: string): string {
@@ -101,6 +101,9 @@ const DEPT_ALIASES: Record<string, string> = {
   'brokerdealer': 'Broker-Dealer',
   'institution': 'Institutional',
   'institutional': 'Institutional',
+  'retirementgroup': 'Retirement Group',
+  'rg': 'Retirement Group',
+  'retirement': 'Retirement Group',
 };
 
 function normalizeDept(value: string): string | null {

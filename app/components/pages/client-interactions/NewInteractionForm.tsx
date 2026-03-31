@@ -13,7 +13,7 @@ import type { TeamMember } from '@/app/lib/auth/types';
 export interface InteractionFormData {
   externalClient: string | null;
   internalClient: string;
-  internalClientDept: 'IAG' | 'Broker-Dealer' | 'Institutional' | '';
+  internalClientDept: 'IAG' | 'Broker-Dealer' | 'Institutional' | 'Retirement Group' | '';
   intakeType: 'IRQ' | 'SRRF' | 'GCG Ad-Hoc' | '';
   adHocChannel?: 'In-Person' | 'Email' | 'Teams';
   projectType: string;
@@ -49,7 +49,7 @@ interface NewInteractionFormProps {
   onNoteDeleted?: (engagementId: number) => void;
 }
 
-const GCG_DEPARTMENTS = ['IAG', 'Broker-Dealer', 'Institutional'] as const;
+const GCG_DEPARTMENTS = ['IAG', 'Broker-Dealer', 'Institutional', 'Retirement Group'] as const;
 
 
 // Project types by intake
