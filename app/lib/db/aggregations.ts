@@ -294,7 +294,7 @@ export async function computeContributionData(filters: EngagementFilters, server
   let maxCount = 0;
   let totalDays = 0;
 
-  for (let week = 0; week < 104; week++) {
+  for (let week = 0; week < 105; week++) {
     const days: DayData[] = [];
     for (let day = 0; day < 5; day++) {
       const d = new Date(anchorMonday);

@@ -449,8 +449,8 @@ export function generateContributionData(filteredEngagements?: Engagement[]): Da
     }
   }
 
-  // Generate 104 weeks of data (2 years, weekdays only)
-  for (let week = 0; week < 104; week++) {
+  // Generate 105 weeks of data (2 years + 1 week to always include the current week)
+  for (let week = 0; week < 105; week++) {
     const days: DayData[] = [];
     for (let day = 0; day < 5; day++) {
       const currentDate = new Date(startDate);

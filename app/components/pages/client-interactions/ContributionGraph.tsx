@@ -1,15 +1,16 @@
 'use client';
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import type { DayData } from '@/app/lib/types/engagements';
 
 interface ContributionGraphProps {
   data: DayData[][];
 }
 
+const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
 export default function ContributionGraph({ data }: ContributionGraphProps) {
   const dayLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
-  const monthLabels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec', 'Jan'];
 
   const getLevelColor = (level: number): string => {
     switch (level) {
@@ -26,11 +27,36 @@ export default function ContributionGraph({ data }: ContributionGraphProps) {
   const recentWeeks = data.slice(-52);
   const flatData = recentWeeks.flat();
 
+  const monthMarkers = useMemo(() => {
+    const markers: { label: string; colIndex: number }[] = [];
+    let lastMonth = -1;
+    recentWeeks.forEach((week, weekIndex) => {
+      const firstDay = new Date(week[0].date);
+      const month = firstDay.getMonth();
+      if (month !== lastMonth) {
+        markers.push({ label: MONTH_NAMES[month], colIndex: weekIndex });
+        lastMonth = month;
+      }
+    });
+    return markers;
+  }, [recentWeeks]);
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      <div style={{ display: 'flex', marginLeft: '32px', marginBottom: '8px' }}>
-        {monthLabels.map((month, i) => (
-          <span key={i} style={{ flex: 1, fontSize: '10px', color: '#71717a', fontWeight: 500 }}>{month}</span>
+      <div style={{ position: 'relative', marginLeft: '32px', marginBottom: '8px', height: '16px' }}>
+        {monthMarkers.map(({ label, colIndex }, i) => (
+          <span
+            key={i}
+            style={{
+              position: 'absolute',
+              left: `${(colIndex / 52) * 100}%`,
+              fontSize: '10px',
+              color: '#71717a',
+              fontWeight: 500,
+            }}
+          >
+            {label}
+          </span>
         ))}
       </div>
 
