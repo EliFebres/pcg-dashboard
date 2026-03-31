@@ -105,6 +105,15 @@ export default function AdminUsersPage() {
     fetchUsers();
   }, [fetchUsers]);
 
+  useEffect(() => {
+    const es = new EventSource('/api/admin/users/events');
+    es.onmessage = (e) => {
+      if (e.data !== 'connected') fetchUsers();
+    };
+    es.onerror = () => es.close();
+    return () => es.close();
+  }, [fetchUsers]);
+
   async function patch(id: string, body: Partial<Pick<User, 'status' | 'role'>>) {
     setActionLoading(id);
     try {

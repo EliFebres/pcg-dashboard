@@ -25,10 +25,10 @@ export const STATIC_FILTER_OPTIONS: FilterOptions = {
   teamMemberGroups: [
     { label: 'Office', options: ['Austin Office', 'Charlotte Office'] },
   ],
-  departments: ['Broker-Dealer', 'IAG', 'Institutional'],
+  departments: ['Broker-Dealer', 'IAG', 'Institutional', 'Retirement Group'],
   intakeTypes: ['IRQ', 'SRRF', 'GCG Ad-Hoc'],
-  projectTypes: ['Data Request', 'Follow-Up', 'Meeting', 'Other', 'PCR'],
-  statuses: ['Completed', 'In Progress', 'Pending'],
+  projectTypes: ['Data Request', 'Discovery Meeting', 'Meeting', 'Other', 'PCR'],
+  statuses: ['In Progress', 'Awaiting Meeting', 'Follow Up', 'Completed'],
 };
 
 // =============================================================================
@@ -220,13 +220,14 @@ export async function computeDepartmentBreakdown(filters: EngagementFilters, ser
     IAG: '#a5f3fc',
     'Broker-Dealer': '#22d3ee',
     Institutional: '#0e7490',
+    'Retirement Group': '#67e8f9',
   };
 
   const total = rows.reduce((s, r) => s + Number(r.cnt), 0);
   const safeTotal = total || 1;
 
   // Ensure all three departments appear even if count is 0
-  const deptMap: Record<string, number> = { IAG: 0, 'Broker-Dealer': 0, Institutional: 0 };
+  const deptMap: Record<string, number> = { IAG: 0, 'Broker-Dealer': 0, Institutional: 0, 'Retirement Group': 0 };
   rows.forEach(r => {
     const dept = r.dept as string;
     deptMap[dept] = Number(r.cnt);
@@ -294,7 +295,7 @@ export async function computeContributionData(filters: EngagementFilters, server
   let maxCount = 0;
   let totalDays = 0;
 
-  for (let week = 0; week < 104; week++) {
+  for (let week = 0; week < 105; week++) {
     const days: DayData[] = [];
     for (let day = 0; day < 5; day++) {
       const d = new Date(anchorMonday);

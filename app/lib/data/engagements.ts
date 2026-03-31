@@ -124,6 +124,9 @@ const internalClients = {
   'Christopher Lee': { name: 'Christopher Lee', gcgDepartment: 'Institutional' as const },
   'Rachel Goldman': { name: 'Rachel Goldman', gcgDepartment: 'Institutional' as const },
   'Andrew Mitchell': { name: 'Andrew Mitchell', gcgDepartment: 'Institutional' as const },
+  // Retirement Group Team
+  'Patricia Evans': { name: 'Patricia Evans', gcgDepartment: 'Retirement Group' as const },
+  'Steven Nguyen': { name: 'Steven Nguyen', gcgDepartment: 'Retirement Group' as const },
 };
 
 // External client companies for dummy data
@@ -158,9 +161,9 @@ export const teamMemberOffices: Record<string, 'Charlotte' | 'Austin'> = {
 
 const teamMembers = Object.keys(teamMemberOffices);
 const internalClientKeys = Object.keys(internalClients) as (keyof typeof internalClients)[];
-const departments: ('IAG' | 'Broker-Dealer' | 'Institutional')[] = ['IAG', 'Broker-Dealer', 'Institutional'];
-const projectTypes = ['Meeting', 'Follow-Up', 'Data Request', 'PCR'];
-const adHocProjectTypes = ['PCR', 'Follow-Up', 'Data Request', 'Other']; // Project types specific to GCG Ad-Hoc
+const departments: ('IAG' | 'Broker-Dealer' | 'Institutional' | 'Retirement Group')[] = ['IAG', 'Broker-Dealer', 'Institutional', 'Retirement Group'];
+const projectTypes = ['Meeting', 'Discovery Meeting', 'Data Request', 'PCR'];
+const adHocProjectTypes = ['PCR', 'Discovery Meeting', 'Data Request', 'Other']; // Project types specific to GCG Ad-Hoc
 
 // Seeded random for consistent data generation
 function seededRandom(seed: number): number {
@@ -168,16 +171,17 @@ function seededRandom(seed: number): number {
   return x - Math.floor(x);
 }
 
-// Weighted department selection: IAG 55%, Broker-Dealer 33%, Institutional 12%
-function getWeightedDepartment(seed: number): 'IAG' | 'Broker-Dealer' | 'Institutional' {
+// Weighted department selection: IAG 50%, Broker-Dealer 30%, Institutional 11%, Retirement Group 9%
+function getWeightedDepartment(seed: number): 'IAG' | 'Broker-Dealer' | 'Institutional' | 'Retirement Group' {
   const rand = seededRandom(seed);
-  if (rand < 0.55) return 'IAG';
-  if (rand < 0.88) return 'Broker-Dealer'; // 0.55 + 0.33 = 0.88
-  return 'Institutional';
+  if (rand < 0.50) return 'IAG';
+  if (rand < 0.80) return 'Broker-Dealer'; // 0.50 + 0.30 = 0.80
+  if (rand < 0.91) return 'Institutional'; // 0.80 + 0.11 = 0.91
+  return 'Retirement Group';
 }
 
 // Get internal client from a specific department
-function getInternalClientByDepartment(dept: 'IAG' | 'Broker-Dealer' | 'Institutional', seed: number): typeof internalClients[keyof typeof internalClients] {
+function getInternalClientByDepartment(dept: 'IAG' | 'Broker-Dealer' | 'Institutional' | 'Retirement Group', seed: number): typeof internalClients[keyof typeof internalClients] {
   const clientsByDept = internalClientKeys.filter(key => internalClients[key].gcgDepartment === dept);
   const selectedKey = clientsByDept[Math.floor(seededRandom(seed) * clientsByDept.length)];
   return internalClients[selectedKey];
@@ -281,10 +285,10 @@ function generateEngagements(): Engagement[] {
       const isAfterCutoff = finishDate > cutoffDate;
       const finishStr = isAfterCutoff ? '—' : finishDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 
-      // Randomly select project type for GCG Ad-Hoc (PCR ~50%, Follow-Up ~30%, Other ~20%)
+      // Randomly select project type for GCG Ad-Hoc
       const adHocType = adHocProjectTypes[Math.floor(seededRandom(seed + 7) * adHocProjectTypes.length)];
 
-      // PCR/Other usually doesn't have an external client (only 15% do), Follow-Up usually does (70%)
+      // PCR/Other usually doesn't have an external client (only 15% do), Data Request usually does (70%)
       const hasExternalClient = (adHocType === 'PCR' || adHocType === 'Other')
         ? seededRandom(seed + 1) > 0.85
         : seededRandom(seed + 1) > 0.3;
@@ -449,8 +453,8 @@ export function generateContributionData(filteredEngagements?: Engagement[]): Da
     }
   }
 
-  // Generate 104 weeks of data (2 years, weekdays only)
-  for (let week = 0; week < 104; week++) {
+  // Generate 105 weeks of data (2 years + 1 week to always include the current week)
+  for (let week = 0; week < 105; week++) {
     const days: DayData[] = [];
     for (let day = 0; day < 5; day++) {
       const currentDate = new Date(startDate);

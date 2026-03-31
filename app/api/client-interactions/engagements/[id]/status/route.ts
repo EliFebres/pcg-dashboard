@@ -4,10 +4,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { execute, query } from '@/app/lib/db';
 import { requireAuth, teamConstraint } from '@/app/lib/auth/require-auth';
 import { toDisplayDate, localTodayISO } from '@/app/lib/db/dateUtils';
+import { emitEngagementChange } from '@/app/lib/events';
 
 // PATCH /api/client-interactions/engagements/:id/status
 // Body: { status: string }
-// Auto-sets date_finished to today when status becomes "Completed"; clears it otherwise.
+// Auto-sets date_finished to today when status becomes "Complete"; clears it otherwise.
 export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -24,7 +25,7 @@ export async function PATCH(
     const engagementId = Number(id);
     const { status } = await req.json();
 
-    const VALID_STATUSES = ['Pending', 'In Progress', 'Completed'];
+    const VALID_STATUSES = ['In Progress', 'Awaiting Meeting', 'Follow Up', 'Completed'];
     if (!status || !VALID_STATUSES.includes(status)) {
       return NextResponse.json({ error: 'Invalid status value' }, { status: 400 });
     }
@@ -48,6 +49,7 @@ export async function PATCH(
       return NextResponse.json({ error: 'Engagement not found' }, { status: 404 });
     }
 
+    emitEngagementChange('updated');
     return NextResponse.json({
       id: engagementId,
       status,

@@ -345,6 +345,9 @@ const BulkUploadModal: React.FC<BulkUploadModalProps> = ({ isOpen, onClose, onIm
                           <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${
                             row.status === 'Completed' ? 'bg-emerald-500/15 text-emerald-400' :
                             row.status === 'In Progress' ? 'bg-blue-500/15 text-blue-400' :
+
+                            row.status === 'Awaiting Meeting' ? 'bg-amber-500/15 text-amber-400' :
+                            row.status === 'Follow Up' ? 'bg-orange-500/15 text-orange-400' :
                             'bg-zinc-700/50 text-zinc-400'
                           }`}>
                             {row.status}

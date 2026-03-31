@@ -490,7 +490,7 @@ export default function EngagementsDashboard() {
               onCardLeave={handleCardLeave}
             />
 
-            <div className="grid grid-cols-3 gap-4" style={{ height: '280px' }}>
+            <div className="grid grid-cols-3 gap-4" style={{ height: '340px' }}>
               <div className="col-span-2 relative overflow-hidden bg-zinc-900/60 backdrop-blur-md border border-zinc-800/50 p-5 h-full rounded-xl">
                 <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] via-transparent to-transparent pointer-events-none" />
                 <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />

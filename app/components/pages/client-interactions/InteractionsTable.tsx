@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { FileText, Download, Check, X, ChevronUp, ChevronDown, ChevronsUpDown, Maximize2, Minimize2, Plus } from 'lucide-react';
 import NotesModal from '../shared/NotesModal';
 import NNAModal from '../shared/NNAModal';
@@ -81,17 +82,23 @@ const InteractionsTable: React.FC<InteractionsTableProps> = ({ engagements, sort
   const [currentPage, setCurrentPage] = useState(1);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [openStatusDropdown, setOpenStatusDropdown] = useState<number | null>(null);
+  const [dropdownPos, setDropdownPos] = useState<{ top: number; left: number } | null>(null);
   const [notesModalEngagement, setNotesModalEngagement] = useState<Engagement | null>(null);
   const [nnaModalEngagement, setNnaModalEngagement] = useState<Engagement | null>(null);
   const statusDropdownRef = useRef<HTMLDivElement>(null);
+  const dropdownPortalRef = useRef<HTMLDivElement>(null);
   const pageSize = 10;
 
-  const statusOptions = ['In Progress', 'Pending', 'Completed'];
+  const statusOptions = ['In Progress', 'Awaiting Meeting', 'Follow Up', 'Completed'];
 
   // Close status dropdown when clicking outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (statusDropdownRef.current && !statusDropdownRef.current.contains(event.target as Node)) {
+      const target = event.target as Node;
+      if (
+        !statusDropdownRef.current?.contains(target) &&
+        !dropdownPortalRef.current?.contains(target)
+      ) {
         setOpenStatusDropdown(null);
       }
     }
@@ -144,7 +151,9 @@ const InteractionsTable: React.FC<InteractionsTableProps> = ({ engagements, sort
     switch (status) {
       case 'Completed': return 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20';
       case 'In Progress': return 'bg-blue-500/10 text-blue-400 border border-blue-500/20';
-      case 'Pending': return 'bg-amber-500/10 text-amber-400 border border-amber-500/20';
+
+      case 'Awaiting Meeting': return 'bg-amber-500/10 text-amber-400 border border-amber-500/20';
+      case 'Follow Up': return 'bg-orange-500/10 text-orange-400 border border-orange-500/20';
       default: return 'bg-zinc-500/10 text-zinc-400 border border-zinc-500/20';
     }
   };
@@ -153,8 +162,8 @@ const InteractionsTable: React.FC<InteractionsTableProps> = ({ engagements, sort
     switch (type) {
       case 'Data Request': return 'bg-cyan-500/15 text-cyan-400';
       case 'Meeting': return 'bg-violet-500/15 text-violet-400';
-      case 'Follow-Up': return 'bg-amber-500/15 text-amber-400';
-      case 'PCR': return 'bg-rose-500/15 text-rose-400';
+      case 'Discovery Meeting': return 'bg-blue-500/15 text-blue-400';
+case 'PCR': return 'bg-rose-500/15 text-rose-400';
       case 'Other': return 'bg-zinc-500/15 text-zinc-400';
       default: return 'bg-zinc-500/10 text-zinc-400';
     }
@@ -278,14 +287,24 @@ const InteractionsTable: React.FC<InteractionsTableProps> = ({ engagements, sort
       <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
         <div className="relative" ref={openStatusDropdown === engagement.id ? statusDropdownRef : null}>
           <button
-            onClick={() => setOpenStatusDropdown(openStatusDropdown === engagement.id ? null : engagement.id)}
+            onClick={(e) => {
+                const rect = (e.currentTarget as HTMLButtonElement).getBoundingClientRect();
+                if (openStatusDropdown !== engagement.id) {
+                  setDropdownPos({ top: rect.bottom + 4, left: rect.left });
+                }
+                setOpenStatusDropdown(openStatusDropdown === engagement.id ? null : engagement.id);
+              }}
             className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium backdrop-blur-sm cursor-pointer hover:ring-1 hover:ring-white/20 transition-all ${getStatusStyle(engagement.status)}`}
           >
             {engagement.status}
             <ChevronDown className={`w-3 h-3 transition-transform ${openStatusDropdown === engagement.id ? 'rotate-180' : ''}`} />
           </button>
-          {openStatusDropdown === engagement.id && (
-            <div className="absolute top-full left-0 mt-1 bg-zinc-800 border border-zinc-700 rounded-lg shadow-xl z-50 min-w-[120px] overflow-hidden">
+          {openStatusDropdown === engagement.id && dropdownPos && createPortal(
+            <div
+              ref={dropdownPortalRef}
+              className="fixed w-max bg-zinc-800 border border-zinc-700 rounded-lg shadow-xl z-[9999] overflow-hidden"
+              style={{ top: dropdownPos.top, left: dropdownPos.left }}
+            >
               {statusOptions.map(status => (
                 <button
                   key={status}
@@ -293,7 +312,7 @@ const InteractionsTable: React.FC<InteractionsTableProps> = ({ engagements, sort
                     onStatusChange(engagement.id, status);
                     setOpenStatusDropdown(null);
                   }}
-                  className={`w-full px-3 py-2 text-left text-xs transition-colors ${
+                  className={`block w-full px-3 py-2 text-left text-xs whitespace-nowrap transition-colors ${
                     engagement.status === status
                       ? 'bg-cyan-500/20 text-cyan-400'
                       : 'text-zinc-300 hover:bg-zinc-700/50'
@@ -302,7 +321,8 @@ const InteractionsTable: React.FC<InteractionsTableProps> = ({ engagements, sort
                   {status}
                 </button>
               ))}
-            </div>
+            </div>,
+            document.body
           )}
         </div>
       </td>

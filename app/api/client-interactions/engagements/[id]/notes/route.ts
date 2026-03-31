@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { query, execute } from '@/app/lib/db';
 import { verifyJWT, SESSION_COOKIE } from '@/app/lib/auth/jwt';
 import type { NoteEntry } from '@/app/lib/types/engagements';
+import { emitEngagementChange } from '@/app/lib/events';
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -87,6 +88,7 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
       [engagementId, authorId]
     );
 
+    emitEngagementChange('updated');
     return NextResponse.json(rowToNoteEntry(rows[0]), { status: 201 });
   } catch (err) {
     console.error('POST .../notes error:', err);

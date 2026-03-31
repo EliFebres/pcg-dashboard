@@ -13,7 +13,7 @@ import type { TeamMember } from '@/app/lib/auth/types';
 export interface InteractionFormData {
   externalClient: string | null;
   internalClient: string;
-  internalClientDept: 'IAG' | 'Broker-Dealer' | 'Institutional' | '';
+  internalClientDept: 'IAG' | 'Broker-Dealer' | 'Institutional' | 'Retirement Group' | '';
   intakeType: 'IRQ' | 'SRRF' | 'GCG Ad-Hoc' | '';
   adHocChannel?: 'In-Person' | 'Email' | 'Teams';
   projectType: string;
@@ -49,14 +49,14 @@ interface NewInteractionFormProps {
   onNoteDeleted?: (engagementId: number) => void;
 }
 
-const GCG_DEPARTMENTS = ['IAG', 'Broker-Dealer', 'Institutional'] as const;
+const GCG_DEPARTMENTS = ['IAG', 'Broker-Dealer', 'Institutional', 'Retirement Group'] as const;
 
 
 // Project types by intake
 const projectTypesByIntake = {
-  'IRQ': ['Meeting', 'Follow-Up', 'Data Request', 'PCR'],
-  'SRRF': ['Meeting', 'Follow-Up', 'Data Request', 'PCR'],
-  'GCG Ad-Hoc': ['PCR', 'Follow-Up', 'Data Request', 'Other'],
+  'IRQ': ['Meeting', 'Discovery Meeting', 'Data Request', 'PCR'],
+  'SRRF': ['Meeting', 'Discovery Meeting', 'Data Request', 'PCR'],
+  'GCG Ad-Hoc': ['PCR', 'Discovery Meeting', 'Data Request', 'Other'],
 };
 
 // Parse NNA input string to number (handles commas, M, B, K suffixes)
@@ -648,8 +648,9 @@ export default function NewInteractionForm({ isOpen, onClose, onSubmit, onUpdate
                   <input
                     type="date"
                     value={formData.dateStarted}
+                    onClick={(e) => e.currentTarget.showPicker()}
                     onChange={(e) => setFormData(prev => ({ ...prev, dateStarted: e.target.value }))}
-                    className="w-full h-[38px] px-3 bg-zinc-800/50 border border-zinc-700 rounded-lg text-white focus:outline-none focus:border-cyan-500/50 transition-colors"
+                    className="w-full h-[38px] px-3 bg-zinc-800/50 border border-zinc-700 rounded-lg text-white focus:outline-none focus:border-cyan-500/50 transition-colors [&::-webkit-calendar-picker-indicator]:invert"
                   />
                   {errors.dateStarted && <p className="mt-1 text-xs text-red-400">{errors.dateStarted}</p>}
                 </div>
@@ -661,8 +662,9 @@ export default function NewInteractionForm({ isOpen, onClose, onSubmit, onUpdate
                   <input
                     type="date"
                     value={formData.dateFinished || ''}
+                    onClick={(e) => e.currentTarget.showPicker()}
                     onChange={(e) => setFormData(prev => ({ ...prev, dateFinished: e.target.value || undefined }))}
-                    className="w-full h-[38px] px-3 bg-zinc-800/50 border border-zinc-700 rounded-lg text-white focus:outline-none focus:border-cyan-500/50 transition-colors"
+                    className="w-full h-[38px] px-3 bg-zinc-800/50 border border-zinc-700 rounded-lg text-white focus:outline-none focus:border-cyan-500/50 transition-colors [&::-webkit-calendar-picker-indicator]:invert"
                   />
                 </div>
               </div>
