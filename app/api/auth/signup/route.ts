@@ -6,6 +6,7 @@ import { queryUsers, executeUsers } from '@/app/lib/db/users';
 import { hashPassword } from '@/app/lib/auth/password';
 import { signJWT, SESSION_COOKIE, COOKIE_OPTIONS } from '@/app/lib/auth/jwt';
 import { rowToUser } from '@/app/lib/auth/types';
+import { emitUserChange } from '@/app/lib/events';
 
 const VALID_TEAMS = ['Portfolio Consulting Group', 'Equity Specialist', 'Fixed Income Specialist'];
 const VALID_OFFICES = ['Austin', 'Charlotte', 'Santa Monica', 'UK', 'Sydney'];
@@ -77,6 +78,7 @@ export async function POST(req: NextRequest) {
     }
 
     if (!isFirstUser) {
+      emitUserChange('created');
       return NextResponse.json(
         { message: 'Registration successful. Your account is pending admin approval.' },
         { status: 201 }

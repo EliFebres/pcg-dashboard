@@ -648,8 +648,9 @@ export default function NewInteractionForm({ isOpen, onClose, onSubmit, onUpdate
                   <input
                     type="date"
                     value={formData.dateStarted}
+                    onClick={(e) => e.currentTarget.showPicker()}
                     onChange={(e) => setFormData(prev => ({ ...prev, dateStarted: e.target.value }))}
-                    className="w-full h-[38px] px-3 bg-zinc-800/50 border border-zinc-700 rounded-lg text-white focus:outline-none focus:border-cyan-500/50 transition-colors"
+                    className="w-full h-[38px] px-3 bg-zinc-800/50 border border-zinc-700 rounded-lg text-white focus:outline-none focus:border-cyan-500/50 transition-colors [&::-webkit-calendar-picker-indicator]:invert"
                   />
                   {errors.dateStarted && <p className="mt-1 text-xs text-red-400">{errors.dateStarted}</p>}
                 </div>
@@ -661,8 +662,9 @@ export default function NewInteractionForm({ isOpen, onClose, onSubmit, onUpdate
                   <input
                     type="date"
                     value={formData.dateFinished || ''}
+                    onClick={(e) => e.currentTarget.showPicker()}
                     onChange={(e) => setFormData(prev => ({ ...prev, dateFinished: e.target.value || undefined }))}
-                    className="w-full h-[38px] px-3 bg-zinc-800/50 border border-zinc-700 rounded-lg text-white focus:outline-none focus:border-cyan-500/50 transition-colors"
+                    className="w-full h-[38px] px-3 bg-zinc-800/50 border border-zinc-700 rounded-lg text-white focus:outline-none focus:border-cyan-500/50 transition-colors [&::-webkit-calendar-picker-indicator]:invert"
                   />
                 </div>
               </div>

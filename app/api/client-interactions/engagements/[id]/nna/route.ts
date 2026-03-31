@@ -3,6 +3,7 @@ export const runtime = 'nodejs';
 import { NextRequest, NextResponse } from 'next/server';
 import { execute } from '@/app/lib/db';
 import { requireAuth, teamConstraint } from '@/app/lib/auth/require-auth';
+import { emitEngagementChange } from '@/app/lib/events';
 
 // PATCH /api/client-interactions/engagements/:id/nna
 // Body: { nna: number | null }
@@ -36,6 +37,7 @@ export async function PATCH(
       [nna ?? null, engagementId, ...teamParams]
     );
 
+    emitEngagementChange('updated');
     return NextResponse.json({ id: engagementId, nna: nna ?? undefined });
   } catch (err) {
     console.error('PATCH .../nna error:', err);
