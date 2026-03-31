@@ -162,8 +162,7 @@ const InteractionsTable: React.FC<InteractionsTableProps> = ({ engagements, sort
     switch (type) {
       case 'Data Request': return 'bg-cyan-500/15 text-cyan-400';
       case 'Meeting': return 'bg-violet-500/15 text-violet-400';
-      case 'Follow-Up': return 'bg-amber-500/15 text-amber-400';
-      case 'PCR': return 'bg-rose-500/15 text-rose-400';
+case 'PCR': return 'bg-rose-500/15 text-rose-400';
       case 'Other': return 'bg-zinc-500/15 text-zinc-400';
       default: return 'bg-zinc-500/10 text-zinc-400';
     }

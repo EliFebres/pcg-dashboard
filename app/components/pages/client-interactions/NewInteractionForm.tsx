@@ -54,9 +54,9 @@ const GCG_DEPARTMENTS = ['IAG', 'Broker-Dealer', 'Institutional'] as const;
 
 // Project types by intake
 const projectTypesByIntake = {
-  'IRQ': ['Meeting', 'Follow-Up', 'Data Request', 'PCR'],
-  'SRRF': ['Meeting', 'Follow-Up', 'Data Request', 'PCR'],
-  'GCG Ad-Hoc': ['PCR', 'Follow-Up', 'Data Request', 'Other'],
+  'IRQ': ['Meeting', 'Data Request', 'PCR'],
+  'SRRF': ['Meeting', 'Data Request', 'PCR'],
+  'GCG Ad-Hoc': ['PCR', 'Data Request', 'Other'],
 };
 
 // Parse NNA input string to number (handles commas, M, B, K suffixes)

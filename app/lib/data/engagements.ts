@@ -159,8 +159,8 @@ export const teamMemberOffices: Record<string, 'Charlotte' | 'Austin'> = {
 const teamMembers = Object.keys(teamMemberOffices);
 const internalClientKeys = Object.keys(internalClients) as (keyof typeof internalClients)[];
 const departments: ('IAG' | 'Broker-Dealer' | 'Institutional')[] = ['IAG', 'Broker-Dealer', 'Institutional'];
-const projectTypes = ['Meeting', 'Follow-Up', 'Data Request', 'PCR'];
-const adHocProjectTypes = ['PCR', 'Follow-Up', 'Data Request', 'Other']; // Project types specific to GCG Ad-Hoc
+const projectTypes = ['Meeting', 'Data Request', 'PCR'];
+const adHocProjectTypes = ['PCR', 'Data Request', 'Other']; // Project types specific to GCG Ad-Hoc
 
 // Seeded random for consistent data generation
 function seededRandom(seed: number): number {
@@ -281,10 +281,10 @@ function generateEngagements(): Engagement[] {
       const isAfterCutoff = finishDate > cutoffDate;
       const finishStr = isAfterCutoff ? '—' : finishDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 
-      // Randomly select project type for GCG Ad-Hoc (PCR ~50%, Follow-Up ~30%, Other ~20%)
+      // Randomly select project type for GCG Ad-Hoc
       const adHocType = adHocProjectTypes[Math.floor(seededRandom(seed + 7) * adHocProjectTypes.length)];
 
-      // PCR/Other usually doesn't have an external client (only 15% do), Follow-Up usually does (70%)
+      // PCR/Other usually doesn't have an external client (only 15% do), Data Request usually does (70%)
       const hasExternalClient = (adHocType === 'PCR' || adHocType === 'Other')
         ? seededRandom(seed + 1) > 0.85
         : seededRandom(seed + 1) > 0.3;
