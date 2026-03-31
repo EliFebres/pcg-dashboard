@@ -189,7 +189,7 @@ function getInternalClientByDepartment(dept: 'IAG' | 'Broker-Dealer' | 'Institut
 
 // Generate NNA (Net New Assets) value based on department
 // IAG: averages ~$20M, Broker-Dealer/Institutional: usually ~$100M, rare $1B (whales)
-function generateNNA(dept: 'IAG' | 'Broker-Dealer' | 'Institutional', seed: number): number {
+function generateNNA(dept: 'IAG' | 'Broker-Dealer' | 'Institutional' | 'Retirement Group', seed: number): number {
   const rand = seededRandom(seed);
 
   if (dept === 'IAG') {
