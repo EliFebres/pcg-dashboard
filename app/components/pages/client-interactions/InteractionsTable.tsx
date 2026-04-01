@@ -290,7 +290,12 @@ case 'PCR': return 'bg-rose-500/15 text-rose-400';
             onClick={(e) => {
                 const rect = (e.currentTarget as HTMLButtonElement).getBoundingClientRect();
                 if (openStatusDropdown !== engagement.id) {
-                  setDropdownPos({ top: rect.bottom + 4, left: rect.left });
+                  const dropdownHeight = statusOptions.length * 32 + 8;
+                  const spaceBelow = window.innerHeight - rect.bottom;
+                  const top = spaceBelow < dropdownHeight
+                    ? rect.top - dropdownHeight - 4
+                    : rect.bottom + 4;
+                  setDropdownPos({ top, left: rect.left });
                 }
                 setOpenStatusDropdown(openStatusDropdown === engagement.id ? null : engagement.id);
               }}
