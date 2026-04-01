@@ -284,9 +284,7 @@ export default function EngagementsDashboard() {
     patchEngagements(e => ({
       ...e,
       status: newStatus,
-      dateFinished: newStatus === 'Completed'
-        ? new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-        : newStatus === 'In Progress' ? '—' : e.dateFinished,
+      dateFinished: e.dateFinished,
     }), engagementId);
     updateEngagementStatus(engagementId, newStatus).catch(console.error);
   };
