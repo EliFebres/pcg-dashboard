@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { Building2, Download, User, Loader2, Inbox, Briefcase } from 'lucide-react';
+import { Building2, Download, User, Loader2, Inbox, Briefcase, CircleDot } from 'lucide-react';
 import MetricCards from '@/app/components/pages/client-interactions/MetricCards';
 import ContributionGraph from '@/app/components/pages/client-interactions/ContributionGraph';
 import DepartmentChart from '@/app/components/pages/client-interactions/DepartmentChart';
@@ -111,6 +111,7 @@ export default function EngagementsDashboard() {
   const [departmentFilter, setDepartmentFilter] = useState<string[]>([]);
   const [intakeTypeFilter, setIntakeTypeFilter] = useState<string[]>([]);
   const [projectTypeFilter, setProjectTypeFilter] = useState<string[]>([]);
+  const [statusFilter, setStatusFilter] = useState('All Statuses');
   const [period, setPeriod] = useState('1Y');
   const [sortColumn, setSortColumn] = useState<string | null>('dateStarted');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc' | null>('desc');
@@ -165,6 +166,7 @@ export default function EngagementsDashboard() {
       departments: departmentFilter.length > 0 ? departmentFilter : undefined,
       intakeTypes: intakeTypeFilter.length > 0 ? intakeTypeFilter : undefined,
       projectTypes: projectTypeFilter.length > 0 ? projectTypeFilter : undefined,
+      status: statusFilter !== 'All Statuses' ? statusFilter : undefined,
       search: searchQuery || undefined,
       pageSize: 200,
       sortColumn: sortColumn || undefined,
@@ -186,7 +188,7 @@ export default function EngagementsDashboard() {
     }, delay);
 
     return () => { clearTimeout(id); controller.abort(); };
-  }, [period, teamMemberFilter, departmentFilter, intakeTypeFilter, projectTypeFilter, searchQuery, sortColumn, sortDirection]);
+  }, [period, teamMemberFilter, departmentFilter, intakeTypeFilter, projectTypeFilter, statusFilter, searchQuery, sortColumn, sortDirection]);
 
   // Re-fetch with current filters (used after mutations)
   const reloadData = useCallback(async () => {
@@ -196,6 +198,7 @@ export default function EngagementsDashboard() {
       departments: departmentFilter.length > 0 ? departmentFilter : undefined,
       intakeTypes: intakeTypeFilter.length > 0 ? intakeTypeFilter : undefined,
       projectTypes: projectTypeFilter.length > 0 ? projectTypeFilter : undefined,
+      status: statusFilter !== 'All Statuses' ? statusFilter : undefined,
       search: searchQuery || undefined,
       pageSize: 200,
       sortColumn: sortColumn || undefined,
@@ -206,7 +209,7 @@ export default function EngagementsDashboard() {
     } catch (err) {
       console.error('Failed to reload dashboard data:', err);
     }
-  }, [period, teamMemberFilter, departmentFilter, intakeTypeFilter, projectTypeFilter, searchQuery, sortColumn, sortDirection]);
+  }, [period, teamMemberFilter, departmentFilter, intakeTypeFilter, projectTypeFilter, statusFilter, searchQuery, sortColumn, sortDirection]);
 
   // SSE connection — reloads dashboard whenever any user mutates an engagement
   useEffect(() => {
@@ -455,6 +458,14 @@ export default function EngagementsDashboard() {
             value: projectTypeFilter,
             onChange: (v: string | string[]) => handleFilterChange(setProjectTypeFilter, v as string[]),
             multiSelect: true,
+          },
+          {
+            id: 'status',
+            icon: CircleDot,
+            label: 'Status',
+            options: ['All Statuses', ...(filterOptions?.statuses ?? [])],
+            value: statusFilter,
+            onChange: (v: string | string[]) => handleFilterChange(setStatusFilter, v as string),
           },
         ]}
         period={period}

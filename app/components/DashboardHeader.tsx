@@ -385,15 +385,21 @@ export default function DashboardHeader({
         </div>
         {/* Global Filters */}
         <div className="flex items-center gap-2 h-9">
-          <div className="relative w-[360px]">
-            <Search className="w-4 h-4 text-zinc-500 absolute left-3 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              placeholder={searchPlaceholder}
-              value={searchValue}
-              onChange={(e) => onSearchChange(e.target.value)}
-              className="w-full pl-9 pr-3 py-2 bg-zinc-900/50 backdrop-blur-sm border border-zinc-700/50 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-cyan-500/50 transition-colors"
-            />
+          <div
+            className={`transition-all duration-300 ease-in-out overflow-hidden ${
+              filtersExpanded ? 'max-w-0 opacity-0' : 'max-w-[360px] opacity-100'
+            }`}
+          >
+            <div className="relative w-[360px]">
+              <Search className="w-4 h-4 text-zinc-500 absolute left-3 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                placeholder={searchPlaceholder}
+                value={searchValue}
+                onChange={(e) => onSearchChange(e.target.value)}
+                className="w-full pl-9 pr-3 py-2 bg-zinc-900/50 backdrop-blur-sm border border-zinc-700/50 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-cyan-500/50 transition-colors"
+              />
+            </div>
           </div>
 
           {/* Filter Toggle Button */}
