@@ -16,6 +16,7 @@ import {
   updateEngagementStatus,
   updateEngagementNNA,
   addEngagementNote,
+  exportEngagements,
   ConflictError,
 } from '@/app/lib/api/client-interactions';
 import type { DashboardData, DashboardMetrics, EngagementFilters } from '@/app/lib/api/client-interactions';
@@ -115,6 +116,8 @@ export default function EngagementsDashboard() {
   const [period, setPeriod] = useState('1Y');
   const [sortColumn, setSortColumn] = useState<string | null>('dateStarted');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc' | null>('desc');
+
+  const [isExporting, setIsExporting] = useState(false);
 
   // Form state
   const [isNewInteractionOpen, setIsNewInteractionOpen] = useState(false);
@@ -225,6 +228,36 @@ export default function EngagementsDashboard() {
     setSortColumn(column);
     setSortDirection(direction);
   }, []);
+
+  const handleExport = useCallback(async () => {
+    setIsExporting(true);
+    try {
+      const filters: EngagementFilters = {
+        period,
+        teamMember: teamMemberFilter !== 'All Team Members' ? teamMemberFilter : undefined,
+        departments: departmentFilter.length > 0 ? departmentFilter : undefined,
+        intakeTypes: intakeTypeFilter.length > 0 ? intakeTypeFilter : undefined,
+        projectTypes: projectTypeFilter.length > 0 ? projectTypeFilter : undefined,
+        status: statusFilter !== 'All Statuses' ? statusFilter : undefined,
+        search: searchQuery || undefined,
+        sortColumn: sortColumn || undefined,
+        sortDirection: sortDirection || 'desc',
+      };
+      const blob = await exportEngagements(filters);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `engagements-export-${new Date().toISOString().split('T')[0]}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Export failed:', err);
+    } finally {
+      setIsExporting(false);
+    }
+  }, [period, teamMemberFilter, departmentFilter, intakeTypeFilter, projectTypeFilter, statusFilter, searchQuery, sortColumn, sortDirection]);
 
   // -------------------------------------------------------------------------
   // Derived display data
@@ -546,6 +579,8 @@ export default function EngagementsDashboard() {
               onNoteDeleted={handleNoteDeleted}
               onNNAChange={handleNNAChange}
               onRowClick={handleRowClick}
+              onExport={handleExport}
+              isExporting={isExporting}
             />
           </>
         )}

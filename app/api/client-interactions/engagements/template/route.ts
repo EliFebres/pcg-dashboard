@@ -25,26 +25,33 @@ export async function GET() {
   // K  NNA ($M)
   // L  Notes
   // M  Tickers Mentioned
+  // No `header` property here: header row is added manually below to prevent
+  // ExcelJS from bleeding row-level styling beyond the last column.
   data.columns = [
-    { header: 'External Client',      key: 'externalClient',     width: 24 },
-    { header: 'Internal Client Name', key: 'internalClientName', width: 24 },
-    { header: 'Internal Client Dept', key: 'internalClientDept', width: 22 },
-    { header: 'Intake Type',          key: 'intakeType',          width: 16 },
-    { header: 'Ad-Hoc Channel',       key: 'adHocChannel',        width: 16 },
-    { header: 'Project Type',         key: 'type',                width: 16 },
-    { header: 'Team Members',         key: 'teamMembers',         width: 30 },
-    { header: 'Date Started',         key: 'dateStarted',         width: 14 },
-    { header: 'Date Finished',        key: 'dateFinished',        width: 14 },
-    { header: 'Status',               key: 'status',              width: 14 },
-    { header: 'NNA ($M)',             key: 'nna',                 width: 12 },
-    { header: 'Notes',                key: 'notes',               width: 40 },
-    { header: 'Tickers Mentioned',    key: 'tickersMentioned',    width: 30 },
+    { key: 'externalClient',     width: 24 },
+    { key: 'internalClientName', width: 24 },
+    { key: 'internalClientDept', width: 22 },
+    { key: 'intakeType',          width: 16 },
+    { key: 'adHocChannel',        width: 16 },
+    { key: 'type',                width: 16 },
+    { key: 'teamMembers',         width: 30 },
+    { key: 'dateStarted',         width: 14 },
+    { key: 'dateFinished',        width: 14 },
+    { key: 'status',              width: 14 },
+    { key: 'nna',                 width: 12 },
+    { key: 'notes',               width: 40 },
+    { key: 'tickersMentioned',    width: 30 },
   ];
 
-  // Style header row — apply fill cell-by-cell so it stops at column M
-  data.getRow(1).height = 20;
-  ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M'].forEach(col => {
-    const cell = data.getCell(`${col}1`);
+  // Add header row manually and style only the 13 populated cells.
+  // eachCell({ includeEmpty: false }) ensures nothing beyond column M is touched.
+  const headerRow = data.addRow([
+    'External Client', 'Internal Client Name', 'Internal Client Dept',
+    'Intake Type', 'Ad-Hoc Channel', 'Project Type', 'Team Members',
+    'Date Started', 'Date Finished', 'Status', 'NNA ($M)', 'Notes', 'Tickers Mentioned',
+  ]);
+  headerRow.height = 20;
+  headerRow.eachCell({ includeEmpty: false }, cell => {
     cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
     cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E3A5F' } };
     cell.alignment = { vertical: 'middle' };

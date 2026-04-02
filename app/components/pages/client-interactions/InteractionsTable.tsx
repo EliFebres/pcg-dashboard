@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { FileText, Download, Check, X, ChevronUp, ChevronDown, ChevronsUpDown, Maximize2, Minimize2, Plus } from 'lucide-react';
+import { FileText, Download, Check, X, ChevronUp, ChevronDown, ChevronsUpDown, Maximize2, Minimize2, Plus, Loader2 } from 'lucide-react';
 import NotesModal from '../shared/NotesModal';
 import NNAModal from '../shared/NNAModal';
 import type { Engagement } from '@/app/lib/types/engagements';
@@ -72,9 +72,11 @@ interface InteractionsTableProps {
   onNoteDeleted: (engagementId: number) => void;
   onNNAChange: (engagementId: number, nna: number | undefined) => void;
   onRowClick: (engagement: Engagement) => void;
+  onExport: () => void;
+  isExporting?: boolean;
 }
 
-const InteractionsTable: React.FC<InteractionsTableProps> = ({ engagements, sortColumn, sortDirection, onSort, onStatusChange, onNoteAdded, onNoteDeleted, onNNAChange, onRowClick }) => {
+const InteractionsTable: React.FC<InteractionsTableProps> = ({ engagements, sortColumn, sortDirection, onSort, onStatusChange, onNoteAdded, onNoteDeleted, onNNAChange, onRowClick, onExport, isExporting }) => {
   const sortConfig: SortConfig = useMemo(
     () => ({ column: sortColumn as SortColumn, direction: sortDirection as SortDirection }),
     [sortColumn, sortDirection]
@@ -461,8 +463,8 @@ case 'PCR': return 'bg-rose-500/15 text-rose-400';
             <p className="text-xs text-zinc-500">
               Showing <span className="text-zinc-300 font-medium">{((currentPage - 1) * pageSize) + 1}–{Math.min(currentPage * pageSize, engagements.length)}</span> of <span className="text-zinc-300 font-medium">{engagements.length}</span>
             </p>
-            <button className="flex items-center gap-1.5 px-2 py-1 text-xs text-zinc-400 hover:text-cyan-400 transition-colors" title="Download table data">
-              <Download className="w-3.5 h-3.5" />
+            <button onClick={onExport} disabled={isExporting} className="flex items-center gap-1.5 px-2 py-1 text-xs text-zinc-400 hover:text-cyan-400 disabled:opacity-50 disabled:cursor-not-allowed transition-colors" title="Download table data">
+              {isExporting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
               Export
             </button>
             <button
@@ -508,8 +510,8 @@ case 'PCR': return 'bg-rose-500/15 text-rose-400';
                 <p className="text-xs text-zinc-500">
                   Showing <span className="text-zinc-300 font-medium">{((currentPage - 1) * pageSize) + 1}–{Math.min(currentPage * pageSize, engagements.length)}</span> of <span className="text-zinc-300 font-medium">{engagements.length}</span>
                 </p>
-                <button className="flex items-center gap-1.5 px-2 py-1 text-xs text-zinc-400 hover:text-cyan-400 transition-colors" title="Download table data">
-                  <Download className="w-3.5 h-3.5" />
+                <button onClick={onExport} disabled={isExporting} className="flex items-center gap-1.5 px-2 py-1 text-xs text-zinc-400 hover:text-cyan-400 disabled:opacity-50 disabled:cursor-not-allowed transition-colors" title="Download table data">
+                  {isExporting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
                   Export
                 </button>
                 <button
