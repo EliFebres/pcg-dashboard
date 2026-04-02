@@ -400,6 +400,7 @@ export default function EngagementsDashboard() {
         initialNoteCount={editingEngagementNoteCount}
         onNoteAdded={handleNoteAdded}
         onNoteDeleted={handleNoteDeleted}
+        onBulkUploadClick={() => setIsBulkUploadOpen(true)}
       />
       <BulkUploadModal
         isOpen={isBulkUploadOpen}
@@ -458,9 +459,7 @@ export default function EngagementsDashboard() {
         ]}
         period={period}
         onPeriodChange={(v: string) => handleFilterChange(setPeriod, v)}
-        secondaryActionButtonLabel="↑ Bulk Upload"
-        onSecondaryActionButtonClick={() => setIsBulkUploadOpen(true)}
-        actionButtonLabel="+ New Interaction"
+        actionButtonLabel="+ Interaction"
         onActionButtonClick={() => setIsNewInteractionOpen(true)}
       />
 

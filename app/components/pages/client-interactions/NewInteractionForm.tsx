@@ -47,6 +47,7 @@ interface NewInteractionFormProps {
   initialNoteCount?: number;
   onNoteAdded?: (engagementId: number) => void;
   onNoteDeleted?: (engagementId: number) => void;
+  onBulkUploadClick?: () => void;
 }
 
 const GCG_DEPARTMENTS = ['IAG', 'Broker-Dealer', 'Institutional', 'Retirement Group'] as const;
@@ -103,7 +104,7 @@ const formatNNADisplay = (value: number | null): string => {
   return `$${value.toLocaleString()}`;
 };
 
-export default function NewInteractionForm({ isOpen, onClose, onSubmit, onUpdate, onDelete, editingEngagement, initialNoteCount, onNoteAdded, onNoteDeleted }: NewInteractionFormProps) {
+export default function NewInteractionForm({ isOpen, onClose, onSubmit, onUpdate, onDelete, editingEngagement, initialNoteCount, onNoteAdded, onNoteDeleted, onBulkUploadClick }: NewInteractionFormProps) {
   const isEditMode = !!editingEngagement;
   const { user: currentUser } = useCurrentUser();
 
@@ -354,12 +355,23 @@ export default function NewInteractionForm({ isOpen, onClose, onSubmit, onUpdate
                 {isEditMode ? 'Update the client interaction record' : 'Create a new client interaction record'}
               </p>
             </div>
-            <button
-              onClick={onClose}
-              className="p-2 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-lg transition-colors"
-            >
-              <X className="w-5 h-5" />
-            </button>
+            <div className="flex items-center gap-2">
+              {!isEditMode && onBulkUploadClick && (
+                <button
+                  type="button"
+                  onClick={onBulkUploadClick}
+                  className="px-3 py-1.5 text-sm text-zinc-400 hover:text-white bg-zinc-800 hover:bg-zinc-700 rounded-lg transition-colors"
+                >
+                  ↑ Bulk Upload
+                </button>
+              )}
+              <button
+                onClick={onClose}
+                className="p-2 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-lg transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
           </div>
 
           {/* Form Content */}
