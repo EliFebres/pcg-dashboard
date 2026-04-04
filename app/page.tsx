@@ -23,24 +23,17 @@ async function getStats() {
 export default async function Home() {
   const stats = await getStats();
   return (
-    <div className="min-h-screen bg-zinc-950 text-white">
+    <div className="min-h-screen text-white relative" style={{ backgroundColor: '#050508' }}>
+
+      {/* Page-wide background glow blobs */}
+      <div className="fixed inset-0 pointer-events-none">
+        <div className="absolute" style={{ top: '-10%', left: '-5%', width: '50%', height: '50%', background: 'radial-gradient(circle, rgba(6, 182, 212, 0.12) 0%, transparent 70%)', filter: 'blur(60px)' }} />
+        <div className="absolute" style={{ bottom: '10%', right: '-10%', width: '45%', height: '45%', background: 'radial-gradient(circle, rgba(59, 130, 246, 0.10) 0%, transparent 70%)', filter: 'blur(80px)' }} />
+        <div className="absolute" style={{ top: '40%', left: '30%', width: '30%', height: '30%', background: 'radial-gradient(circle, rgba(34, 211, 238, 0.06) 0%, transparent 70%)', filter: 'blur(60px)' }} />
+      </div>
 
       {/* ─── Hero Section ─────────────────────────────────────────────── */}
-      <section className="relative min-h-screen flex flex-col overflow-hidden">
-
-        {/* Background glow */}
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_30%,rgba(37,99,235,0.18),transparent)]" />
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_50%_40%_at_50%_30%,rgba(6,182,212,0.10),transparent)]" />
-          {/* Dot grid */}
-          <div
-            className="absolute inset-0 opacity-[0.06]"
-            style={{
-              backgroundImage: 'radial-gradient(circle, #94a3b8 1px, transparent 1px)',
-              backgroundSize: '32px 32px',
-            }}
-          />
-        </div>
+      <section className="relative min-h-[680px] flex flex-col overflow-hidden">
 
         {/* Hero content */}
         <div className="relative z-10 flex-1 flex flex-col items-center justify-center text-center px-6 gap-6">
@@ -77,8 +70,6 @@ export default async function Home() {
           </div>
         </div>
 
-        {/* Bottom fade into next section */}
-        <div className="absolute bottom-0 inset-x-0 h-24 bg-gradient-to-t from-zinc-950 to-transparent pointer-events-none" />
       </section>
 
       {/* ─── Stats Section (template) ─────────────────────────────────── */}
@@ -117,7 +108,7 @@ export default async function Home() {
             ].map(({ icon: Icon, title, desc }) => (
               <div
                 key={title}
-                className="relative p-6 rounded-xl bg-zinc-900/60 backdrop-blur-md border border-zinc-800/50 overflow-hidden group min-h-64"
+                className="relative p-6 rounded-xl bg-zinc-900/20 border border-zinc-800/20 overflow-hidden group min-h-96"
               >
                 {/* Full-card background icon */}
                 <Icon
@@ -126,11 +117,11 @@ export default async function Home() {
                   strokeWidth={1}
                 />
                 {/* Light blue gradient overlay between icon and text */}
-                <div className="absolute inset-0 bg-gradient-to-t from-sky-900/40 via-blue-900/20 to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-t from-sky-900/20 via-blue-900/10 to-transparent" />
                 {/* Top shine */}
                 <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
                 {/* Text content */}
-                <div className="relative z-10 mt-36">
+                <div className="relative z-10 mt-64">
                   <h3 className="text-white font-semibold mb-2">{title}</h3>
                   <p className="text-sm text-zinc-400 leading-relaxed">{desc}</p>
                 </div>
