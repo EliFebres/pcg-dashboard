@@ -17,7 +17,7 @@ export const COOKIE_OPTIONS = {
   secure: process.env.COOKIE_SECURE === 'true',
   sameSite: 'lax' as const,
   path: '/',
-  maxAge: 60 * 60 * 24, // 24 hours in seconds
+  maxAge: 60 * 60 * 24 * 30, // 30 days in seconds
 };
 
 function getSecret(): Uint8Array {
@@ -30,7 +30,7 @@ export async function signJWT(payload: JWTPayload): Promise<string> {
   return new SignJWT({ ...payload })
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
-    .setExpirationTime('24h')
+    .setExpirationTime('30d')
     .sign(getSecret());
 }
 

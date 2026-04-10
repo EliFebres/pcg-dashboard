@@ -53,12 +53,12 @@ function formatDisplayName(fullName: string): string {
 export default function Sidebar({ className = '' }: SidebarProps) {
   const pathname = usePathname();
   const { user } = useCurrentUser();
-  const [isCollapsed, setIsCollapsed] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('sidebar-collapsed') === 'true';
-    }
-    return false;
-  });
+  const [isCollapsed, setIsCollapsed] = useState(false);
+
+  useEffect(() => {
+    const stored = localStorage.getItem('sidebar-collapsed');
+    if (stored === 'true') setIsCollapsed(true);
+  }, []);
 
   const toggleCollapsed = () => {
     setIsCollapsed(prev => {
