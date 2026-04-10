@@ -149,8 +149,8 @@ export default function FeatureSections({
 
           {/* 3 visual feature cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-            {cards.map(card => (
-              <div key={card.title} className="card-shine rounded-xl border border-white/[0.06] bg-white/[0.02] p-6 flex flex-col">
+            {cards.map((card, i) => (
+              <div key={card.title} className="scroll-fade-in card-shine rounded-xl border border-white/[0.06] bg-white/[0.02] p-6 flex flex-col" style={{ transitionDelay: `${i * 150}ms` }}>
                 <div className="h-[200px] flex items-center justify-center mb-6 rounded-lg bg-white/[0.02] border border-white/[0.04] overflow-hidden">
                   <FeatureCardVisual visual={card.visual} />
                 </div>

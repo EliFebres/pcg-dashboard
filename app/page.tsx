@@ -58,7 +58,7 @@ export default function Home() {
       <FeatureSections
         className="scroll-fade-in"
         dashboardHeading={<>Every insight,<br />one dashboard</>}
-        dashboardDescription="Track client interactions, analyze portfolio trends, and easily identify competitive opportunities all from a single platform, built for ISG."
+        dashboardDescription="Track client interactions, analyze portfolio trends, and identify competitive opportunities all from a single platform, built specifically for ISG."
         cards={[
           {
             title: 'Client Interaction Tracking',
@@ -153,8 +153,8 @@ export default function Home() {
         ]}
         currentMonthIndex={3}
         projects={[
-          { name: 'Client Interactions', color: '#0891b2', borderColor: '#0891b2', start: 0, width: 54 },
-          { name: 'Portfolio Trends', color: '#0ea5e9', borderColor: '#0ea5e9', start: 54, width: 31 },
+          { name: 'Client Interactions', color: '#0891b2', borderColor: '#0891b2', start: 0, width: 46 },
+          { name: 'Portfolio Trends', color: '#e90e0e', borderColor: '#e90e0e', start: 46, width: 31 },
           { name: 'Landing Page and User Management', color: '#10b981', borderColor: '#10b981', start: 15, width: 39 },
           { name: 'Ticker Trends', color: '#f59e0b', borderColor: '#f59e0b', start: 31, width: 31 },
         ]}

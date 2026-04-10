@@ -6,7 +6,7 @@ interface DashboardPreviewProps {
 
 export default function DashboardPreview({ className }: DashboardPreviewProps) {
   return (
-    <section className={`relative px-6 pb-28 ${className ?? ''}`}>
+    <section className={`relative px-6 pb-12 ${className ?? ''}`}>
       <div className="max-w-[1100px] mx-auto">
         <div className="relative rounded-xl border border-white/[0.08] overflow-hidden bg-[#0a0a0f] shadow-[0_0_120px_-30px_rgba(6,182,212,0.2)]">
           {/* Gradient top border shine */}
