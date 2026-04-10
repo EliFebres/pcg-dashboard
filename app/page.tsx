@@ -345,25 +345,25 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── Feature deep-dive — Cycles ──────────────────────────── */}
+      {/* ── Feature deep-dive — Real-time activity ────────────────── */}
       <section className="py-24 px-6 border-t border-white/[0.04]">
         <div className="max-w-[1100px] mx-auto">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-start">
             <div>
               <h2 className="text-[clamp(28px,5vw,48px)] font-[500] tracking-[-0.035em] leading-[1.1] landing-gradient-text mb-5">
-                Build momentum<br />with Cycles
+                Stay in sync,<br />in real time
               </h2>
               <p className="text-[16px] leading-[1.7] text-[#9b9ba4] mb-10">
-                Cycles focus your team on what work should happen next.
-                A healthy routine to maintain velocity and make meaningful progress.
+                A shared view of your team&apos;s activity as it happens — so
+                nothing slips through the cracks.
               </p>
 
               <div className="space-y-4">
                 {[
-                  { title: 'Automatic tracking', desc: 'Started issues are added to the current cycle.' },
-                  { title: 'Scheduled', desc: 'Unfinished work rolls over to the next cycle automatically.' },
-                  { title: 'Fully configurable', desc: 'Set start and end dates, duration, and cool-down periods.' },
-                  { title: 'Predict delays', desc: 'Get warnings when a cycle is at risk of falling behind.' },
+                  { title: 'Live activity feed', desc: 'See engagements, portfolio logs, and report requests as they happen.' },
+                  { title: 'Team-wide visibility', desc: 'One view of what everyone is working on across departments.' },
+                  { title: 'Filterable by role', desc: 'Drill down to your office, your department, or your own activity.' },
+                  { title: 'Exportable data', desc: 'Pull what you need into spreadsheets for leadership or compliance.' },
                 ].map(f => (
                   <div key={f.title} className="flex gap-3">
                     <div className="w-1.5 h-1.5 rounded-full bg-cyan-600 mt-2 flex-shrink-0" />
@@ -376,27 +376,41 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Cycle visual */}
-            <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-6 relative overflow-hidden">
-              <div className="text-[12px] text-[#6b6b76] uppercase tracking-wider mb-4">Cycle 24 — Apr 7 – Apr 20</div>
-              <div className="space-y-3 mb-6">
-                <div className="flex justify-between text-[13px]">
-                  <span className="text-[#9b9ba4]">Scope</span>
-                  <span className="text-white font-medium">34 issues</span>
-                </div>
-                <div className="flex justify-between text-[13px]">
-                  <span className="text-[#9b9ba4]">Completed</span>
-                  <span className="text-emerald-400 font-medium">21 issues</span>
-                </div>
-                <div className="flex justify-between text-[13px]">
-                  <span className="text-[#9b9ba4]">In progress</span>
-                  <span className="text-cyan-500 font-medium">8 issues</span>
-                </div>
+            {/* Activity frequency chart */}
+            <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-6 relative overflow-hidden flex flex-col justify-between h-full">
+              <div className="text-[12px] text-[#6b6b76] uppercase tracking-wider mb-6">Weekly Activity</div>
+              <div className="flex items-end gap-2 flex-1 mb-4">
+                {[
+                  { day: 'Mon', eng: 9, port: 4, rep: 2 },
+                  { day: 'Tue', eng: 12, port: 3, rep: 4 },
+                  { day: 'Wed', eng: 7, port: 5, rep: 1 },
+                  { day: 'Thu', eng: 11, port: 3, rep: 3 },
+                  { day: 'Fri', eng: 8, port: 3, rep: 2 },
+                ].map(d => (
+                  <div key={d.day} className="flex-1 flex flex-col items-center gap-1">
+                    <div className="w-full flex flex-col gap-[2px] items-center">
+                      <div className="w-full rounded-t transition-all" style={{ height: `${d.eng * 8}px`, background: 'linear-gradient(180deg, #22d3ee, #0e7490)' }} />
+                      <div className="w-full transition-all" style={{ height: `${d.port * 8}px`, background: 'linear-gradient(180deg, #34d399, #047857)' }} />
+                      <div className="w-full rounded-b transition-all" style={{ height: `${d.rep * 8}px`, background: 'linear-gradient(180deg, #38bdf8, #0369a1)' }} />
+                    </div>
+                    <span className="text-[11px] text-[#6b6b76] mt-2">{d.day}</span>
+                  </div>
+                ))}
               </div>
-              {/* Progress bar */}
-              <div className="h-2 rounded-full bg-white/[0.06] overflow-hidden flex">
-                <div className="bg-emerald-500 rounded-l-full" style={{ width: '62%' }} />
-                <div className="bg-cyan-600" style={{ width: '23%' }} />
+              {/* Legend */}
+              <div className="flex gap-4 pt-4 border-t border-white/[0.06]">
+                <div className="flex items-center gap-1.5">
+                  <div className="w-2.5 h-2.5 rounded-sm" style={{ background: 'linear-gradient(180deg, #22d3ee, #0e7490)' }} />
+                  <span className="text-[11px] text-[#9b9ba4]">Engagements</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <div className="w-2.5 h-2.5 rounded-sm" style={{ background: 'linear-gradient(180deg, #34d399, #047857)' }} />
+                  <span className="text-[11px] text-[#9b9ba4]">Portfolios</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <div className="w-2.5 h-2.5 rounded-sm" style={{ background: 'linear-gradient(180deg, #38bdf8, #0369a1)' }} />
+                  <span className="text-[11px] text-[#9b9ba4]">Reports</span>
+                </div>
               </div>
               {/* Decorative glow */}
               <div className="absolute -bottom-20 -right-20 w-60 h-60 bg-cyan-600/[0.06] rounded-full blur-3xl" />
