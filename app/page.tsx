@@ -30,9 +30,8 @@ export default function Home() {
             A better way to<br />work together
           </h1>
 
-          <p className="text-[17px] leading-[1.7] text-[#9b9ba4] max-w-[520px] mx-auto mb-10 fade-in-d2">
+          <p className="text-[17px] leading-[1.7] text-[#9b9ba4] max-w-[600px] mx-auto mb-10 fade-in-d2">
             Meet the new standard for modern software development.
-            Streamline client projects, visually share notes and progress, and automatically analyze insights.
           </p>
 
           <div className="flex items-center justify-center gap-4 fade-in-d3">
@@ -215,78 +214,131 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── Feature deep-dive — Issue tracking ──────────────────── */}
+      {/* ── Feature deep-dive — Dashboards ──────────────────── */}
       <section className="py-24 px-6 border-t border-white/[0.04]">
         <div className="max-w-[1100px] mx-auto">
           <div className="max-w-[640px] mb-16">
             <h2 className="text-[clamp(28px,5vw,48px)] font-[500] tracking-[-0.035em] leading-[1.1] landing-gradient-text mb-5">
-              Issue tracking<br />you&apos;ll enjoy using
+              Every insight,<br />one dashboard
             </h2>
             <p className="text-[16px] leading-[1.7] text-[#9b9ba4]">
-              Create tasks in seconds, discuss issues in context, and breeze
-              through your work in views tailored to you and your team.
+              Track client engagements, analyze client portfolio construction, and
+              surface ticker trends all from a single platform built for ISG.
             </p>
           </div>
 
           {/* 3 visual feature cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-            {/* Card 1 — Keyboard */}
+            {/* Card 1 — Activity Heatmap */}
             <div className="card-shine rounded-xl border border-white/[0.06] bg-white/[0.02] p-6 flex flex-col">
               <div className="h-[200px] flex items-center justify-center mb-6 rounded-lg bg-white/[0.02] border border-white/[0.04] overflow-hidden">
-                <div className="grid grid-cols-5 gap-1.5">
-                  {['⌘', 'K', 'I', 'A', 'S', 'P', 'L', 'D', 'C', 'V'].map((k, i) => (
-                    <div
-                      key={i}
-                      className="w-9 h-9 rounded-md bg-white/[0.06] border border-white/[0.08] flex items-center justify-center text-[11px] text-[#9b9ba4] font-mono"
-                    >
-                      {k}
-                    </div>
+                <div className="px-4">
+                  <div className="flex items-end gap-[3px]">
+                    {[
+                      [0,1,0,2,1,0,3],
+                      [1,2,1,0,2,3,1],
+                      [0,3,2,1,0,1,2],
+                      [2,1,3,2,1,0,1],
+                      [1,0,2,3,2,1,0],
+                      [0,2,1,0,3,2,1],
+                      [3,1,0,2,1,3,2],
+                      [1,2,3,1,0,2,0],
+                      [0,1,2,3,2,1,3],
+                      [2,0,1,2,3,0,1],
+                      [1,3,0,1,2,1,2],
+                      [0,2,1,3,1,2,0],
+                    ].map((col, ci) => (
+                      <div key={ci} className="flex flex-col gap-[3px]">
+                        {col.map((v, ri) => (
+                          <div
+                            key={ri}
+                            className={`w-[14px] h-[14px] rounded-[3px] ${
+                              v === 0 ? 'bg-white/[0.04]' :
+                              v === 1 ? 'bg-cyan-900/60' :
+                              v === 2 ? 'bg-cyan-600/70' :
+                              'bg-cyan-400'
+                            }`}
+                          />
+                        ))}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+              <h3 className="text-[15px] font-medium text-white mb-2">Client interaction tracking</h3>
+              <p className="text-[13px] text-[#9b9ba4] leading-[1.6]">
+                Visualize engagement activity at a glance with contribution
+                heatmaps across your entire team.
+              </p>
+            </div>
+
+            {/* Card 2 — Portfolio Trends */}
+            <div className="card-shine rounded-xl border border-white/[0.06] bg-white/[0.02] p-6 flex flex-col">
+              <div className="h-[200px] flex items-center justify-center mb-6 rounded-lg bg-white/[0.02] border border-white/[0.04] overflow-hidden">
+                <svg viewBox="0 0 200 140" className="w-full h-full px-4 py-3">
+                  {/* Axes */}
+                  <line x1="30" y1="10" x2="30" y2="120" stroke="white" strokeOpacity="0.08" />
+                  <line x1="30" y1="120" x2="190" y2="120" stroke="white" strokeOpacity="0.08" />
+                  {/* Grid lines */}
+                  {[37, 65, 92].map(y => (
+                    <line key={y} x1="30" y1={y} x2="190" y2={y} stroke="white" strokeOpacity="0.03" />
                   ))}
-                </div>
-              </div>
-              <h3 className="text-[15px] font-medium text-white mb-2">Built for your keyboard</h3>
-              <p className="text-[13px] text-[#9b9ba4] leading-[1.6]">
-                Fly through your tasks with rapid-fire keyboard shortcuts
-                for everything. Literally everything.
-              </p>
-            </div>
-
-            {/* Card 2 — Speed */}
-            <div className="card-shine rounded-xl border border-white/[0.06] bg-white/[0.02] p-6 flex flex-col">
-              <div className="h-[200px] flex items-center justify-center mb-6 rounded-lg bg-white/[0.02] border border-white/[0.04]">
-                <div className="text-center">
-                  <div className="text-[48px] font-[600] tracking-tight landing-gradient-text">50ms</div>
-                  <div className="text-[12px] text-[#6b6b76] mt-1">interactions &amp; real-time sync</div>
-                </div>
-              </div>
-              <h3 className="text-[15px] font-medium text-white mb-2">Breathtakingly fast</h3>
-              <p className="text-[13px] text-[#9b9ba4] leading-[1.6]">
-                Built for speed with 50ms interactions and real-time sync,
-                so your tools never slow you down.
-              </p>
-            </div>
-
-            {/* Card 3 — Workflows */}
-            <div className="card-shine rounded-xl border border-white/[0.06] bg-white/[0.02] p-6 flex flex-col">
-              <div className="h-[200px] flex items-center justify-center mb-6 rounded-lg bg-white/[0.02] border border-white/[0.04] overflow-hidden">
-                <div className="space-y-2.5 w-full px-5">
+                  {[70, 110, 150].map(x => (
+                    <line key={x} x1={x} y1="10" x2={x} y2="120" stroke="white" strokeOpacity="0.03" />
+                  ))}
+                  {/* Axis labels */}
+                  <text x="110" y="135" textAnchor="middle" fill="#6b6b76" fontSize="7" fontFamily="var(--font-geist-sans)">Value / Growth</text>
+                  <text x="12" y="65" textAnchor="middle" fill="#6b6b76" fontSize="7" fontFamily="var(--font-geist-sans)" transform="rotate(-90, 12, 65)">Small / Large</text>
+                  {/* Scatter bubbles */}
                   {[
-                    { label: 'Backlog', color: 'bg-[#3b3b44]', w: 'w-3/4' },
-                    { label: 'Todo', color: 'bg-[#6b6b76]', w: 'w-2/3' },
-                    { label: 'In Progress', color: 'bg-cyan-600', w: 'w-1/2' },
-                    { label: 'Done', color: 'bg-emerald-500', w: 'w-5/6' },
-                  ].map(s => (
-                    <div key={s.label} className="flex items-center gap-3">
-                      <span className="text-[11px] text-[#6b6b76] w-[72px] text-right flex-shrink-0">{s.label}</span>
-                      <div className={`h-2 rounded-full ${s.color} ${s.w}`} />
+                    { x: 65, y: 45, r: 5, color: '#06b6d4', o: 0.9 },
+                    { x: 88, y: 72, r: 6, color: '#06b6d4', o: 1 },
+                    { x: 120, y: 38, r: 4, color: '#06b6d4', o: 0.7 },
+                    { x: 145, y: 58, r: 7, color: '#06b6d4', o: 0.85 },
+                    { x: 72, y: 95, r: 5, color: '#06b6d4', o: 0.75 },
+                    { x: 155, y: 85, r: 4, color: '#06b6d4', o: 0.6 },
+                    { x: 100, y: 52, r: 5, color: '#06b6d4', o: 0.8 },
+                    { x: 132, y: 100, r: 6, color: '#06b6d4', o: 0.7 },
+                    { x: 50, y: 68, r: 4, color: '#06b6d4', o: 0.65 },
+                    { x: 170, y: 42, r: 5, color: '#06b6d4', o: 0.9 },
+                    { x: 110, y: 65, r: 5, color: '#6b6b76', o: 0.9 },
+                    { x: 78, y: 55, r: 7, color: '#6b6b76', o: 0.75 },
+                    { x: 140, y: 78, r: 4, color: '#6b6b76', o: 0.8 },
+                    { x: 58, y: 85, r: 6, color: '#6b6b76', o: 0.65 },
+                    { x: 165, y: 55, r: 5, color: '#6b6b76', o: 0.7 },
+                    { x: 95, y: 98, r: 3, color: '#6b6b76', o: 0.6 },
+                    { x: 125, y: 28, r: 5, color: '#6b6b76', o: 0.85 },
+                    { x: 48, y: 38, r: 4, color: '#6b6b76', o: 0.7 },
+                  ].map((p, i) => (
+                    <circle key={i} cx={p.x} cy={p.y} r={p.r} fill={p.color} fillOpacity={p.o} />
+                  ))}
+                </svg>
+              </div>
+              <h3 className="text-[15px] font-medium text-white mb-2">Portfolio construction analytics</h3>
+              <p className="text-[13px] text-[#9b9ba4] leading-[1.6]">
+                Compare client portfolio characteristics against benchmarks
+                with style maps and performance trend lines.
+              </p>
+            </div>
+
+            {/* Card 3 — Ticker Trends */}
+            <div className="card-shine rounded-xl border border-white/[0.06] bg-white/[0.02] p-6 flex flex-col">
+              <div className="h-[200px] flex items-center justify-center mb-6 rounded-lg bg-white/[0.02] border border-white/[0.04] overflow-hidden">
+                <div className="w-full px-5 space-y-3">
+                  {[100, 86, 73, 54, 45].map((w, i) => (
+                    <div key={i} className="flex items-center gap-3">
+                      <div className="w-[36px] h-[10px] rounded bg-white/[0.06] flex-shrink-0" />
+                      <div className="flex-1 h-[10px] rounded-full bg-white/[0.04] overflow-hidden">
+                        <div className="h-full rounded-full bg-cyan-500" style={{ width: `${w}%`, opacity: 1 - i * 0.15 }} />
+                      </div>
                     </div>
                   ))}
                 </div>
               </div>
-              <h3 className="text-[15px] font-medium text-white mb-2">Designed for modern software teams</h3>
+              <h3 className="text-[15px] font-medium text-white mb-2">Ticker adoption trends</h3>
               <p className="text-[13px] text-[#9b9ba4] leading-[1.6]">
-                Comes with built-in workflows that create focus and routine
-                for your team.
+                Track hot tickers, spot DFA adoption patterns,
+                and surface emerging trends across portfolios.
               </p>
             </div>
           </div>
