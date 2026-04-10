@@ -80,3 +80,52 @@ body {
     transform: scaleY(1) translateY(0);
   }
 }
+
+/* ── Landing page (Linear-style) ─────────────────────────────── */
+
+.landing-gradient-text {
+  background: linear-gradient(180deg, #fff 0%, rgba(255, 255, 255, 0.55) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.hero-glow {
+  background: radial-gradient(ellipse 80% 50% at 50% -20%, rgba(6, 182, 212, 0.2), transparent);
+}
+
+@keyframes landingFadeIn {
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.fade-in      { animation: landingFadeIn 1s ease-out both; }
+.fade-in-d1   { animation: landingFadeIn 1s ease-out 0.1s both; }
+.fade-in-d2   { animation: landingFadeIn 1s ease-out 0.2s both; }
+.fade-in-d3   { animation: landingFadeIn 1s ease-out 0.35s both; }
+.fade-in-d4   { animation: landingFadeIn 1s ease-out 0.5s both; }
+
+/* Logos infinite scroll */
+@keyframes logoScroll {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+.logo-scroll {
+  animation: logoScroll 30s linear infinite;
+}
+
+/* Subtle card shine on hover */
+.card-shine {
+  position: relative;
+  overflow: hidden;
+}
+.card-shine::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, transparent 40%, rgba(255,255,255,0.03) 50%, transparent 60%);
+  opacity: 0;
+  transition: opacity 0.5s;
+}
+.card-shine:hover::after {
+  opacity: 1;
+}
