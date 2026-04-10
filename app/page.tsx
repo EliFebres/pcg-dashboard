@@ -222,7 +222,7 @@ export default function Home() {
               Every insight,<br />one dashboard
             </h2>
             <p className="text-[16px] leading-[1.7] text-[#9b9ba4]">
-              Track client engagements, analyze client portfolio construction, and
+              Track client engagements, analyze client portfolios, and
               surface ticker trends all from a single platform built for ISG.
             </p>
           </div>
