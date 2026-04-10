@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Eye, EyeOff, UserPlus, CheckCircle, X } from 'lucide-react';
+import { Eye, EyeOff, ArrowRight, CheckCircle, X } from 'lucide-react';
 import GlassSelect from '@/app/components/pages/shared/GlassSelect';
 
 const TEAMS = [
@@ -36,7 +36,6 @@ export default function SignupModal({ isOpen, onClose, onSwitchToLogin }: Signup
   const [isLoading, setIsLoading] = useState(false);
   const [success, setSuccess] = useState<'pending' | null>(null);
 
-  // Reset form when modal opens
   useEffect(() => {
     if (isOpen) {
       setForm({ firstName: '', lastName: '', email: '', password: '', confirmPassword: '', title: '', team: '', office: '' });
@@ -123,210 +122,251 @@ export default function SignupModal({ isOpen, onClose, onSwitchToLogin }: Signup
   // Success state
   if (success === 'pending') {
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
-        <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+      <div
+        className="fixed inset-0 z-50 flex items-center justify-center p-4"
+        style={{ fontFamily: 'var(--font-geist-sans)' }}
+        onClick={onClose}
+      >
+        <div className="absolute inset-0 bg-[#08070b]/80 backdrop-blur-md" />
         <div
-          className="relative w-full max-w-sm bg-zinc-900/90 backdrop-blur-md border border-zinc-800/50 rounded-2xl p-8 shadow-2xl text-center"
+          className="relative w-full max-w-[400px] animate-[landingFadeIn_0.35s_ease-out_both]"
           onClick={e => e.stopPropagation()}
         >
-          <button
-            onClick={onClose}
-            className="absolute top-4 right-4 text-zinc-500 hover:text-zinc-300 transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
-          <div className="flex justify-center mb-4">
-            <CheckCircle className="w-12 h-12 text-cyan-400" />
+          <div className="absolute -inset-px rounded-2xl bg-gradient-to-b from-cyan-500/20 via-transparent to-transparent pointer-events-none" />
+          <div className="relative rounded-2xl border border-white/[0.08] bg-[#0a0a0f]/95 backdrop-blur-xl shadow-2xl overflow-hidden">
+            <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-cyan-500/40 to-transparent" />
+            <div className="p-8 text-center">
+              <button
+                onClick={onClose}
+                className="absolute top-5 right-5 w-8 h-8 flex items-center justify-center rounded-lg border border-white/[0.06] bg-white/[0.02] text-[#6b6b76] hover:text-white hover:border-white/[0.12] transition-all"
+              >
+                <X className="w-4 h-4" />
+              </button>
+              <div className="flex justify-center mb-4">
+                <CheckCircle className="w-12 h-12 text-cyan-500" />
+              </div>
+              <h2 className="text-[22px] font-[500] tracking-[-0.02em] leading-[1.2] landing-gradient-text mb-2">
+                Registration Submitted
+              </h2>
+              <p className="text-[14px] text-[#6b6b76] mb-6 leading-relaxed">
+                Your account is pending admin approval. You&apos;ll be able to sign in once an admin approves your request.
+              </p>
+              <button
+                onClick={onSwitchToLogin}
+                className="inline-flex items-center gap-2 px-5 py-2.5 text-[14px] text-cyan-500 border border-white/[0.08] rounded-xl hover:bg-white/[0.04] transition-all"
+              >
+                Back to Login
+              </button>
+            </div>
           </div>
-          <h2 className="text-lg font-semibold text-zinc-100 mb-2">Registration Submitted</h2>
-          <p className="text-sm text-zinc-400 mb-6 leading-relaxed">
-            Your account is pending admin approval. You&apos;ll be able to sign in once an admin approves your request.
-          </p>
-          <button
-            onClick={onSwitchToLogin}
-            className="inline-flex items-center gap-2 px-4 py-2 text-sm text-cyan-400 border border-cyan-500/30 rounded-lg hover:bg-cyan-500/10 transition-colors"
-          >
-            Back to Login
-          </button>
         </div>
       </div>
     );
   }
 
-  const fieldClass = (field: string) =>
-    `w-full px-3 py-2.5 bg-zinc-800/60 border rounded-lg text-zinc-100 text-sm placeholder-zinc-600 focus:outline-none focus:ring-1 transition-colors ${
+  const inputClass = (field: string) =>
+    `w-full px-4 py-3 bg-white/[0.03] border rounded-xl text-white text-[14px] placeholder-[#4b4b54] focus:outline-none focus:ring-1 focus:bg-white/[0.04] transition-all ${
       fieldErrors[field]
-        ? 'border-red-500/50 focus:border-red-500/50 focus:ring-red-500/20'
-        : 'border-zinc-700/50 focus:border-cyan-500/50 focus:ring-cyan-500/30'
+        ? 'border-red-500/20 focus:border-red-500/30 focus:ring-red-500/20'
+        : 'border-white/[0.06] focus:border-cyan-500/30 focus:ring-cyan-500/20'
     }`;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      style={{ fontFamily: 'var(--font-geist-sans)' }}
+      onClick={onClose}
+    >
       {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+      <div className="absolute inset-0 bg-[#08070b]/80 backdrop-blur-md" />
 
       {/* Modal */}
       <div
-        className="relative w-full max-w-md max-h-[90vh] overflow-y-auto bg-zinc-900/90 backdrop-blur-md border border-zinc-800/50 rounded-2xl p-8 shadow-2xl"
+        className="relative w-full max-w-[440px] animate-[landingFadeIn_0.35s_ease-out_both]"
         onClick={e => e.stopPropagation()}
       >
-        {/* Close button */}
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 text-zinc-500 hover:text-zinc-300 transition-colors"
-        >
-          <X className="w-5 h-5" />
-        </button>
+        {/* Top border gradient */}
+        <div className="absolute -inset-px rounded-2xl bg-gradient-to-b from-cyan-500/20 via-transparent to-transparent pointer-events-none" />
 
-        <h2 className="text-lg font-semibold text-zinc-100 mb-6">Request account access</h2>
+        <div className="relative rounded-2xl border border-white/[0.08] bg-[#0a0a0f]/95 backdrop-blur-xl shadow-2xl overflow-hidden">
+          {/* Top gradient shine */}
+          <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-cyan-500/40 to-transparent" />
 
-        {error && (
-          <div className="mb-4 px-4 py-3 bg-red-500/10 border border-red-500/30 rounded-lg text-red-400 text-sm">
-            {error}
-          </div>
-        )}
+          <div className="p-8 max-h-[90vh] overflow-y-auto">
+            {/* Close button */}
+            <button
+              onClick={onClose}
+              className="absolute top-5 right-5 w-8 h-8 flex items-center justify-center rounded-lg border border-white/[0.06] bg-white/[0.02] text-[#6b6b76] hover:text-white hover:border-white/[0.12] transition-all z-10"
+            >
+              <X className="w-4 h-4" />
+            </button>
 
-        <form onSubmit={handleSubmit} className="space-y-4" noValidate>
-          {/* Name row */}
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-sm font-medium text-zinc-400 mb-1.5">First name</label>
-              <input
-                type="text"
-                value={form.firstName}
-                onChange={set('firstName')}
-                className={fieldClass('firstName')}
-                placeholder="First"
-                autoComplete="given-name"
-              />
-              {fieldErrors.firstName && <p className="text-red-400 text-xs mt-1">{fieldErrors.firstName}</p>}
+            {/* Header */}
+            <div className="mb-8">
+              <h2 className="text-[22px] font-[500] tracking-[-0.02em] leading-[1.2] landing-gradient-text">
+                Request access
+              </h2>
+              <p className="text-[14px] text-[#6b6b76] mt-1.5">Create your account to get started</p>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-zinc-400 mb-1.5">Last name</label>
-              <input
-                type="text"
-                value={form.lastName}
-                onChange={set('lastName')}
-                className={fieldClass('lastName')}
-                placeholder="Last"
-                autoComplete="family-name"
-              />
-              {fieldErrors.lastName && <p className="text-red-400 text-xs mt-1">{fieldErrors.lastName}</p>}
-            </div>
-          </div>
 
-          {/* Email */}
-          <div>
-            <label className="block text-sm font-medium text-zinc-400 mb-1.5">Email address</label>
-            <input
-              type="email"
-              value={form.email}
-              onChange={set('email')}
-              className={fieldClass('email')}
-              placeholder="you@example.com"
-              autoComplete="email"
-            />
-            {fieldErrors.email && <p className="text-red-400 text-xs mt-1">{fieldErrors.email}</p>}
-          </div>
-
-          {/* Password */}
-          <div>
-            <label className="block text-sm font-medium text-zinc-400 mb-1.5">Password</label>
-            <div className="relative">
-              <input
-                type={showPassword ? 'text' : 'password'}
-                value={form.password}
-                onChange={set('password')}
-                className={`${fieldClass('password')} pr-10`}
-                placeholder="Min 10 characters"
-                autoComplete="new-password"
-              />
-              <button type="button" onClick={() => setShowPassword(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 transition-colors" tabIndex={-1}>
-                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-              </button>
-            </div>
-            {fieldErrors.password && <p className="text-red-400 text-xs mt-1">{fieldErrors.password}</p>}
-          </div>
-
-          {/* Confirm Password */}
-          <div>
-            <label className="block text-sm font-medium text-zinc-400 mb-1.5">Confirm password</label>
-            <div className="relative">
-              <input
-                type={showConfirm ? 'text' : 'password'}
-                value={form.confirmPassword}
-                onChange={set('confirmPassword')}
-                className={`${fieldClass('confirmPassword')} pr-10`}
-                placeholder="Re-enter password"
-                autoComplete="new-password"
-              />
-              <button type="button" onClick={() => setShowConfirm(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 transition-colors" tabIndex={-1}>
-                {showConfirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-              </button>
-            </div>
-            {fieldErrors.confirmPassword && <p className="text-red-400 text-xs mt-1">{fieldErrors.confirmPassword}</p>}
-          </div>
-
-          {/* Title */}
-          <div>
-            <label className="block text-sm font-medium text-zinc-400 mb-1.5">Title</label>
-            <input
-              type="text"
-              value={form.title}
-              onChange={set('title')}
-              className={fieldClass('title')}
-              placeholder="e.g. Associate, Analyst"
-              autoComplete="organization-title"
-            />
-            {fieldErrors.title && <p className="text-red-400 text-xs mt-1">{fieldErrors.title}</p>}
-          </div>
-
-          {/* Team + Office row */}
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-sm font-medium text-zinc-400 mb-1.5">Team</label>
-              <GlassSelect
-                value={form.team}
-                onChange={v => { setForm(prev => ({ ...prev, team: v })); setFieldErrors(prev => ({ ...prev, team: '' })); }}
-                options={TEAMS}
-                placeholder="Select team"
-                hasError={!!fieldErrors.team}
-              />
-              {fieldErrors.team && <p className="text-red-400 text-xs mt-1">{fieldErrors.team}</p>}
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-zinc-400 mb-1.5">Office</label>
-              <GlassSelect
-                value={form.office}
-                onChange={v => { setForm(prev => ({ ...prev, office: v })); setFieldErrors(prev => ({ ...prev, office: '' })); }}
-                options={OFFICES}
-                placeholder="Select office"
-                hasError={!!fieldErrors.office}
-              />
-              {fieldErrors.office && <p className="text-red-400 text-xs mt-1">{fieldErrors.office}</p>}
-            </div>
-          </div>
-
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium text-sm rounded-lg transition-all mt-2"
-          >
-            {isLoading ? (
-              <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-            ) : (
-              <UserPlus className="w-4 h-4" />
+            {error && (
+              <div className="mb-5 px-4 py-3 rounded-xl border border-red-500/20 bg-red-500/[0.06] text-red-400 text-[13px]">
+                {error}
+              </div>
             )}
-            {isLoading ? 'Submitting...' : 'Request access'}
-          </button>
-        </form>
 
-        <p className="text-center text-sm text-zinc-500 mt-6">
-          Already have an account?{' '}
-          <button onClick={onSwitchToLogin} className="text-cyan-400 hover:text-cyan-300 transition-colors">
-            Sign in
-          </button>
-        </p>
+            <form onSubmit={handleSubmit} className="space-y-5" noValidate>
+              {/* Name row */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[13px] font-medium text-[#9b9ba4] mb-2">First name</label>
+                  <input
+                    type="text"
+                    value={form.firstName}
+                    onChange={set('firstName')}
+                    className={inputClass('firstName')}
+                    placeholder="First"
+                    autoComplete="given-name"
+                  />
+                  {fieldErrors.firstName && <p className="text-red-400 text-[12px] mt-1">{fieldErrors.firstName}</p>}
+                </div>
+                <div>
+                  <label className="block text-[13px] font-medium text-[#9b9ba4] mb-2">Last name</label>
+                  <input
+                    type="text"
+                    value={form.lastName}
+                    onChange={set('lastName')}
+                    className={inputClass('lastName')}
+                    placeholder="Last"
+                    autoComplete="family-name"
+                  />
+                  {fieldErrors.lastName && <p className="text-red-400 text-[12px] mt-1">{fieldErrors.lastName}</p>}
+                </div>
+              </div>
+
+              {/* Email */}
+              <div>
+                <label className="block text-[13px] font-medium text-[#9b9ba4] mb-2">Email address</label>
+                <input
+                  type="email"
+                  value={form.email}
+                  onChange={set('email')}
+                  className={inputClass('email')}
+                  placeholder="you@example.com"
+                  autoComplete="email"
+                />
+                {fieldErrors.email && <p className="text-red-400 text-[12px] mt-1">{fieldErrors.email}</p>}
+              </div>
+
+              {/* Password */}
+              <div>
+                <label className="block text-[13px] font-medium text-[#9b9ba4] mb-2">Password</label>
+                <div className="relative">
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    value={form.password}
+                    onChange={set('password')}
+                    className={`${inputClass('password')} pr-11`}
+                    placeholder="Min 10 characters"
+                    autoComplete="new-password"
+                  />
+                  <button type="button" onClick={() => setShowPassword(v => !v)} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#4b4b54] hover:text-[#9b9ba4] transition-colors" tabIndex={-1}>
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+                {fieldErrors.password && <p className="text-red-400 text-[12px] mt-1">{fieldErrors.password}</p>}
+              </div>
+
+              {/* Confirm Password */}
+              <div>
+                <label className="block text-[13px] font-medium text-[#9b9ba4] mb-2">Confirm password</label>
+                <div className="relative">
+                  <input
+                    type={showConfirm ? 'text' : 'password'}
+                    value={form.confirmPassword}
+                    onChange={set('confirmPassword')}
+                    className={`${inputClass('confirmPassword')} pr-11`}
+                    placeholder="Re-enter password"
+                    autoComplete="new-password"
+                  />
+                  <button type="button" onClick={() => setShowConfirm(v => !v)} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#4b4b54] hover:text-[#9b9ba4] transition-colors" tabIndex={-1}>
+                    {showConfirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+                {fieldErrors.confirmPassword && <p className="text-red-400 text-[12px] mt-1">{fieldErrors.confirmPassword}</p>}
+              </div>
+
+              {/* Title */}
+              <div>
+                <label className="block text-[13px] font-medium text-[#9b9ba4] mb-2">Title</label>
+                <input
+                  type="text"
+                  value={form.title}
+                  onChange={set('title')}
+                  className={inputClass('title')}
+                  placeholder="e.g. Associate, Analyst"
+                  autoComplete="organization-title"
+                />
+                {fieldErrors.title && <p className="text-red-400 text-[12px] mt-1">{fieldErrors.title}</p>}
+              </div>
+
+              {/* Team + Office row */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[13px] font-medium text-[#9b9ba4] mb-2">Team</label>
+                  <GlassSelect
+                    value={form.team}
+                    onChange={v => { setForm(prev => ({ ...prev, team: v })); setFieldErrors(prev => ({ ...prev, team: '' })); }}
+                    options={TEAMS}
+                    placeholder="Select team"
+                    hasError={!!fieldErrors.team}
+                  />
+                  {fieldErrors.team && <p className="text-red-400 text-[12px] mt-1">{fieldErrors.team}</p>}
+                </div>
+                <div>
+                  <label className="block text-[13px] font-medium text-[#9b9ba4] mb-2">Office</label>
+                  <GlassSelect
+                    value={form.office}
+                    onChange={v => { setForm(prev => ({ ...prev, office: v })); setFieldErrors(prev => ({ ...prev, office: '' })); }}
+                    options={OFFICES}
+                    placeholder="Select office"
+                    hasError={!!fieldErrors.office}
+                  />
+                  {fieldErrors.office && <p className="text-red-400 text-[12px] mt-1">{fieldErrors.office}</p>}
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="w-full flex items-center justify-center gap-2.5 px-5 py-3 bg-cyan-600 hover:bg-cyan-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium text-[14px] rounded-xl transition-all mt-1 shadow-[0_0_20px_-4px_rgba(6,182,212,0.3)] hover:shadow-[0_0_24px_-4px_rgba(6,182,212,0.4)]"
+              >
+                {isLoading ? (
+                  <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                ) : (
+                  <>
+                    Request access
+                    <ArrowRight size={15} />
+                  </>
+                )}
+              </button>
+            </form>
+
+            {/* Divider */}
+            <div className="flex items-center gap-3 my-6">
+              <div className="flex-1 h-px bg-white/[0.06]" />
+              <span className="text-[12px] text-[#4b4b54] uppercase tracking-wider">or</span>
+              <div className="flex-1 h-px bg-white/[0.06]" />
+            </div>
+
+            <p className="text-center text-[13px] text-[#6b6b76]">
+              Already have an account?{' '}
+              <button onClick={onSwitchToLogin} className="text-cyan-500 hover:text-cyan-400 transition-colors">
+                Sign in
+              </button>
+            </p>
+          </div>
+        </div>
       </div>
     </div>
   );

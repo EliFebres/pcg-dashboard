@@ -20,7 +20,7 @@ export default function Home() {
     const targets = el.querySelectorAll('.scroll-fade-in');
     const observer = new IntersectionObserver(
       entries => entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); observer.unobserve(e.target); } }),
-      { threshold: 0, rootMargin: '0px 0px -30% 0px' }
+      { threshold: 0.3 }
     );
     targets.forEach(t => observer.observe(t));
     return () => observer.disconnect();
