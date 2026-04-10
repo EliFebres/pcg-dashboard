@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, BarChart3, ChevronDown, PieChart, Flame, User, LogOut, Users, UserCheck, PanelLeftClose, PanelLeftOpen, Boxes } from 'lucide-react';
+import { LayoutDashboard, BarChart3, ChevronDown, PieChart, Flame, User, LogOut, Users, UserCheck, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { useCurrentUser } from '@/app/lib/auth/context';
 import { toDisplayName } from '@/app/lib/auth/types';
 
@@ -53,7 +53,20 @@ function formatDisplayName(fullName: string): string {
 export default function Sidebar({ className = '' }: SidebarProps) {
   const pathname = usePathname();
   const { user } = useCurrentUser();
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('sidebar-collapsed') === 'true';
+    }
+    return false;
+  });
+
+  const toggleCollapsed = () => {
+    setIsCollapsed(prev => {
+      const next = !prev;
+      localStorage.setItem('sidebar-collapsed', String(next));
+      return next;
+    });
+  };
 
   const getExpandedItemsForPath = (path: string) => {
     const items: string[] = [];
@@ -98,18 +111,22 @@ export default function Sidebar({ className = '' }: SidebarProps) {
   const displayName = user ? formatDisplayName(`${user.firstName} ${user.lastName}`) : '...';
 
   return (
-    <aside className={`${isCollapsed ? 'w-14' : 'w-56'} transition-all duration-200 overflow-x-hidden bg-[#111113] flex flex-col font-[family-name:var(--font-inter)] ${className}`}>
+    <aside className={`${isCollapsed ? 'w-14' : 'w-56'} transition-all duration-200 ${isCollapsed ? '' : 'overflow-x-hidden'} bg-[#111113] flex flex-col font-[family-name:var(--font-inter)] ${className}`}>
 
       {/* Header: dashboard icon (left) + collapse toggle (right) */}
       <div className={`px-2 pt-6 pb-3 flex items-center flex-shrink-0 ${isCollapsed ? 'justify-center' : 'justify-between'}`}>
         {!isCollapsed && (
           <div className="flex items-center gap-2">
-            <Boxes className="w-6 h-6 flex-shrink-0" style={{ stroke: 'url(#sidebar-icon-gradient)' }} />
+            <svg width="24" height="24" viewBox="0 0 100 100" fill="none" className="flex-shrink-0">
+              <path d="M50 5A45 45 0 1 1 12 32" stroke="url(#sidebar-icon-gradient)" strokeWidth="8" strokeLinecap="round" fill="none"/>
+              <path d="M50 24A26 26 0 1 0 72 66" stroke="url(#sidebar-icon-gradient)" strokeWidth="7" strokeLinecap="round" fill="none" opacity="0.4"/>
+              <circle cx="50" cy="50" r="7" fill="url(#sidebar-icon-gradient)"/>
+            </svg>
             <span className="text-[1.05rem] font-semibold tracking-wide text-white">PCG Tools</span>
           </div>
         )}
         <button
-          onClick={() => setIsCollapsed(!isCollapsed)}
+          onClick={toggleCollapsed}
           title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
           className="p-1.5 rounded-md text-zinc-500 hover:text-zinc-200 hover:bg-white/[0.05] transition-colors flex-shrink-0"
         >
@@ -132,7 +149,7 @@ export default function Sidebar({ className = '' }: SidebarProps) {
       <div className="border-t border-zinc-800/50 mx-2 my-1.5" />
 
       {/* Navigation */}
-      <nav className="relative flex-1 px-1.5 py-2 overflow-y-auto overflow-x-hidden">
+      <nav className="relative flex-1 px-1.5 py-2 ${isCollapsed ? '' : 'overflow-y-auto overflow-x-hidden'}">
         {navSections.map((section) => (
           <div key={section.title} className="mb-3">
             {!isCollapsed && (
@@ -172,7 +189,7 @@ export default function Sidebar({ className = '' }: SidebarProps) {
                     <div key={item.label} className="relative group">
                       <button
                         onClick={() => !isCollapsed && toggleExpanded(item.label)}
-                        className={`w-full flex items-center transition-colors border-l-2 ${isCollapsed ? 'justify-center px-0 py-2 border-transparent' : `justify-between px-2 py-2 ${parentActive ? 'bg-gradient-to-r from-blue-600/20 to-cyan-600/10 text-cyan-400 border-cyan-400 backdrop-blur-sm' : 'text-zinc-400 hover:bg-white/[0.03] hover:text-zinc-200 border-transparent'}`}`}
+                        className={`w-full flex items-center transition-colors border-l-2 ${isCollapsed ? `justify-center px-0 py-2 ${parentActive ? 'bg-gradient-to-r from-blue-600/20 to-cyan-600/10 text-cyan-400 border-cyan-400 backdrop-blur-sm' : 'text-zinc-400 hover:bg-white/[0.03] hover:text-zinc-200 border-transparent'}` : `justify-between px-2 py-2 ${parentActive ? 'bg-gradient-to-r from-blue-600/20 to-cyan-600/10 text-cyan-400 border-cyan-400 backdrop-blur-sm' : 'text-zinc-400 hover:bg-white/[0.03] hover:text-zinc-200 border-transparent'}`}`}
                       >
                         <div className={`flex items-center ${isCollapsed ? '' : 'gap-2.5'}`}>
                           <Icon className="w-5 h-5 flex-shrink-0" />
@@ -216,7 +233,7 @@ export default function Sidebar({ className = '' }: SidebarProps) {
                   <div key={item.href} className="relative group">
                     <Link
                       href={item.href}
-                      className={`w-full flex items-center transition-colors border-l-2 ${isCollapsed ? 'justify-center px-0 py-2 border-transparent' : `px-2 py-2 gap-2.5 ${active ? 'bg-gradient-to-r from-blue-600/20 to-cyan-600/10 text-cyan-400 border-cyan-400 backdrop-blur-sm' : 'text-zinc-400 hover:bg-white/[0.03] hover:text-zinc-200 border-transparent'}`}`}
+                      className={`w-full flex items-center transition-colors border-l-2 ${isCollapsed ? `justify-center px-0 py-2 ${active ? 'bg-gradient-to-r from-blue-600/20 to-cyan-600/10 text-cyan-400 border-cyan-400 backdrop-blur-sm' : 'text-zinc-400 hover:bg-white/[0.03] hover:text-zinc-200 border-transparent'}` : `px-2 py-2 gap-2.5 ${active ? 'bg-gradient-to-r from-blue-600/20 to-cyan-600/10 text-cyan-400 border-cyan-400 backdrop-blur-sm' : 'text-zinc-400 hover:bg-white/[0.03] hover:text-zinc-200 border-transparent'}`}`}
                     >
                       <Icon className="w-5 h-5 flex-shrink-0" />
                       {!isCollapsed && <span className="text-[0.9rem] font-semibold tracking-wide">{item.label}</span>}
@@ -245,7 +262,7 @@ export default function Sidebar({ className = '' }: SidebarProps) {
             <div className="relative group">
               <Link
                 href="/admin/users"
-                className={`w-full flex items-center transition-colors border-l-2 ${isCollapsed ? 'justify-center px-0 py-2 border-transparent' : `px-2 py-2 gap-2.5 ${pathname === '/admin/users' ? 'bg-gradient-to-r from-blue-600/20 to-cyan-600/10 text-cyan-400 border-cyan-400 backdrop-blur-sm' : 'text-zinc-400 hover:bg-white/[0.03] hover:text-zinc-200 border-transparent'}`}`}
+                className={`w-full flex items-center transition-colors border-l-2 ${isCollapsed ? `justify-center px-0 py-2 ${pathname === '/admin/users' ? 'bg-gradient-to-r from-blue-600/20 to-cyan-600/10 text-cyan-400 border-cyan-400 backdrop-blur-sm' : 'text-zinc-400 hover:bg-white/[0.03] hover:text-zinc-200 border-transparent'}` : `px-2 py-2 gap-2.5 ${pathname === '/admin/users' ? 'bg-gradient-to-r from-blue-600/20 to-cyan-600/10 text-cyan-400 border-cyan-400 backdrop-blur-sm' : 'text-zinc-400 hover:bg-white/[0.03] hover:text-zinc-200 border-transparent'}`}`}
               >
                 <Users className="w-5 h-5 flex-shrink-0" />
                 {!isCollapsed && <span className="text-[0.9rem] font-semibold tracking-wide">User Management</span>}
@@ -259,7 +276,7 @@ export default function Sidebar({ className = '' }: SidebarProps) {
             <div className="relative group">
               <Link
                 href="/admin/team-members"
-                className={`w-full flex items-center transition-colors border-l-2 ${isCollapsed ? 'justify-center px-0 py-2 border-transparent' : `px-2 py-2 gap-2.5 ${pathname === '/admin/team-members' ? 'bg-gradient-to-r from-blue-600/20 to-cyan-600/10 text-cyan-400 border-cyan-400 backdrop-blur-sm' : 'text-zinc-400 hover:bg-white/[0.03] hover:text-zinc-200 border-transparent'}`}`}
+                className={`w-full flex items-center transition-colors border-l-2 ${isCollapsed ? `justify-center px-0 py-2 ${pathname === '/admin/team-members' ? 'bg-gradient-to-r from-blue-600/20 to-cyan-600/10 text-cyan-400 border-cyan-400 backdrop-blur-sm' : 'text-zinc-400 hover:bg-white/[0.03] hover:text-zinc-200 border-transparent'}` : `px-2 py-2 gap-2.5 ${pathname === '/admin/team-members' ? 'bg-gradient-to-r from-blue-600/20 to-cyan-600/10 text-cyan-400 border-cyan-400 backdrop-blur-sm' : 'text-zinc-400 hover:bg-white/[0.03] hover:text-zinc-200 border-transparent'}`}`}
               >
                 <UserCheck className="w-5 h-5 flex-shrink-0" />
                 {!isCollapsed && <span className="text-[0.9rem] font-semibold tracking-wide">Team Members</span>}
