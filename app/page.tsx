@@ -1,5 +1,9 @@
-import Link from 'next/link';
+'use client';
+
+import { useState, useEffect, useRef } from 'react';
 import { ArrowRight, ChevronRight } from 'lucide-react';
+import LoginModal from '@/app/components/auth/LoginModal';
+import SignupModal from '@/app/components/auth/SignupModal';
 
 /* ────────────────────────────────────────────────────────────────
    Linear-style landing page — faithful reproduction of layout,
@@ -7,8 +11,24 @@ import { ArrowRight, ChevronRight } from 'lucide-react';
    ──────────────────────────────────────────────────────────────── */
 
 export default function Home() {
+  const [authModal, setAuthModal] = useState<'login' | 'signup' | null>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const targets = el.querySelectorAll('.scroll-fade-in');
+    const observer = new IntersectionObserver(
+      entries => entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); observer.unobserve(e.target); } }),
+      { threshold: 0, rootMargin: '0px 0px -30% 0px' }
+    );
+    targets.forEach(t => observer.observe(t));
+    return () => observer.disconnect();
+  }, []);
+
   return (
     <div
+      ref={scrollRef}
       className="min-h-screen bg-[#08070b] text-white overflow-x-hidden"
       style={{ fontFamily: 'var(--font-geist-sans)' }}
     >
@@ -19,12 +39,12 @@ export default function Home() {
       <section className="relative pt-[72px] pb-12 px-6">
         <div className="max-w-[740px] mx-auto text-center">
           {/* Announcement pill */}
-          <Link href="/login" className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-white/10 bg-white/[0.03] mb-8 fade-in cursor-pointer hover:bg-white/[0.06] transition-colors">
+          <button onClick={() => setAuthModal('login')} className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-white/10 bg-white/[0.03] mb-8 fade-in cursor-pointer hover:bg-white/[0.06] transition-colors">
             <span className="text-[13px] text-[#b4b4bc]">Now tracking Client Interactions</span>
             <span className="text-[13px] text-cyan-500 flex items-center gap-0.5">
               See what&apos;s new <ChevronRight size={13} />
             </span>
-          </Link>
+          </button>
 
           <h1 className="text-[clamp(36px,7vw,72px)] font-[500] leading-[1.05] tracking-[-0.04em] landing-gradient-text mb-6 fade-in-d1">
             A better way to<br />work together
@@ -35,19 +55,19 @@ export default function Home() {
           </p>
 
           <div className="flex items-center justify-center gap-4 fade-in-d3">
-            <Link
-              href="/signup"
+            <button
+              onClick={() => setAuthModal('signup')}
               className="inline-flex items-center gap-2 px-5 py-2.5 bg-cyan-600 hover:bg-cyan-500 rounded-[10px] text-[14px] font-medium transition-colors"
             >
               Sign Up
               <ArrowRight size={15} />
-            </Link>
-            <Link
-              href="/login"
+            </button>
+            <button
+              onClick={() => setAuthModal('login')}
               className="inline-flex items-center gap-2 px-5 py-2.5 rounded-[10px] border border-white/[0.1] text-[14px] font-medium text-[#b4b4bc] hover:text-white hover:border-white/[0.2] transition-colors"
             >
               Log In
-            </Link>
+            </button>
           </div>
         </div>
       </section>
@@ -215,7 +235,7 @@ export default function Home() {
       </section>
 
       {/* ── Feature deep-dive — Dashboards ──────────────────── */}
-      <section className="py-24 px-6 border-t border-white/[0.04]">
+      <section className="py-24 px-6 border-t border-white/[0.04] scroll-fade-in">
         <div className="max-w-[1100px] mx-auto">
           <div className="max-w-[640px] mb-16">
             <h2 className="text-[clamp(28px,5vw,48px)] font-[500] tracking-[-0.035em] leading-[1.1] landing-gradient-text mb-5">
@@ -346,7 +366,7 @@ export default function Home() {
       </section>
 
       {/* ── Feature deep-dive — Real-time activity ────────────────── */}
-      <section className="py-24 px-6 border-t border-white/[0.04]">
+      <section className="py-24 px-6 border-t border-white/[0.04] scroll-fade-in">
         <div className="max-w-[1100px] mx-auto">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-start">
             <div>
@@ -420,7 +440,7 @@ export default function Home() {
       </section>
 
       {/* ── Feature deep-dive — Roadmaps ─────────────────────────── */}
-      <section className="py-24 px-6 border-t border-white/[0.04]">
+      <section className="py-24 px-6 border-t border-white/[0.04] scroll-fade-in">
         <div className="max-w-[1100px] mx-auto">
           <div className="max-w-[640px] mx-auto text-center mb-16">
             <h2 className="text-[clamp(28px,5vw,48px)] font-[500] tracking-[-0.035em] leading-[1.1] landing-gradient-text mb-5">
@@ -507,6 +527,18 @@ export default function Home() {
           <span className="text-[12px] text-[#6b6b76]">Developed by Eli Febres</span>
         </div>
       </footer>
+
+      {/* Auth modals */}
+      <LoginModal
+        isOpen={authModal === 'login'}
+        onClose={() => setAuthModal(null)}
+        onSwitchToSignup={() => setAuthModal('signup')}
+      />
+      <SignupModal
+        isOpen={authModal === 'signup'}
+        onClose={() => setAuthModal(null)}
+        onSwitchToLogin={() => setAuthModal('login')}
+      />
     </div>
   );
 }

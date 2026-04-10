@@ -104,6 +104,17 @@ body {
 .fade-in-d3   { animation: landingFadeIn 1s ease-out 0.35s both; }
 .fade-in-d4   { animation: landingFadeIn 1s ease-out 0.5s both; }
 
+/* Scroll-triggered fade-in */
+.scroll-fade-in {
+  opacity: 0;
+  transform: translateY(32px);
+  transition: opacity 0.8s ease-out, transform 0.8s ease-out;
+}
+.scroll-fade-in.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
 /* Logos infinite scroll */
 @keyframes logoScroll {
   0%   { transform: translateX(0); }

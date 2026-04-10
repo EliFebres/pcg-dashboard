@@ -299,7 +299,7 @@ export default function Sidebar({ className = '' }: SidebarProps) {
             className={`w-full flex items-center text-red-400/70 hover:bg-red-500/[0.06] hover:text-red-400 border-l-2 border-transparent transition-colors ${isCollapsed ? 'justify-center px-0 py-2' : 'gap-2.5 px-2 py-2'}`}
             onClick={async () => {
               await fetch('/api/auth/logout', { method: 'POST' });
-              window.location.href = '/login';
+              window.location.href = '/';
             }}
           >
             <LogOut className="w-5 h-5 flex-shrink-0" />
