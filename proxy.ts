@@ -26,6 +26,11 @@ export async function proxy(req: NextRequest) {
   const isAuthenticated = payload !== null && payload.status === 'active';
   const isAdmin = isAuthenticated && payload?.role === 'admin';
 
+  // Logged-in users on landing page → send to dashboard
+  if (pathname === '/' && isAuthenticated) {
+    return NextResponse.redirect(new URL('/dashboard/client-interactions', req.url));
+  }
+
   // Redirect already-authenticated users away from login/signup
   if ((pathname === '/login' || pathname === '/signup') && isAuthenticated) {
     return NextResponse.redirect(new URL('/dashboard/client-interactions', req.url));
@@ -61,6 +66,7 @@ export async function proxy(req: NextRequest) {
 
 export const config = {
   matcher: [
+    '/',
     '/dashboard/:path*',
     '/admin/:path*',
     '/login',

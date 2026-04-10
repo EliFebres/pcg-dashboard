@@ -19,12 +19,12 @@ export default function Home() {
       <section className="relative pt-[72px] pb-12 px-6">
         <div className="max-w-[740px] mx-auto text-center">
           {/* Announcement pill */}
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-white/10 bg-white/[0.03] mb-8 fade-in cursor-pointer hover:bg-white/[0.06] transition-colors">
-            <span className="text-[13px] text-[#b4b4bc]">Introducing Linear Agents</span>
+          <Link href="/login" className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-white/10 bg-white/[0.03] mb-8 fade-in cursor-pointer hover:bg-white/[0.06] transition-colors">
+            <span className="text-[13px] text-[#b4b4bc]">Now tracking Client Interactions</span>
             <span className="text-[13px] text-cyan-500 flex items-center gap-0.5">
-              Built for the future <ChevronRight size={13} />
+              See what&apos;s new <ChevronRight size={13} />
             </span>
-          </div>
+          </Link>
 
           <h1 className="text-[clamp(36px,7vw,72px)] font-[500] leading-[1.05] tracking-[-0.04em] landing-gradient-text mb-6 fade-in-d1">
             A better way to<br />work together
@@ -488,77 +488,23 @@ export default function Home() {
       </section>
 
       {/* ── Footer ──────────────────────────────────────────────── */}
-      <footer className="border-t border-white/[0.06] py-12 px-6">
-        <div className="max-w-[1100px] mx-auto">
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-8 mb-12">
-            {/* Product */}
-            <div>
-              <div className="text-[12px] font-medium text-[#6b6b76] uppercase tracking-wider mb-4">Product</div>
-              <div className="space-y-2.5">
-                {['Features', 'Integrations', 'Pricing', 'Changelog', 'Docs', 'Linear Method', 'Download'].map(l => (
-                  <div key={l} className="text-[13px] text-[#9b9ba4] hover:text-white transition-colors cursor-pointer">{l}</div>
-                ))}
-              </div>
-            </div>
-            {/* Company */}
-            <div>
-              <div className="text-[12px] font-medium text-[#6b6b76] uppercase tracking-wider mb-4">Company</div>
-              <div className="space-y-2.5">
-                {['About us', 'Blog', 'Careers', 'Customers', 'Brand'].map(l => (
-                  <div key={l} className="text-[13px] text-[#9b9ba4] hover:text-white transition-colors cursor-pointer">{l}</div>
-                ))}
-              </div>
-            </div>
-            {/* Resources */}
-            <div>
-              <div className="text-[12px] font-medium text-[#6b6b76] uppercase tracking-wider mb-4">Resources</div>
-              <div className="space-y-2.5">
-                {['Community', 'Contact', 'DPA', 'Terms of service', 'Report a vulnerability'].map(l => (
-                  <div key={l} className="text-[13px] text-[#9b9ba4] hover:text-white transition-colors cursor-pointer">{l}</div>
-                ))}
-              </div>
-            </div>
-            {/* Developers */}
-            <div>
-              <div className="text-[12px] font-medium text-[#6b6b76] uppercase tracking-wider mb-4">Developers</div>
-              <div className="space-y-2.5">
-                {['API', 'Status', 'GitHub', 'README'].map(l => (
-                  <div key={l} className="text-[13px] text-[#9b9ba4] hover:text-white transition-colors cursor-pointer">{l}</div>
-                ))}
-              </div>
-            </div>
-            {/* Connect */}
-            <div>
-              <div className="text-[12px] font-medium text-[#6b6b76] uppercase tracking-wider mb-4">Connect</div>
-              <div className="space-y-2.5">
-                {['X (Twitter)', 'GitHub', 'Slack', 'YouTube'].map(l => (
-                  <div key={l} className="text-[13px] text-[#9b9ba4] hover:text-white transition-colors cursor-pointer">{l}</div>
-                ))}
-              </div>
-            </div>
+      <footer className="border-t border-white/[0.06] py-8 px-6">
+        <div className="max-w-[1100px] mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <svg width="16" height="16" viewBox="0 0 100 100" fill="none">
+              <defs>
+                <linearGradient id="logoGrad" x1="0" y1="0" x2="100" y2="100" gradientUnits="userSpaceOnUse">
+                  <stop offset="0%" stopColor="#22d3ee"/>
+                  <stop offset="100%" stopColor="#0891b2"/>
+                </linearGradient>
+              </defs>
+              <path d="M50 5A45 45 0 1 1 12 32" stroke="url(#logoGrad)" strokeWidth="8" strokeLinecap="round" fill="none"/>
+              <path d="M50 24A26 26 0 1 0 72 66" stroke="url(#logoGrad)" strokeWidth="7" strokeLinecap="round" fill="none" opacity="0.4"/>
+              <circle cx="50" cy="50" r="7" fill="url(#logoGrad)"/>
+            </svg>
+            <span className="text-[12px] text-[#6b6b76]">PCG Tools &copy; {new Date().getFullYear()} Portfolio Consulting Group</span>
           </div>
-
-          {/* Bottom row — 4 logo options (pick one, delete the rest) */}
-          <div className="flex items-center justify-between pt-8 border-t border-white/[0.06]">
-            <div className="flex items-center gap-12">
-
-              <div className="flex items-center gap-2">
-                <svg width="16" height="16" viewBox="0 0 100 100" fill="none">
-                  <defs>
-                    <linearGradient id="logoGrad" x1="0" y1="0" x2="100" y2="100" gradientUnits="userSpaceOnUse">
-                      <stop offset="0%" stopColor="#22d3ee"/>
-                      <stop offset="100%" stopColor="#0891b2"/>
-                    </linearGradient>
-                  </defs>
-                  <path d="M50 5A45 45 0 1 1 12 32" stroke="url(#logoGrad)" strokeWidth="8" strokeLinecap="round" fill="none"/>
-                  <path d="M50 24A26 26 0 1 0 72 66" stroke="url(#logoGrad)" strokeWidth="7" strokeLinecap="round" fill="none" opacity="0.4"/>
-                  <circle cx="50" cy="50" r="7" fill="url(#logoGrad)"/>
-                </svg>
-                <span className="text-[12px] text-[#6b6b76]">PCG Tools — Developed by Eli Febres &copy; {new Date().getFullYear()} Portfolio Consulting Group</span>
-              </div>
-
-            </div>
-          </div>
+          <span className="text-[12px] text-[#6b6b76]">Developed by Eli Febres</span>
         </div>
       </footer>
     </div>
