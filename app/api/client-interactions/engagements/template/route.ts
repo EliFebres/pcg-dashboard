@@ -11,7 +11,7 @@ export async function GET() {
   // ── Data sheet ─────────────────────────────────────────────────────────────
   const data = workbook.addWorksheet('Engagements');
 
-  // Column order (13 cols — Department and Portfolio Logged are auto-derived):
+  // Column order (16 cols — Department is auto-derived):
   // A  External Client
   // B  Internal Client Name
   // C  Internal Client Dept
@@ -25,6 +25,9 @@ export async function GET() {
   // K  NNA ($M)
   // L  Notes
   // M  Tickers Mentioned
+  // N  Portfolio Logged
+  // O  Portfolio
+  // P  Notes (JSON)
   // No `header` property here: header row is added manually below to prevent
   // ExcelJS from bleeding row-level styling beyond the last column.
   data.columns = [
@@ -41,14 +44,18 @@ export async function GET() {
     { key: 'nna',                 width: 12 },
     { key: 'notes',               width: 40 },
     { key: 'tickersMentioned',    width: 30 },
+    { key: 'portfolioLogged',     width: 16 },
+    { key: 'portfolio',           width: 50 },
+    { key: 'structuredNotes',     width: 50 },
   ];
 
-  // Add header row manually and style only the 13 populated cells.
-  // eachCell({ includeEmpty: false }) ensures nothing beyond column M is touched.
+  // Add header row manually and style only the populated cells.
+  // eachCell({ includeEmpty: false }) ensures nothing beyond the last column is touched.
   const headerRow = data.addRow([
     'External Client', 'Internal Client Name', 'Internal Client Dept',
     'Intake Type', 'Ad-Hoc Channel', 'Project Type', 'Team Members',
     'Date Started', 'Date Finished', 'Status', 'NNA ($M)', 'Notes', 'Tickers Mentioned',
+    'Portfolio Logged', 'Portfolio', 'Notes (JSON)',
   ]);
   headerRow.height = 20;
   headerRow.eachCell({ includeEmpty: false }, cell => {
@@ -76,6 +83,7 @@ export async function GET() {
   addValidation('E', '"In-Person,Email,Teams"');
   addValidation('F', '"Meeting,Discovery Meeting,Data Request,PCR,Other"');
   addValidation('J', '"In Progress,Awaiting Meeting,Follow Up,Completed"');
+  addValidation('N', '"Yes,No"');
 
   // Date format for date columns
   for (let i = 2; i <= 1001; i++) {
@@ -99,6 +107,9 @@ export async function GET() {
       nna: 120,
       notes: 'Client requested equity exposure analysis.',
       tickersMentioned: '',
+      portfolioLogged: 'Yes',
+      portfolio: '[{"identifier":"DFAC","constituentType":"Security","assetClass":"Equity","weight":0.6},{"identifier":"DFCF","constituentType":"Security","assetClass":"Fixed Income","weight":0.4}]',
+      structuredNotes: '[{"text":"Client requested equity exposure analysis.","author":"Sarah K.","authorId":"user_1","date":"2024-06-10T10:00:00Z"}]',
     },
     {
       externalClient: 'BlueStar Wealth',
@@ -114,6 +125,9 @@ export async function GET() {
       nna: '',
       notes: '',
       tickersMentioned: '',
+      portfolioLogged: 'No',
+      portfolio: '',
+      structuredNotes: '',
     },
     {
       externalClient: '',
@@ -129,6 +143,9 @@ export async function GET() {
       nna: '',
       notes: 'Discussed DFA core equity vs Vanguard.',
       tickersMentioned: 'DFAC, VTI',
+      portfolioLogged: 'No',
+      portfolio: '',
+      structuredNotes: '[{"text":"Discussed DFA core equity vs Vanguard.","author":"Chris B.","authorId":"user_2","date":"2024-11-18T14:30:00Z"}]',
     },
   ];
 
@@ -164,10 +181,14 @@ export async function GET() {
     ['Date Finished', 'Leave blank for In Progress / Awaiting rows.'],
     ['Status', 'Required. In Progress | Awaiting Meeting | Follow Up | Completed'],
     ['NNA ($M)', 'Optional. Net New Assets in millions. "120" = $120M.'],
-    ['Notes', 'Optional. Free text.'],
+    ['Notes', 'Optional. Human-readable notes text.'],
     ['Tickers Mentioned', 'Optional. Comma-separated tickers (GCG Ad-Hoc). E.g. "DFAC, VTI"'],
+    ['Portfolio Logged', 'Yes or No. Whether a client portfolio was logged for this engagement.'],
+    ['Portfolio', 'Optional. JSON array of holdings. Format: [{"identifier":"DFAC","constituentType":"Security","assetClass":"Equity","weight":0.35}]'],
+    ['Notes (JSON)', 'Optional. JSON array of notes with metadata. Format: [{"text":"...","author":"Eli F.","authorId":"user_1","date":"2024-06-10T10:00:00Z"}]'],
     ['', ''],
-    ['Auto-filled by system', 'Department (from Internal Client Dept) · Portfolio Logged (always No on import)'],
+    ['Auto-filled by system', 'Department (from Internal Client Dept)'],
+    ['Backup/restore', 'Columns N-P are populated by the Export button for full backup. On import, Notes (JSON) takes priority over Notes for restoring individual note entries.'],
   ];
 
   refData.forEach(([col, note]) => ref.addRow([col, note]));

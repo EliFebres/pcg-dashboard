@@ -116,13 +116,36 @@ export async function POST(req: NextRequest) {
             row.dateFinished ?? null,
             row.status,
             row.portfolioLogged,
-            null, // portfolio holdings not included in bulk upload
+            row.portfolio ?? null,
             row.nna ?? null,
-            row.notes ?? null,
+            row.structuredNotes ? null : (row.notes ?? null),
             row.tickersMentioned.length > 0 ? JSON.stringify(row.tickersMentioned) : null,
             auth.payload.team,
           ]
         );
+
+        // Insert structured notes into engagement_notes table if present
+        if (row.structuredNotes) {
+          const notes = JSON.parse(row.structuredNotes) as { text: string; author: string; authorId?: string; date?: string }[];
+          for (const note of notes) {
+            const noteSeq = await conn.runAndReadAll(
+              `SELECT nextval('engagement_notes_id_seq') AS nextval`
+            );
+            const noteId = Number(noteSeq.getRowObjects()[0].nextval);
+            await conn.run(
+              `INSERT INTO engagement_notes (id, engagement_id, note_text, author_name, author_id, created_at)
+               VALUES (?, ?, ?, ?, ?, ?)`,
+              [
+                noteId,
+                id,
+                note.text,
+                note.author,
+                note.authorId ?? 'bulk-import',
+                note.date ?? new Date().toISOString(),
+              ]
+            );
+          }
+        }
       }
     });
 
@@ -150,5 +173,7 @@ function buildPreview(rows: ParsedRow[]) {
     portfolioLogged: row.portfolioLogged,
     nna: row.nna,
     notes: row.notes,
+    portfolio: row.portfolio,
+    structuredNotes: row.structuredNotes,
   }));
 }

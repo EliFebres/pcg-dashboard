@@ -24,6 +24,8 @@ const VALID_PROJECT_TYPES = ['Meeting', 'Discovery Meeting', 'Data Request', 'PC
 const VALID_DEPARTMENTS = ['IAG', 'Broker-Dealer', 'Institutional', 'Retirement Group'];
 const VALID_STATUSES = ['In Progress', 'Awaiting Meeting', 'Follow Up', 'Completed'];
 const VALID_INTERNAL_CLIENT_DEPTS = ['IAG', 'Broker-Dealer', 'Institutional', 'Retirement Group'];
+const VALID_CONSTITUENT_TYPES = ['Portfolio', 'Morningstar-Fund', 'Security', 'Index'];
+const VALID_ASSET_CLASSES = ['Equity', 'Fixed Income', 'Alternatives', 'Crypto', 'Fund of Funds'];
 
 // Fuzzy normalize for enum matching — case-insensitive, strip spaces/hyphens
 function normalize(s: string): string {
@@ -256,6 +258,65 @@ export function validateRows(rows: ParsedRow[]): ValidationResult {
         field: 'Date Finished',
         message: `Status is "${normStatus}" but Date Finished is set. It will be saved as-is.`,
       });
+    }
+
+    // Portfolio JSON validation
+    if (row.portfolio) {
+      try {
+        const holdings = JSON.parse(row.portfolio);
+        if (!Array.isArray(holdings)) {
+          rowErrors.push({ rowNumber: row.rowNumber, field: 'Portfolio', message: 'Must be a JSON array of holdings.' });
+        } else {
+          for (let i = 0; i < holdings.length; i++) {
+            const h = holdings[i];
+            if (!h.identifier || typeof h.identifier !== 'string') {
+              rowErrors.push({ rowNumber: row.rowNumber, field: 'Portfolio', message: `Holding ${i + 1}: missing or invalid identifier.` });
+            }
+            if (!VALID_CONSTITUENT_TYPES.includes(h.constituentType)) {
+              rowErrors.push({ rowNumber: row.rowNumber, field: 'Portfolio', message: `Holding ${i + 1}: invalid constituentType "${h.constituentType}". Use: ${VALID_CONSTITUENT_TYPES.join(', ')}.` });
+            }
+            if (!VALID_ASSET_CLASSES.includes(h.assetClass)) {
+              rowErrors.push({ rowNumber: row.rowNumber, field: 'Portfolio', message: `Holding ${i + 1}: invalid assetClass "${h.assetClass}". Use: ${VALID_ASSET_CLASSES.join(', ')}.` });
+            }
+            if (typeof h.weight !== 'number' || h.weight < 0 || h.weight > 1) {
+              rowErrors.push({ rowNumber: row.rowNumber, field: 'Portfolio', message: `Holding ${i + 1}: weight must be a number between 0 and 1.` });
+            }
+          }
+        }
+      } catch {
+        rowErrors.push({ rowNumber: row.rowNumber, field: 'Portfolio', message: 'Invalid JSON. Expected a JSON array of holdings.' });
+      }
+    }
+
+    // Portfolio consistency warnings
+    if (row.portfolioLogged && !row.portfolio) {
+      rowWarnings.push({ rowNumber: row.rowNumber, field: 'Portfolio', message: 'Portfolio Logged is Yes but no portfolio data provided.' });
+    }
+    if (!row.portfolioLogged && row.portfolio) {
+      rowWarnings.push({ rowNumber: row.rowNumber, field: 'Portfolio Logged', message: 'Portfolio data present but Portfolio Logged is No. It will be set to Yes.' });
+      row.portfolioLogged = true;
+    }
+
+    // Structured notes JSON validation
+    if (row.structuredNotes) {
+      try {
+        const notes = JSON.parse(row.structuredNotes);
+        if (!Array.isArray(notes)) {
+          rowErrors.push({ rowNumber: row.rowNumber, field: 'Notes (JSON)', message: 'Must be a JSON array of note entries.' });
+        } else {
+          for (let i = 0; i < notes.length; i++) {
+            const n = notes[i];
+            if (!n.text || typeof n.text !== 'string') {
+              rowErrors.push({ rowNumber: row.rowNumber, field: 'Notes (JSON)', message: `Note ${i + 1}: missing or invalid "text" field.` });
+            }
+            if (!n.author || typeof n.author !== 'string') {
+              rowErrors.push({ rowNumber: row.rowNumber, field: 'Notes (JSON)', message: `Note ${i + 1}: missing or invalid "author" field.` });
+            }
+          }
+        }
+      } catch {
+        rowErrors.push({ rowNumber: row.rowNumber, field: 'Notes (JSON)', message: 'Invalid JSON. Expected a JSON array of note entries.' });
+      }
     }
 
     errors.push(...rowErrors);

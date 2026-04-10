@@ -352,7 +352,7 @@ export async function computeEngagementsList(filters: EngagementFilters, serverC
       `SELECT *,
          (SELECT COUNT(*) FROM engagement_notes WHERE engagement_id = engagements.id) AS note_count
        FROM engagements ${whereClause}
-       ORDER BY ${sortCol} ${sortDir} NULLS LAST
+       ORDER BY ${sortCol} ${sortDir} ${sortDir === 'DESC' ? 'NULLS FIRST' : 'NULLS LAST'}
        LIMIT ? OFFSET ?`,
       [...params, pageSize, offset]
     ),

@@ -9,7 +9,7 @@ import type { EngagementFilters } from '@/app/lib/api/client-interactions';
 
 // GET /api/client-interactions/export
 // Same query params as the engagements list route (no pagination — exports all matching rows)
-// Returns an .xlsx file in the same 13-column format as the bulk upload template
+// Returns an .xlsx file in the same 16-column format as the bulk upload template
 export async function GET(req: NextRequest) {
   const auth = await requireAuth(req);
   if (auth.error) return auth.error;
@@ -40,7 +40,30 @@ export async function GET(req: NextRequest) {
       params
     );
 
-    const buffer = await buildXlsx(rows);
+    // Fetch structured notes for all exported engagements
+    const engagementIds = rows.map(r => Number(r.id));
+    const notesMap = new Map<number, object[]>();
+    if (engagementIds.length > 0) {
+      const noteRows = await query<Record<string, unknown>>(
+        `SELECT engagement_id, note_text, author_name, author_id, created_at
+         FROM engagement_notes
+         WHERE engagement_id IN (${engagementIds.map(() => '?').join(',')})
+         ORDER BY created_at ASC`,
+        engagementIds
+      );
+      for (const nr of noteRows) {
+        const eid = Number(nr.engagement_id);
+        if (!notesMap.has(eid)) notesMap.set(eid, []);
+        notesMap.get(eid)!.push({
+          text: nr.note_text as string,
+          author: nr.author_name as string,
+          authorId: nr.author_id as string,
+          date: String(nr.created_at),
+        });
+      }
+    }
+
+    const buffer = await buildXlsx(rows, notesMap);
 
     return new NextResponse(new Uint8Array(buffer), {
       headers: {
@@ -55,11 +78,11 @@ export async function GET(req: NextRequest) {
   }
 }
 
-async function buildXlsx(rows: Record<string, unknown>[]): Promise<Buffer> {
+async function buildXlsx(rows: Record<string, unknown>[], notesMap: Map<number, object[]>): Promise<Buffer> {
   const workbook = new ExcelJS.Workbook();
   const sheet = workbook.addWorksheet('Engagements');
 
-  // 13 columns — same order and keys as the bulk upload template
+  // 16 columns — same order and keys as the bulk upload template
   // No `header` property here: header row is added manually below to prevent
   // ExcelJS from bleeding row-level styling beyond the last column.
   sheet.columns = [
@@ -76,14 +99,18 @@ async function buildXlsx(rows: Record<string, unknown>[]): Promise<Buffer> {
     { key: 'nna',                 width: 12 },
     { key: 'notes',               width: 40 },
     { key: 'tickersMentioned',    width: 30 },
+    { key: 'portfolioLogged',     width: 16 },
+    { key: 'portfolio',           width: 50 },
+    { key: 'structuredNotes',     width: 50 },
   ];
 
-  // Add header row manually and style only the 13 populated cells.
-  // eachCell({ includeEmpty: false }) ensures nothing beyond column M is touched.
+  // Add header row manually and style only the populated cells.
+  // eachCell({ includeEmpty: false }) ensures nothing beyond the last column is touched.
   const headerRow = sheet.addRow([
     'External Client', 'Internal Client Name', 'Internal Client Dept',
     'Intake Type', 'Ad-Hoc Channel', 'Project Type', 'Team Members',
     'Date Started', 'Date Finished', 'Status', 'NNA ($M)', 'Notes', 'Tickers Mentioned',
+    'Portfolio Logged', 'Portfolio', 'Notes (JSON)',
   ]);
   headerRow.height = 20;
   headerRow.eachCell({ includeEmpty: false }, cell => {
@@ -100,6 +127,9 @@ async function buildXlsx(rows: Record<string, unknown>[]): Promise<Buffer> {
     const tickers = JSON.parse((row.tickers_mentioned as string) || '[]') as string[];
     const nnaRaw = row.nna as number | null;
 
+    const engagementId = Number(row.id);
+    const structuredNotes = notesMap.get(engagementId);
+
     sheet.addRow({
       externalClient:     (row.external_client as string) || '',
       internalClientName: row.internal_client_name as string,
@@ -114,9 +144,92 @@ async function buildXlsx(rows: Record<string, unknown>[]): Promise<Buffer> {
       nna:                nnaRaw != null ? nnaRaw / 1_000_000 : '',
       notes:              (row.notes_agg as string) || (row.notes as string) || '',
       tickersMentioned:   tickers.join(', '),
+      portfolioLogged:    Boolean(row.portfolio_logged) ? 'Yes' : 'No',
+      portfolio:          (row.portfolio as string) || '',
+      structuredNotes:    structuredNotes ? JSON.stringify(structuredNotes) : '',
+    });
+  }
+
+  // ── Engagements (Formatted) sheet — human-readable, no JSON ──────────────
+  const fmt = workbook.addWorksheet('Engagements (Formatted)');
+
+  fmt.columns = [
+    { key: 'externalClient',     width: 24 },
+    { key: 'internalClientName', width: 24 },
+    { key: 'internalClientDept', width: 22 },
+    { key: 'intakeType',          width: 16 },
+    { key: 'adHocChannel',        width: 16 },
+    { key: 'type',                width: 16 },
+    { key: 'teamMembers',         width: 30 },
+    { key: 'dateStarted',         width: 18 },
+    { key: 'dateFinished',        width: 18 },
+    { key: 'status',              width: 14 },
+    { key: 'nna',                 width: 14 },
+    { key: 'portfolioLogged',     width: 16 },
+    { key: 'portfolio',           width: 40 },
+    { key: 'notes',               width: 50 },
+    { key: 'tickersMentioned',    width: 30 },
+  ];
+
+  const fmtHeader = fmt.addRow([
+    'External Client', 'Internal Client Name', 'Department',
+    'Intake Type', 'Ad-Hoc Channel', 'Project Type', 'Team Members',
+    'Date Started', 'Date Finished', 'Status', 'NNA ($M)',
+    'Portfolio Logged', 'Portfolio Holdings', 'Notes', 'Tickers Mentioned',
+  ]);
+  fmtHeader.height = 20;
+  fmtHeader.eachCell({ includeEmpty: false }, cell => {
+    cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E3A5F' } };
+    cell.alignment = { vertical: 'middle' };
+  });
+
+  fmt.views = [{ state: 'frozen', ySplit: 1 }];
+
+  for (const row of rows) {
+    const teamMembers = JSON.parse((row.team_members as string) || '[]') as string[];
+    const tickers = JSON.parse((row.tickers_mentioned as string) || '[]') as string[];
+    const nnaRaw = row.nna as number | null;
+    // Format portfolio holdings as readable text: "DFAC (Equity, 35%), DFCF (Fixed Income, 40%)"
+    let portfolioText = '';
+    if (row.portfolio) {
+      try {
+        const holdings = JSON.parse(row.portfolio as string) as { identifier: string; assetClass: string; weight: number }[];
+        portfolioText = holdings
+          .map(h => `${h.identifier} (${h.assetClass}, ${Math.round(h.weight * 100)}%)`)
+          .join(', ');
+      } catch { /* leave empty */ }
+    }
+
+    const notesText = (row.notes_agg as string) || (row.notes as string) || '';
+
+    fmt.addRow({
+      externalClient:     (row.external_client as string) || '',
+      internalClientName: row.internal_client_name as string,
+      internalClientDept: row.internal_client_dept as string,
+      intakeType:         row.intake_type as string,
+      adHocChannel:       (row.ad_hoc_channel as string) || '',
+      type:               row.type as string,
+      teamMembers:        teamMembers.join(', '),
+      dateStarted:        formatDate(row.date_started as string),
+      dateFinished:       row.date_finished ? formatDate(row.date_finished as string) : '',
+      status:             row.status as string,
+      nna:                nnaRaw != null ? `$${(nnaRaw / 1_000_000).toFixed(1)}M` : '',
+      portfolioLogged:    Boolean(row.portfolio_logged) ? 'Yes' : 'No',
+      portfolio:          portfolioText,
+      notes:              notesText,
+      tickersMentioned:   tickers.join(', '),
     });
   }
 
   const arrayBuffer = await workbook.xlsx.writeBuffer();
   return Buffer.from(arrayBuffer);
+}
+
+// Format ISO date or timestamp to readable "Mon DD, YYYY" format
+function formatDate(value: string): string {
+  if (!value) return '';
+  const d = new Date(value);
+  if (isNaN(d.getTime())) return value;
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
 }
