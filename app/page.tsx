@@ -345,41 +345,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── Feature deep-dive — Issue tracking (copy) ─────────────── */}
-      <section className="py-24 px-6 border-t border-white/[0.04]">
-        <div className="max-w-[1100px] mx-auto">
-          <div className="max-w-[640px] mb-16">
-            <h2 className="text-[clamp(28px,5vw,48px)] font-[500] tracking-[-0.035em] leading-[1.1] landing-gradient-text mb-5">
-              Issue tracking<br />you&apos;ll enjoy using
-            </h2>
-            <p className="text-[16px] leading-[1.7] text-[#9b9ba4]">
-              Create tasks in seconds, discuss issues in context, and breeze
-              through your work in views tailored to you and your team.
-            </p>
-          </div>
-
-          {/* Feature grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {[
-              { title: 'Parent and sub-issues', desc: 'Break larger tasks into smaller, actionable issues.' },
-              { title: 'Automated backlog', desc: 'Auto-close and auto-archive stale issues to keep your backlog lean.' },
-              { title: 'Custom workflows', desc: 'Define unique issue states and flows for each team.' },
-              { title: 'Filters and custom views', desc: 'Slice and dice issues with powerful filters and saved views.' },
-              { title: 'Discussion', desc: 'Collaborate on issues in context without losing the thread.' },
-              { title: 'Issue templates', desc: 'Guide your team with templates for common issue types.' },
-            ].map(f => (
-              <div
-                key={f.title}
-                className="p-5 rounded-xl border border-white/[0.06] bg-white/[0.02] hover:bg-white/[0.04] hover:border-white/[0.1] transition-all duration-300"
-              >
-                <h3 className="text-[14px] font-medium text-white mb-1.5">{f.title}</h3>
-                <p className="text-[13px] text-[#9b9ba4] leading-[1.6]">{f.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
       {/* ── Feature deep-dive — Cycles ──────────────────────────── */}
       <section className="py-24 px-6 border-t border-white/[0.04]">
         <div className="max-w-[1100px] mx-auto">
@@ -445,11 +410,10 @@ export default function Home() {
         <div className="max-w-[1100px] mx-auto">
           <div className="max-w-[640px] mx-auto text-center mb-16">
             <h2 className="text-[clamp(28px,5vw,48px)] font-[500] tracking-[-0.035em] leading-[1.1] landing-gradient-text mb-5">
-              Set direction<br />with Roadmaps
+              Platform Roadmap
             </h2>
             <p className="text-[16px] leading-[1.7] text-[#9b9ba4]">
-              Plan visually, collaborate cross-team, and make better decisions
-              with insights and updates.
+              Follow what&apos;s shipping, what&apos;s next, and where the platform is headed.
             </p>
           </div>
 
@@ -457,20 +421,21 @@ export default function Home() {
           <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-6 overflow-x-auto">
             {/* Month headers */}
             <div className="flex gap-0 mb-6 min-w-[600px]">
-              {['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'].map((m, i) => (
-                <div key={m} className={`flex-1 text-[12px] text-[#6b6b76] border-l border-white/[0.06] pl-3 ${i === 3 ? 'text-cyan-500' : ''}`}>
-                  {m} 2025
+              {['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec', 'Jan'].map((m, i) => (
+                <div key={`${m}-${i}`} className={`flex-1 text-[12px] text-[#6b6b76] border-l border-white/[0.06] pl-2 ${i === 3 ? 'text-cyan-500' : ''}`}>
+                  {m} {i < 12 ? '26' : '27'}
                 </div>
               ))}
             </div>
             {/* Project bars */}
             <div className="space-y-3 min-w-[600px]">
               {[
-                { name: 'API v2 Launch', color: 'bg-cyan-600', start: 5, width: 40 },
-                { name: 'Mobile App', color: 'bg-sky-500', start: 20, width: 55 },
-                { name: 'Design System', color: 'bg-emerald-500', start: 0, width: 65 },
-                { name: 'Analytics Dashboard', color: 'bg-amber-500', start: 35, width: 45 },
-                { name: 'Customer Portal', color: 'bg-rose-500', start: 50, width: 35 },
+                // { name: 'Project Name', color: 'bg-COLOR-SHADE', start: START_%, width: WIDTH_% },
+                // start: 0 = Jan 26, ~8 = Feb, ~15 = Mar, ~23 = Apr, ~31 = May, ~38 = Jun, ~46 = Jul, ~54 = Aug, ~62 = Sep, ~69 = Oct, ~77 = Nov, ~85 = Dec, ~92 = Jan 27
+                { name: 'Client Interactions', color: 'bg-cyan-600', start: 0, width: 54 },
+                { name: 'Portfolio Trends', color: 'bg-sky-500', start: 54, width: 31 },
+                { name: 'Landing Page and User Management', color: 'bg-emerald-500', start: 15, width: 39 },
+                { name: 'Ticker Trends', color: 'bg-amber-500', start: 31, width: 31 },
               ].map(p => (
                 <div key={p.name} className="flex items-center gap-3 h-9">
                   <div className="relative flex-1 h-7 rounded">
@@ -490,10 +455,10 @@ export default function Home() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-8">
             {[
               { title: 'Multi-team projects', desc: 'Collaborate across teams and departments.' },
-              { title: 'Project documents', desc: 'Keep briefs and specs alongside the work.' },
-              { title: 'Timeline views', desc: 'Visualize your product journey end-to-end.' },
-              { title: 'Project insights', desc: 'Track scope, velocity, and progress at a glance.' },
-              { title: 'Custom roadmaps', desc: 'Organize work across multiple views and filters.' },
+              { title: 'Interaction automation', desc: 'Auto-log client engagements and reduce manual data entry.' },
+              { title: 'Leadership report automation', desc: 'Generate executive summaries and team activity reports on demand.' },
+              { title: 'Cross-dashboard insights', desc: 'Data flows between dashboards so actions in one surface automatically in others.' },
+              { title: 'Market monitoring dashboard', desc: 'Track yield curves, spreads, and macro signals in one place.' },
               { title: 'Notifications', desc: 'Stay informed with personal project updates.' },
             ].map(f => (
               <div
