@@ -180,9 +180,9 @@ export default function Sidebar({ className = '' }: SidebarProps) {
                           </div>
                           {!isCollapsed && <ChevronDown className="w-4 h-4 text-zinc-600" />}
                         </div>
-                        {/* Tooltip — "Under Construction" always; also serves as label when collapsed */}
+                        {/* Tooltip — "In Development" always; also serves as label when collapsed */}
                         <span className="absolute left-full ml-3 top-1/2 -translate-y-1/2 px-2 py-1 bg-zinc-800 border border-zinc-700 text-zinc-200 text-xs rounded-md opacity-0 group-hover:opacity-100 whitespace-nowrap pointer-events-none z-50 transition-opacity">
-                          Under Construction
+                          In Development
                         </span>
                       </div>
                     );
@@ -367,7 +367,7 @@ export default function Sidebar({ className = '' }: SidebarProps) {
           className="fixed px-2 py-1 bg-zinc-800 border border-zinc-700 text-zinc-200 text-xs rounded-md whitespace-nowrap pointer-events-none z-50"
           style={{ left: disabledTooltipPos.x + 14, top: disabledTooltipPos.y + 4 }}
         >
-          Under Construction
+          In Development
         </span>
       )}
     </aside>
