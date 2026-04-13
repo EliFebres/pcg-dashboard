@@ -196,6 +196,7 @@ export default function NewInteractionForm({ isOpen, onClose, onSubmit, onUpdate
       setShowInternalClientDropdown(false);
       setTickerInput('');
       setLocalNoteCount(initialNoteCount ?? 0);
+      setDeleteConfirm(false);
     }
   }, [isOpen, editingEngagement, initialNoteCount]);
 
@@ -675,7 +676,17 @@ export default function NewInteractionForm({ isOpen, onClose, onSubmit, onUpdate
                     type="date"
                     value={formData.dateFinished || ''}
                     onClick={(e) => e.currentTarget.showPicker()}
-                    onChange={(e) => setFormData(prev => ({ ...prev, dateFinished: e.target.value || undefined }))}
+                    onChange={(e) => setFormData(prev => {
+                      const nextDateFinished = e.target.value || undefined;
+                      // Auto-complete only when adding a date to an In Progress project.
+                      // Any other status is left alone so users can track post-meeting follow-ups, etc.
+                      const autoComplete = !!nextDateFinished && prev.status === 'In Progress';
+                      return {
+                        ...prev,
+                        dateFinished: nextDateFinished,
+                        status: autoComplete ? 'Completed' : prev.status,
+                      };
+                    })}
                     className="w-full h-[38px] px-3 bg-zinc-800/50 border border-zinc-700 rounded-lg text-white focus:outline-none focus:border-cyan-500/50 transition-colors [&::-webkit-calendar-picker-indicator]:invert"
                   />
                 </div>

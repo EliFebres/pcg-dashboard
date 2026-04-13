@@ -24,6 +24,7 @@ import type { EngagementMetric, Engagement } from '@/app/lib/types/engagements';
 import DashboardHeader from '@/app/components/dashboard/shared/DashboardHeader';
 import { useCurrentUser } from '@/app/lib/auth/context';
 import { toDisplayName } from '@/app/lib/auth/types';
+import { useDashboardChanges } from '@/app/lib/hooks/useDashboardChanges';
 
 // =============================================================================
 // HELPERS
@@ -270,6 +271,17 @@ export default function EngagementsDashboard() {
   const contributionWeeks = useMemo(() => dashboardData?.contributionData.weeks ?? [], [dashboardData]);
   const engagements = useMemo(() => dashboardData?.engagements.engagements ?? [], [dashboardData]);
   const filterOptions = dashboardData?.filterOptions;
+
+  // Realtime flash tokens — diffs each dashboardData snapshot against the previous one.
+  // filtersKey must include every filter/sort dep so filter changes reset the diff baseline.
+  const filtersKey = useMemo(
+    () => JSON.stringify([
+      period, teamMemberFilter, departmentFilter, intakeTypeFilter,
+      projectTypeFilter, statusFilter, searchQuery, sortColumn, sortDirection,
+    ]),
+    [period, teamMemberFilter, departmentFilter, intakeTypeFilter, projectTypeFilter, statusFilter, searchQuery, sortColumn, sortDirection],
+  );
+  const dashboardChanges = useDashboardChanges(dashboardData, filtersKey);
 
   // -------------------------------------------------------------------------
   // CRUD handlers
@@ -529,6 +541,7 @@ export default function EngagementsDashboard() {
               flippedCard={flippedCard}
               onCardEnter={handleCardEnter}
               onCardLeave={handleCardLeave}
+              metricChanges={dashboardChanges.metricChanges}
             />
 
             <div className="grid grid-cols-3 gap-4" style={{ height: '340px' }}>
@@ -546,7 +559,7 @@ export default function EngagementsDashboard() {
                     </button>
                   </div>
                   <div className="flex-1" style={{ minHeight: 0 }}>
-                    {contributionWeeks.length > 0 && <ContributionGraph data={contributionWeeks} />}
+                    {contributionWeeks.length > 0 && <ContributionGraph data={contributionWeeks} contributionChanges={dashboardChanges.contributionChanges} />}
                   </div>
                 </div>
               </div>
@@ -564,7 +577,7 @@ export default function EngagementsDashboard() {
                       <Download className="w-3.5 h-3.5" />
                     </button>
                   </div>
-                  <DepartmentChart data={departments} />
+                  <DepartmentChart data={departments} departmentChanges={dashboardChanges.departmentChanges} />
                 </div>
               </div>
             </div>
@@ -581,6 +594,9 @@ export default function EngagementsDashboard() {
               onRowClick={handleRowClick}
               onExport={handleExport}
               isExporting={isExporting}
+              newRowIds={dashboardChanges.newRowIds}
+              removedRowIds={dashboardChanges.removedRowIds}
+              rowFieldChanges={dashboardChanges.rowFieldChanges}
             />
           </>
         )}

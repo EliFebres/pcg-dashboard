@@ -6,6 +6,8 @@ import { FileText, Download, Check, X, ChevronUp, ChevronDown, ChevronsUpDown, M
 import NotesModal from '@/app/components/dashboard/interactions-and-trends/client-interactions/NotesModal';
 import NNAModal from '@/app/components/dashboard/interactions-and-trends/client-interactions/NNAModal';
 import type { Engagement } from '@/app/lib/types/engagements';
+import type { ChangeFlash, EngagementField } from '@/app/lib/hooks/useDashboardChanges';
+import { FLASH_CLASS, FLASH_TEXT_CLASS } from '@/app/lib/hooks/useDashboardChanges';
 
 // Sort configuration types
 type SortDirection = 'asc' | 'desc' | null;
@@ -74,9 +76,17 @@ interface InteractionsTableProps {
   onRowClick: (engagement: Engagement) => void;
   onExport: () => void;
   isExporting?: boolean;
+  newRowIds?: Map<number, ChangeFlash>;
+  removedRowIds?: Map<number, ChangeFlash>;
+  rowFieldChanges?: Map<number, Partial<Record<EngagementField, ChangeFlash>>>;
 }
 
-const InteractionsTable: React.FC<InteractionsTableProps> = ({ engagements, sortColumn, sortDirection, onSort, onStatusChange, onNoteAdded, onNoteDeleted, onNNAChange, onRowClick, onExport, isExporting }) => {
+interface GhostRow {
+  engagement: Engagement;
+  expiresAt: number;
+}
+
+const InteractionsTable: React.FC<InteractionsTableProps> = ({ engagements, sortColumn, sortDirection, onSort, onStatusChange, onNoteAdded, onNoteDeleted, onNNAChange, onRowClick, onExport, isExporting, newRowIds, removedRowIds, rowFieldChanges }) => {
   const sortConfig: SortConfig = useMemo(
     () => ({ column: sortColumn as SortColumn, direction: sortDirection as SortDirection }),
     [sortColumn, sortDirection]
@@ -90,6 +100,43 @@ const InteractionsTable: React.FC<InteractionsTableProps> = ({ engagements, sort
   const statusDropdownRef = useRef<HTMLDivElement>(null);
   const dropdownPortalRef = useRef<HTMLDivElement>(null);
   const pageSize = 10;
+
+  // Ghost-row tracking: keep just-removed rows around briefly so they can fade out red.
+  const [ghostRows, setGhostRows] = useState<GhostRow[]>([]);
+  const prevEngagementsRef = useRef<Map<number, Engagement>>(new Map());
+
+  useEffect(() => {
+    // Read prev map before updating it so we can still find the removed rows' data.
+    if (removedRowIds && removedRowIds.size > 0) {
+      const prevMap = prevEngagementsRef.current;
+      setGhostRows(current => {
+        const existingIds = new Set(current.map(g => g.engagement.id));
+        const toAdd: GhostRow[] = [];
+        const expiresAt = Date.now() + 1100;
+        for (const id of removedRowIds.keys()) {
+          if (existingIds.has(id)) continue;
+          const e = prevMap.get(id);
+          if (e) toAdd.push({ engagement: e, expiresAt });
+        }
+        return toAdd.length > 0 ? [...current, ...toAdd] : current;
+      });
+    }
+    // Update prev snapshot to the current engagements.
+    const next = new Map<number, Engagement>();
+    for (const e of engagements) next.set(e.id, e);
+    prevEngagementsRef.current = next;
+  }, [engagements, removedRowIds]);
+
+  useEffect(() => {
+    if (ghostRows.length === 0) return;
+    const soonest = Math.min(...ghostRows.map(g => g.expiresAt));
+    const delay = Math.max(10, soonest - Date.now() + 20);
+    const timer = setTimeout(() => {
+      const now = Date.now();
+      setGhostRows(cur => cur.filter(g => g.expiresAt > now));
+    }, delay);
+    return () => clearTimeout(timer);
+  }, [ghostRows]);
 
   const statusOptions = ['In Progress', 'Awaiting Meeting', 'Follow Up', 'Completed'];
 
@@ -196,12 +243,26 @@ case 'PCR': return 'bg-rose-500/15 text-rose-400';
     return `$${value.toLocaleString()}`;
   };
 
+  // Build a per-cell flash className based on the rowFieldChanges map for this id.
+  const flashFor = (id: number, field: EngagementField): string => {
+    const flash = rowFieldChanges?.get(id)?.[field];
+    return flash ? FLASH_CLASS[flash.kind] : '';
+  };
+  // Text-color variant: recolors the text inside an element instead of painting a box behind it.
+  const flashTextFor = (id: number, field: EngagementField): string => {
+    const flash = rowFieldChanges?.get(id)?.[field];
+    return flash ? FLASH_TEXT_CLASS[flash.kind] : '';
+  };
+
   // Render table row
-  const renderTableRow = (engagement: Engagement, keyPrefix: string = '') => (
+  const renderTableRow = (engagement: Engagement, keyPrefix: string = '', isGhost: boolean = false) => {
+    const rowFlash = !isGhost && newRowIds?.has(engagement.id) ? FLASH_CLASS[newRowIds.get(engagement.id)!.kind] : '';
+    const ghostClass = isGhost ? 'ghost-row' : '';
+    return (
     <tr
-      key={`${keyPrefix}${engagement.id}`}
-      className="hover:bg-white/[0.02] transition-colors cursor-pointer"
-      onClick={() => onRowClick(engagement)}
+      key={`${keyPrefix}${isGhost ? 'ghost-' : ''}${engagement.id}`}
+      className={`hover:bg-white/[0.02] transition-colors cursor-pointer ${rowFlash} ${ghostClass}`.trim()}
+      onClick={isGhost ? undefined : () => onRowClick(engagement)}
     >
       <td className="px-4 py-3">
         <span className={`text-sm font-medium ${engagement.externalClient ? 'text-zinc-200' : 'text-zinc-600'}`}>
@@ -215,16 +276,16 @@ case 'PCR': return 'bg-rose-500/15 text-rose-400';
         </div>
       </td>
       <td className="px-4 py-3">
-        <span className={`inline-flex px-2 py-0.5 text-xs font-medium backdrop-blur-sm ${getIntakeTypeStyle(engagement.intakeType)}`}>
+        <span className={`inline-flex px-2 py-0.5 text-xs font-medium backdrop-blur-sm ${getIntakeTypeStyle(engagement.intakeType)} ${flashTextFor(engagement.id, 'intakeType')}`}>
           {engagement.intakeType}
         </span>
       </td>
       <td className="px-4 py-3">
-        <span className={`inline-flex px-2 py-0.5 text-xs font-medium backdrop-blur-sm ${getTypeStyle(engagement.type)}`}>
+        <span className={`inline-flex px-2 py-0.5 text-xs font-medium backdrop-blur-sm ${getTypeStyle(engagement.type)} ${flashTextFor(engagement.id, 'type')}`}>
           {engagement.type}
         </span>
       </td>
-      <td className="px-4 py-3">
+      <td className={`px-4 py-3 ${flashFor(engagement.id, 'teamMembers')}`}>
         <div className="flex -space-x-1.5">
           {engagement.teamMembers.slice(0, 4).map((member, idx) => (
             <div
@@ -249,18 +310,18 @@ case 'PCR': return 'bg-rose-500/15 text-rose-400';
         <span className="text-sm text-zinc-400 font-mono">{engagement.dateStarted}</span>
       </td>
       <td className="px-4 py-3">
-        <span className={`text-sm font-mono ${engagement.dateFinished === '—' ? 'text-zinc-600' : 'text-zinc-400'}`}>
+        <span className={`text-sm font-mono ${engagement.dateFinished === '—' ? 'text-zinc-600' : 'text-zinc-400'} ${flashTextFor(engagement.id, 'dateFinished')}`}>
           {engagement.dateFinished}
         </span>
       </td>
       <td className="px-4 py-3">
         {engagement.portfolioLogged ? (
-          <div className="flex items-center gap-1.5 text-emerald-400">
+          <div className={`flex items-center gap-1.5 text-emerald-400 ${flashTextFor(engagement.id, 'portfolioLogged')}`}>
             <Check className="w-4 h-4" />
             <span className="text-xs font-medium">Yes</span>
           </div>
         ) : (
-          <div className="flex items-center gap-1.5 text-zinc-500">
+          <div className={`flex items-center gap-1.5 text-zinc-500 ${flashTextFor(engagement.id, 'portfolioLogged')}`}>
             <X className="w-4 h-4" />
             <span className="text-xs font-medium">No</span>
           </div>
@@ -273,7 +334,7 @@ case 'PCR': return 'bg-rose-500/15 text-rose-400';
             engagement.nna
               ? 'text-emerald-400 hover:bg-emerald-500/10'
               : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-700/30'
-          }`}
+          } ${flashTextFor(engagement.id, 'nna')}`}
           title={engagement.nna ? 'Edit NNA' : 'Add NNA'}
         >
           {engagement.nna ? (
@@ -301,7 +362,7 @@ case 'PCR': return 'bg-rose-500/15 text-rose-400';
                 }
                 setOpenStatusDropdown(openStatusDropdown === engagement.id ? null : engagement.id);
               }}
-            className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium backdrop-blur-sm cursor-pointer hover:ring-1 hover:ring-white/20 transition-all ${getStatusStyle(engagement.status)}`}
+            className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium backdrop-blur-sm cursor-pointer hover:ring-1 hover:ring-white/20 transition-all ${getStatusStyle(engagement.status)} ${flashTextFor(engagement.id, 'status')}`}
           >
             {engagement.status}
             <ChevronDown className={`w-3 h-3 transition-transform ${openStatusDropdown === engagement.id ? 'rotate-180' : ''}`} />
@@ -340,7 +401,7 @@ case 'PCR': return 'bg-rose-500/15 text-rose-400';
             (engagement.noteCount ?? 0) > 0 || engagement.notes
               ? 'bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400'
               : 'bg-zinc-800/50 hover:bg-zinc-700/50 text-zinc-500 hover:text-zinc-300'
-          }`}
+          } ${flashTextFor(engagement.id, 'noteCount')}`}
           title={(engagement.noteCount ?? 0) > 0 || engagement.notes ? 'View notes' : 'Add notes'}
         >
           <FileText className="w-4 h-4" />
@@ -352,7 +413,8 @@ case 'PCR': return 'bg-rose-500/15 text-rose-400';
         </button>
       </td>
     </tr>
-  );
+    );
+  };
 
   // Render table header
   const renderTableHeader = () => (
@@ -482,6 +544,7 @@ case 'PCR': return 'bg-rose-500/15 text-rose-400';
             {renderTableHeader()}
             <tbody className="divide-y divide-zinc-800/50">
               {paginatedEngagements.map((engagement) => renderTableRow(engagement))}
+              {ghostRows.map(({ engagement }) => renderTableRow(engagement, '', true))}
             </tbody>
           </table>
         </div>
@@ -544,6 +607,7 @@ case 'PCR': return 'bg-rose-500/15 text-rose-400';
                 </thead>
                 <tbody className="divide-y divide-zinc-800/50">
                   {paginatedEngagements.map((engagement) => renderTableRow(engagement, 'fs-'))}
+                  {ghostRows.map(({ engagement }) => renderTableRow(engagement, 'fs-', true))}
                 </tbody>
               </table>
             </div>

@@ -5,15 +5,17 @@ import { ArrowUpRight, ArrowDownRight } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell, AreaChart, Area, PieChart, Pie, Tooltip } from 'recharts';
 import ClientOnlyChart from '@/app/components/dashboard/shared/ClientOnlyChart';
 import type { EngagementMetric } from '@/app/lib/types/engagements';
+import type { ChangeFlash, MetricKey } from '@/app/lib/hooks/useDashboardChanges';
 
 interface MetricCardsProps {
   metrics: EngagementMetric[];
   flippedCard: string | null;
   onCardEnter: (cardLabel: string) => void;
   onCardLeave: () => void;
+  metricChanges?: Partial<Record<MetricKey, ChangeFlash>>;
 }
 
-export default function MetricCards({ metrics, flippedCard, onCardEnter, onCardLeave }: MetricCardsProps) {
+export default function MetricCards({ metrics, flippedCard, onCardEnter, onCardLeave, metricChanges }: MetricCardsProps) {
   const [windowWidth, setWindowWidth] = useState(0);
   useEffect(() => {
     setWindowWidth(window.innerWidth);
@@ -30,6 +32,11 @@ export default function MetricCards({ metrics, flippedCard, onCardEnter, onCardL
         const hasIntakeSourceBreakdown = !!metric.intakeSourceBreakdown;
         const isFlippable = hasIntakeBreakdown || hasIntakeSourceBreakdown;
         const isFlipped = flippedCard === metric.label;
+        const metricFlash = metricChanges?.[metric.label as MetricKey];
+        const metricFlashClass =
+          metricFlash?.kind === 'green' ? 'flash-text-green'
+          : metricFlash?.kind === 'red' ? 'flash-text-red'
+          : '';
 
         return (
           <div
@@ -62,7 +69,9 @@ export default function MetricCards({ metrics, flippedCard, onCardEnter, onCardL
                   <p className="text-white text-[0.8rem]">{metric.label}</p>
                 </div>
                 <div className="relative z-10 pt-6">
-                  <p className="text-[3rem] font-bold text-white mb-2 tracking-tight leading-none">{metric.value}</p>
+                  <p className={`text-[3rem] font-bold text-white mb-2 tracking-tight leading-none ${metricFlashClass}`}>
+                    {metric.value}
+                  </p>
                   <div className="flex items-center gap-2 ml-1">
                     <span
                       className={`flex items-center gap-1 text-[0.9rem] font-medium ${metric.isPositive ? 'text-[#39FF14]' : 'text-[#FF3131]'}`}

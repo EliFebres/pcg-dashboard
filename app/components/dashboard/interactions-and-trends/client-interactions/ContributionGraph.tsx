@@ -2,14 +2,17 @@
 
 import React, { useMemo } from 'react';
 import type { DayData } from '@/app/lib/types/engagements';
+import type { ChangeFlash } from '@/app/lib/hooks/useDashboardChanges';
+import { FLASH_CLASS } from '@/app/lib/hooks/useDashboardChanges';
 
 interface ContributionGraphProps {
   data: DayData[][];
+  contributionChanges?: Map<string, ChangeFlash>;
 }
 
 const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
-export default function ContributionGraph({ data }: ContributionGraphProps) {
+export default function ContributionGraph({ data, contributionChanges }: ContributionGraphProps) {
   const dayLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
 
   const getLevelColor = (level: number): string => {
@@ -81,22 +84,26 @@ export default function ContributionGraph({ data }: ContributionGraphProps) {
           flex: 1,
           gridAutoFlow: 'column'
         }}>
-          {flatData.map((day, index) => (
-            <div
-              key={index}
-              style={{
-                backgroundColor: getLevelColor(day.level),
-                borderRadius: '2px',
-                cursor: 'pointer',
-                minWidth: 0,
-                minHeight: 0,
-                transition: 'background-color 600ms ease-out, transform 200ms ease-out',
-                transform: 'scale(1)',
-              }}
-              className="hover:scale-110"
-              title={`${new Date(day.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}\n${day.projectCount} project${day.projectCount !== 1 ? 's' : ''}, ${day.adHocCount} ad-hoc${day.adHocCount !== 1 ? 's' : ''}`}
-            />
-          ))}
+          {flatData.map((day, index) => {
+            const flash = contributionChanges?.get(String(day.date));
+            const flashClass = flash ? FLASH_CLASS[flash.kind] : '';
+            return (
+              <div
+                key={index}
+                style={{
+                  backgroundColor: getLevelColor(day.level),
+                  borderRadius: '2px',
+                  cursor: 'pointer',
+                  minWidth: 0,
+                  minHeight: 0,
+                  transition: 'background-color 600ms ease-out, transform 200ms ease-out',
+                  transform: 'scale(1)',
+                }}
+                className={`hover:scale-110 ${flashClass}`.trim()}
+                title={`${new Date(day.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}\n${day.projectCount} project${day.projectCount !== 1 ? 's' : ''}, ${day.adHocCount} ad-hoc${day.adHocCount !== 1 ? 's' : ''}`}
+              />
+            );
+          })}
         </div>
       </div>
 

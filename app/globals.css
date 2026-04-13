@@ -124,6 +124,66 @@ body {
   animation: logoScroll 30s linear infinite;
 }
 
+/* ── Bloomberg-style pulse flashes for realtime updates ─────── */
+
+@keyframes pulseFlashNeutral {
+  0%   { background-color: rgba(244, 244, 245, 0.22); box-shadow: inset 0 0 0 1px rgba(244, 244, 245, 0.18); }
+  100% { background-color: transparent; box-shadow: inset 0 0 0 1px transparent; }
+}
+@keyframes pulseFlashBlue {
+  0%   { background-color: rgba(34, 211, 238, 0.28); box-shadow: inset 0 0 0 1px rgba(34, 211, 238, 0.35); }
+  100% { background-color: transparent; box-shadow: inset 0 0 0 1px transparent; }
+}
+@keyframes pulseFlashGreen {
+  0%   { background-color: rgba(57, 255, 20, 0.25); box-shadow: inset 0 0 0 1px rgba(57, 255, 20, 0.35); }
+  100% { background-color: transparent; box-shadow: inset 0 0 0 1px transparent; }
+}
+@keyframes pulseFlashRed {
+  0%   { background-color: rgba(255, 49, 49, 0.28); box-shadow: inset 0 0 0 1px rgba(255, 49, 49, 0.35); }
+  100% { background-color: transparent; box-shadow: inset 0 0 0 1px transparent; }
+}
+@keyframes pulseFlashAmber {
+  0%   { background-color: rgba(245, 158, 11, 0.28); box-shadow: inset 0 0 0 1px rgba(245, 158, 11, 0.35); }
+  100% { background-color: transparent; box-shadow: inset 0 0 0 1px transparent; }
+}
+
+.flash-neutral { animation: pulseFlashNeutral 1100ms ease-out 1; }
+.flash-blue    { animation: pulseFlashBlue    1100ms ease-out 1; }
+.flash-green   { animation: pulseFlashGreen   1100ms ease-out 1; }
+.flash-red     { animation: pulseFlashRed     1100ms ease-out 1; }
+.flash-amber   { animation: pulseFlashAmber   1100ms ease-out 1; }
+
+/* Text-only flash — recolors the text itself instead of painting a box behind it.
+   Each keyframe only specifies `from`, so at 100% the element reverts to its normal
+   computed color. Works for any element regardless of its base text color. */
+@keyframes pulseFlashTextBlue {
+  from { color: #22d3ee; text-shadow: 0 0 10px rgba(34, 211, 238, 0.55); }
+}
+@keyframes pulseFlashTextGreen {
+  from { color: #39FF14; text-shadow: 0 0 10px rgba(57, 255, 20, 0.55); }
+}
+@keyframes pulseFlashTextRed {
+  from { color: #FF3131; text-shadow: 0 0 10px rgba(255, 49, 49, 0.55); }
+}
+@keyframes pulseFlashTextAmber {
+  from { color: #f59e0b; text-shadow: 0 0 10px rgba(245, 158, 11, 0.55); }
+}
+@keyframes pulseFlashTextNeutral {
+  from { color: #fafafa; text-shadow: 0 0 8px rgba(250, 250, 250, 0.35); }
+}
+.flash-text-blue    { animation: pulseFlashTextBlue    1100ms ease-out 1; }
+.flash-text-green   { animation: pulseFlashTextGreen   1100ms ease-out 1; }
+.flash-text-red     { animation: pulseFlashTextRed     1100ms ease-out 1; }
+.flash-text-amber   { animation: pulseFlashTextAmber   1100ms ease-out 1; }
+.flash-text-neutral { animation: pulseFlashTextNeutral 1100ms ease-out 1; }
+
+/* Ghost row: rows that were just deleted — fade + red tint, then unmount */
+@keyframes ghostRowFade {
+  0%   { background-color: rgba(255, 49, 49, 0.28); opacity: 1; }
+  100% { background-color: transparent; opacity: 0; }
+}
+.ghost-row { animation: ghostRowFade 1100ms ease-out 1 forwards; pointer-events: none; }
+
 /* Subtle card shine on hover */
 .card-shine {
   position: relative;
