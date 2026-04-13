@@ -3,10 +3,10 @@
 import { useState, useEffect, useRef } from 'react';
 import LoginModal from '@/app/components/auth/LoginModal';
 import SignupModal from '@/app/components/auth/SignupModal';
-import HeroSection from '@/app/components/pages/landing-page/HeroSection';
-import DashboardPreview from '@/app/components/pages/landing-page/DashboardPreview';
-import FeatureSections from '@/app/components/pages/landing-page/FeatureSections';
-import PlatformRoadmap from '@/app/components/pages/landing-page/PlatformRoadmap';
+import HeroSection from '@/app/components/landing-page/HeroSection';
+import DashboardPreview from '@/app/components/landing-page/DashboardPreview';
+import FeatureSections from '@/app/components/landing-page/FeatureSections';
+import PlatformRoadmap from '@/app/components/landing-page/PlatformRoadmap';
 
 /* ────────────────────────────────────────────────────────────────
    Linear-style landing page — faithful reproduction of layout,

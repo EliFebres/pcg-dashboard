@@ -1,0 +1,845 @@
+'use client';
+
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { X, ChevronDown, Check, DollarSign, Briefcase, FileText } from 'lucide-react';
+import NNAModal from '@/app/components/dashboard/interactions-and-trends/client-interactions/NNAModal';
+import PortfolioModal from '@/app/components/dashboard/interactions-and-trends/client-interactions/PortfolioModal';
+import NotesModal from '@/app/components/dashboard/interactions-and-trends/client-interactions/NotesModal';
+import { PortfolioHolding } from '@/app/lib/types/engagements';
+import { getGcgClients, GcgClient } from '@/app/lib/api/client-interactions';
+import { useCurrentUser } from '@/app/lib/auth/context';
+import type { TeamMember } from '@/app/lib/auth/types';
+
+export interface InteractionFormData {
+  externalClient: string | null;
+  internalClient: string;
+  internalClientDept: 'IAG' | 'Broker-Dealer' | 'Institutional' | 'Retirement Group' | '';
+  intakeType: 'IRQ' | 'SRRF' | 'GCG Ad-Hoc' | '';
+  adHocChannel?: 'In-Person' | 'Email' | 'Teams';
+  projectType: string;
+  teamMembers: string[];
+  dateStarted: string;
+  dateFinished?: string;
+  status?: string;
+  notes: string;
+  portfolioLogged: boolean;
+  portfolio?: PortfolioHolding[];
+  nna: number | null;
+  tickersMentioned?: string[]; // Only for GCG Ad-Hoc - tickers discussed during interaction
+}
+
+export interface EditingEngagement {
+  id: number;
+  data: InteractionFormData;
+  originalDateStarted: string; // Preserve exact original string to avoid roundtrip changes
+  originalDateFinished?: string; // Preserve exact original string to avoid roundtrip changes
+  version?: number; // Optimistic locking — sent back on save to detect concurrent edits
+  createdById?: string; // User ID of the creator — used to determine delete permission
+}
+
+interface NewInteractionFormProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSubmit: (data: InteractionFormData) => void;
+  onUpdate?: (id: number, data: InteractionFormData) => void;
+  onDelete?: (id: number) => void;
+  editingEngagement?: EditingEngagement | null;
+  initialNoteCount?: number;
+  onNoteAdded?: (engagementId: number) => void;
+  onNoteDeleted?: (engagementId: number) => void;
+  onBulkUploadClick?: () => void;
+}
+
+const GCG_DEPARTMENTS = ['IAG', 'Broker-Dealer', 'Institutional', 'Retirement Group'] as const;
+
+
+// Project types by intake
+const projectTypesByIntake = {
+  'IRQ': ['Meeting', 'Discovery Meeting', 'Data Request', 'PCR'],
+  'SRRF': ['Meeting', 'Discovery Meeting', 'Data Request', 'PCR'],
+  'GCG Ad-Hoc': ['PCR', 'Discovery Meeting', 'Data Request', 'Other'],
+};
+
+// Parse NNA input string to number (handles commas, M, B, K suffixes)
+const parseNNAInput = (input: string): number | undefined => {
+  if (!input.trim()) return undefined;
+
+  // Remove commas and spaces
+  let cleaned = input.replace(/,/g, '').replace(/\s/g, '').toUpperCase();
+
+  // Remove leading $ if present
+  if (cleaned.startsWith('$')) {
+    cleaned = cleaned.substring(1);
+  }
+
+  // Handle M (millions), B (billions), and K (thousands) suffixes
+  let multiplier = 1;
+  if (cleaned.endsWith('M')) {
+    multiplier = 1_000_000;
+    cleaned = cleaned.slice(0, -1);
+  } else if (cleaned.endsWith('B')) {
+    multiplier = 1_000_000_000;
+    cleaned = cleaned.slice(0, -1);
+  } else if (cleaned.endsWith('K')) {
+    multiplier = 1_000;
+    cleaned = cleaned.slice(0, -1);
+  }
+
+  const num = parseFloat(cleaned);
+  if (isNaN(num)) return undefined;
+
+  return Math.round(num * multiplier);
+};
+
+// Format NNA for display
+const formatNNADisplay = (value: number | null): string => {
+  if (!value || value === 0) return '—';
+  if (value >= 1_000_000_000) {
+    return `$${(value / 1_000_000_000).toFixed(1)}B`;
+  } else if (value >= 1_000_000) {
+    return `$${(value / 1_000_000).toFixed(1)}M`;
+  } else if (value >= 1_000) {
+    return `$${(value / 1_000).toFixed(0)}K`;
+  }
+  return `$${value.toLocaleString()}`;
+};
+
+export default function NewInteractionForm({ isOpen, onClose, onSubmit, onUpdate, onDelete, editingEngagement, initialNoteCount, onNoteAdded, onNoteDeleted, onBulkUploadClick }: NewInteractionFormProps) {
+  const isEditMode = !!editingEngagement;
+  const { user: currentUser } = useCurrentUser();
+
+  const getDefaultFormData = (): InteractionFormData => ({
+    externalClient: '',
+    internalClient: '',
+    internalClientDept: '',
+    intakeType: '',
+    projectType: '',
+    teamMembers: [],
+    dateStarted: new Date().toISOString().split('T')[0],
+    notes: '',
+    portfolioLogged: false,
+    portfolio: undefined,
+    nna: null,
+    tickersMentioned: [],
+  });
+
+  const [formData, setFormData] = useState<InteractionFormData>(getDefaultFormData());
+
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [gcgClients, setGcgClients] = useState<GcgClient[]>([]);
+  const [gcgClientsLoading, setGcgClientsLoading] = useState(false);
+  const [showDeptDropdown, setShowDeptDropdown] = useState(false);
+  const deptDropdownRef = useRef<HTMLDivElement>(null);
+  const [internalClientSearch, setInternalClientSearch] = useState('');
+  const [showInternalClientDropdown, setShowInternalClientDropdown] = useState(false);
+  const [isNNAModalOpen, setIsNNAModalOpen] = useState(false);
+  const [isPortfolioModalOpen, setIsPortfolioModalOpen] = useState(false);
+  const [isNotesModalOpen, setIsNotesModalOpen] = useState(false);
+  const [localNoteCount, setLocalNoteCount] = useState(initialNoteCount ?? 0);
+  const [tickerInput, setTickerInput] = useState('');
+  const [deleteConfirm, setDeleteConfirm] = useState(false);
+  const internalClientRef = useRef<HTMLDivElement>(null);
+  const [teamMembersByOffice, setTeamMembersByOffice] = useState<Record<string, TeamMember[]>>({});
+
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (internalClientRef.current && !internalClientRef.current.contains(event.target as Node)) {
+        setShowInternalClientDropdown(false);
+      }
+      if (deptDropdownRef.current && !deptDropdownRef.current.contains(event.target as Node)) {
+        setShowDeptDropdown(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Fetch team members for current user's team
+  useEffect(() => {
+    if (!currentUser) return;
+    fetch(`/api/team-members?team=${encodeURIComponent(currentUser.team)}`)
+      .then(r => r.json())
+      .then((members: TeamMember[]) => {
+        const grouped = members.reduce((acc, m) => {
+          if (!acc[m.office]) acc[m.office] = [];
+          acc[m.office].push(m);
+          return acc;
+        }, {} as Record<string, TeamMember[]>);
+        setTeamMembersByOffice(grouped);
+      })
+      .catch(() => setTeamMembersByOffice({}));
+  }, [currentUser]);
+
+  // Fetch GCG clients fresh each time the form opens
+  useEffect(() => {
+    if (!isOpen) return;
+    setGcgClientsLoading(true);
+    getGcgClients()
+      .then(setGcgClients)
+      .catch(() => setGcgClients([]))
+      .finally(() => setGcgClientsLoading(false));
+  }, [isOpen]);
+
+  // Reset form when opened (or populate with editing data)
+  useEffect(() => {
+    if (isOpen) {
+      if (editingEngagement) {
+        // Pre-fill with existing data for editing
+        setFormData(editingEngagement.data);
+      } else {
+        // Reset to defaults for new interaction
+        setFormData(getDefaultFormData());
+      }
+      setErrors({});
+      setInternalClientSearch('');
+      setShowInternalClientDropdown(false);
+      setTickerInput('');
+      setLocalNoteCount(initialNoteCount ?? 0);
+    }
+  }, [isOpen, editingEngagement, initialNoteCount]);
+
+  // Clients matching the current search, grouped by department
+  const trimmedSearch = internalClientSearch.trim();
+  const filteredClientGroups = useMemo(() => {
+    const filtered = trimmedSearch
+      ? gcgClients.filter(c => c.name.toLowerCase().includes(trimmedSearch.toLowerCase()))
+      : gcgClients;
+    const groups: Record<string, string[]> = {};
+    filtered.forEach(c => {
+      if (!groups[c.dept]) groups[c.dept] = [];
+      groups[c.dept].push(c.name);
+    });
+    return Object.entries(groups);
+  }, [gcgClients, trimmedSearch]);
+
+  // True when the typed name doesn't match any existing client exactly
+  const isNewClient = trimmedSearch.length > 0 &&
+    !gcgClients.some(c => c.name.toLowerCase() === trimmedSearch.toLowerCase());
+
+  // Get available project types based on intake type
+  const availableProjectTypes = formData.intakeType
+    ? (projectTypesByIntake[formData.intakeType as keyof typeof projectTypesByIntake] || [])
+    : [];
+
+  // Reset project type when intake type changes (only if current project type is invalid)
+  useEffect(() => {
+    if (formData.intakeType && formData.projectType && !availableProjectTypes.includes(formData.projectType)) {
+      setFormData(prev => ({ ...prev, projectType: '' }));
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formData.intakeType]);
+
+  const validateForm = (): boolean => {
+    const newErrors: Record<string, string> = {};
+
+    if (!formData.intakeType) {
+      newErrors.intakeType = 'Intake type is required';
+    }
+
+    if (!formData.internalClient) {
+      newErrors.internalClient = 'Internal client is required';
+    } else if (!formData.internalClientDept) {
+      newErrors.internalClient = 'Department is required';
+    }
+
+    if (!formData.projectType) {
+      newErrors.projectType = 'Project type is required';
+    }
+
+    if (formData.teamMembers.length === 0) {
+      newErrors.teamMembers = 'At least one team member is required';
+    }
+
+    if (!formData.dateStarted) {
+      newErrors.dateStarted = 'Start date is required';
+    }
+
+    if (formData.intakeType === 'GCG Ad-Hoc' && !formData.adHocChannel) {
+      newErrors.adHocChannel = 'Channel is required for GCG Ad-Hoc';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (validateForm()) {
+      const submissionData = {
+        ...formData,
+        externalClient: formData.externalClient?.trim() || null,
+      };
+
+      if (isEditMode && editingEngagement && onUpdate) {
+        // Update existing interaction
+        onUpdate(editingEngagement.id, submissionData);
+      } else {
+        // Create new interaction
+        onSubmit({
+          ...submissionData,
+          nna: null, // NNA is added later, not at interaction creation
+        });
+      }
+      onClose();
+    }
+  };
+
+  const toggleTeamMember = (member: string) => {
+    setFormData(prev => ({
+      ...prev,
+      teamMembers: prev.teamMembers.includes(member)
+        ? prev.teamMembers.filter(m => m !== member)
+        : [...prev.teamMembers, member]
+    }));
+  };
+
+  const addTickers = (input: string) => {
+    const newTickers = input
+      .split(/[,\s]+/)
+      .map(t => t.trim().toUpperCase())
+      .filter(t => t.length > 0 && !formData.tickersMentioned?.includes(t));
+
+    if (newTickers.length > 0) {
+      setFormData(prev => ({
+        ...prev,
+        tickersMentioned: [...(prev.tickersMentioned || []), ...newTickers]
+      }));
+    }
+    setTickerInput('');
+  };
+
+  const removeTicker = (ticker: string) => {
+    setFormData(prev => ({
+      ...prev,
+      tickersMentioned: prev.tickersMentioned?.filter(t => t !== ticker) || []
+    }));
+  };
+
+  const handleTickerKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' || e.key === ',') {
+      e.preventDefault();
+      addTickers(tickerInput);
+    } else if (e.key === 'Backspace' && !tickerInput && formData.tickersMentioned?.length) {
+      // Remove last ticker if backspace pressed on empty input
+      const tickers = formData.tickersMentioned;
+      removeTicker(tickers[tickers.length - 1]);
+    }
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <>
+      {/* Backdrop */}
+      <div
+        className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm"
+        onClick={onClose}
+      />
+
+      {/* Form Panel - Centered */}
+      <div
+        className="fixed inset-0 z-[100] flex items-center justify-center p-8 pointer-events-none"
+      >
+        <div
+          className="w-full max-w-2xl max-h-[90vh] bg-zinc-900 border border-zinc-800 rounded-xl shadow-2xl pointer-events-auto overflow-hidden"
+        >
+        <div className="flex flex-col max-h-[90vh]">
+          {/* Header */}
+          <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-800">
+            <div>
+              <h2 className="text-lg font-semibold text-white">
+                {isEditMode ? 'Edit Interaction' : 'New Interaction'}
+              </h2>
+              <p className="text-sm text-zinc-500">
+                {isEditMode ? 'Update the client interaction record' : 'Create a new client interaction record'}
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              {!isEditMode && onBulkUploadClick && (
+                <button
+                  type="button"
+                  onClick={onBulkUploadClick}
+                  className="px-3 py-1.5 text-sm text-zinc-400 hover:text-white bg-zinc-800 hover:bg-zinc-700 rounded-lg transition-colors"
+                >
+                  ↑ Bulk Upload
+                </button>
+              )}
+              <button
+                onClick={onClose}
+                className="p-2 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-lg transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+
+          {/* Form Content */}
+          <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto min-h-0">
+            <div className="p-6 space-y-4">
+              {/* Row 1: Intake Type + Project Type + Interaction Type for Ad-Hoc */}
+              <div className={`grid gap-4 ${formData.intakeType === 'GCG Ad-Hoc' ? 'grid-cols-3' : 'grid-cols-2'}`}>
+                <div>
+                  <label className="block text-sm font-medium text-zinc-300 mb-1.5">
+                    Intake Type <span className="text-red-400">*</span>
+                  </label>
+                  <div className="relative">
+                    <select
+                      value={formData.intakeType}
+                      onChange={(e) => setFormData(prev => ({ ...prev, intakeType: e.target.value as 'IRQ' | 'SRRF' | 'GCG Ad-Hoc' | '', adHocChannel: undefined }))}
+                      className="w-full px-3 py-2 bg-zinc-800/50 border border-zinc-700 rounded-lg text-white focus:outline-none focus:border-cyan-500/50 transition-colors appearance-none cursor-pointer"
+                    >
+                      <option value="" className="bg-zinc-800">Select...</option>
+                      <option value="IRQ" className="bg-zinc-800">IRQ</option>
+                      <option value="SRRF" className="bg-zinc-800">SRRF</option>
+                      <option value="GCG Ad-Hoc" className="bg-zinc-800">GCG Ad-Hoc</option>
+                    </select>
+                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 pointer-events-none" />
+                  </div>
+                  {errors.intakeType && <p className="mt-1 text-xs text-red-400">{errors.intakeType}</p>}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-zinc-300 mb-1.5">
+                    Project Type <span className="text-red-400">*</span>
+                  </label>
+                  <div className="relative">
+                    <select
+                      value={formData.projectType}
+                      onChange={(e) => setFormData(prev => ({ ...prev, projectType: e.target.value }))}
+                      className="w-full px-3 py-2 bg-zinc-800/50 border border-zinc-700 rounded-lg text-white focus:outline-none focus:border-cyan-500/50 transition-colors appearance-none cursor-pointer"
+                    >
+                      <option value="" className="bg-zinc-800">Select...</option>
+                      {availableProjectTypes.map(type => (
+                        <option key={type} value={type} className="bg-zinc-800">{type}</option>
+                      ))}
+                    </select>
+                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 pointer-events-none" />
+                  </div>
+                  {errors.projectType && <p className="mt-1 text-xs text-red-400">{errors.projectType}</p>}
+                </div>
+                {formData.intakeType === 'GCG Ad-Hoc' && (
+                  <div>
+                    <label className="block text-sm font-medium text-zinc-300 mb-1.5">
+                      Interaction Type <span className="text-red-400">*</span>
+                    </label>
+                    <div className="relative">
+                      <select
+                        value={formData.adHocChannel || ''}
+                        onChange={(e) => setFormData(prev => ({ ...prev, adHocChannel: e.target.value as 'In-Person' | 'Email' | 'Teams' }))}
+                        className="w-full px-3 py-2 bg-zinc-800/50 border border-zinc-700 rounded-lg text-white focus:outline-none focus:border-cyan-500/50 transition-colors appearance-none cursor-pointer"
+                      >
+                        <option value="" className="bg-zinc-800">Select...</option>
+                        <option value="In-Person" className="bg-zinc-800">In-Person</option>
+                        <option value="Email" className="bg-zinc-800">Email</option>
+                        <option value="Teams" className="bg-zinc-800">Teams</option>
+                      </select>
+                      <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 pointer-events-none" />
+                    </div>
+                    {errors.adHocChannel && <p className="mt-1 text-xs text-red-400">{errors.adHocChannel}</p>}
+                  </div>
+                )}
+              </div>
+
+              {/* Tickers Mentioned - Only for GCG Ad-Hoc */}
+              {formData.intakeType === 'GCG Ad-Hoc' && (
+                <div>
+                  <label className="block text-sm font-medium text-zinc-300 mb-1.5">
+                    Tickers Mentioned <span className="text-zinc-500 font-normal text-xs">(Optional - for Ticker Trends)</span>
+                  </label>
+                  <div className="flex flex-wrap gap-1.5 p-2 bg-zinc-800/50 border border-zinc-700 rounded-lg min-h-[42px] focus-within:border-cyan-500/50 transition-colors">
+                    {formData.tickersMentioned?.map((ticker) => (
+                      <span
+                        key={ticker}
+                        className="inline-flex items-center gap-1 px-2 py-1 bg-cyan-500/20 border border-cyan-500/30 rounded text-xs font-medium text-cyan-400"
+                      >
+                        {ticker}
+                        <button
+                          type="button"
+                          onClick={() => removeTicker(ticker)}
+                          className="hover:text-cyan-200 transition-colors"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </span>
+                    ))}
+                    <input
+                      type="text"
+                      value={tickerInput}
+                      onChange={(e) => setTickerInput(e.target.value.toUpperCase())}
+                      onKeyDown={handleTickerKeyDown}
+                      onBlur={() => tickerInput && addTickers(tickerInput)}
+                      placeholder={formData.tickersMentioned?.length ? '' : 'Type tickers (e.g., AAPL, MSFT)...'}
+                      className="flex-1 min-w-[120px] bg-transparent border-none text-white text-sm placeholder-zinc-500 focus:outline-none"
+                    />
+                  </div>
+                  <p className="mt-1 text-xs text-zinc-500">Press Enter or comma to add. Used for Ticker Trends analytics.</p>
+                </div>
+              )}
+
+              {/* Row 2: External Client + Internal Client */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-zinc-300 mb-1.5">
+                    External Client <span className="text-zinc-500 font-normal text-xs">(Optional)</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.externalClient || ''}
+                    onChange={(e) => setFormData(prev => ({ ...prev, externalClient: e.target.value }))}
+                    placeholder="e.g., Vanguard Advisors"
+                    className="w-full px-3 py-2 bg-zinc-800/50 border border-zinc-700 rounded-lg text-white placeholder-zinc-500 focus:outline-none focus:border-cyan-500/50 transition-colors"
+                  />
+                </div>
+                <div className="relative" ref={internalClientRef}>
+                  <label className="block text-sm font-medium text-zinc-300 mb-1.5">
+                    Internal Client (GCG) <span className="text-red-400">*</span>
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={formData.internalClient || internalClientSearch}
+                      onChange={(e) => {
+                        setInternalClientSearch(e.target.value);
+                        setFormData(prev => ({ ...prev, internalClient: '', internalClientDept: '' }));
+                        setShowInternalClientDropdown(true);
+                      }}
+                      onFocus={() => setShowInternalClientDropdown(true)}
+                      placeholder={gcgClientsLoading ? 'Loading...' : 'Search or add a client...'}
+                      className="w-full px-3 py-2 bg-zinc-800/50 border border-zinc-700 rounded-lg text-white placeholder-zinc-500 focus:outline-none focus:border-cyan-500/50 transition-colors"
+                    />
+                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 pointer-events-none" />
+                  </div>
+                  {/* Dropdown */}
+                  {showInternalClientDropdown && !gcgClientsLoading && (
+                    <div className="absolute z-50 w-full mt-1 max-h-52 overflow-y-auto bg-zinc-800 border border-zinc-700 rounded-lg shadow-xl">
+                      {filteredClientGroups.length > 0 ? (
+                        filteredClientGroups.map(([dept, names]) => (
+                          <div key={dept}>
+                            <div className="px-3 py-1.5 text-xs font-semibold text-zinc-500 uppercase tracking-wider bg-zinc-800/80 sticky top-0">
+                              {dept}
+                            </div>
+                            {names.map(name => (
+                              <button
+                                key={name}
+                                type="button"
+                                onClick={() => {
+                                  const client = gcgClients.find(c => c.name === name)!;
+                                  setFormData(prev => ({ ...prev, internalClient: name, internalClientDept: client.dept as 'IAG' | 'Broker-Dealer' | 'Institutional' }));
+                                  setInternalClientSearch('');
+                                  setShowInternalClientDropdown(false);
+                                }}
+                                className={`w-full px-3 py-2 text-left text-sm transition-colors ${
+                                  formData.internalClient === name
+                                    ? 'bg-cyan-500/20 text-cyan-400'
+                                    : 'text-zinc-300 hover:bg-zinc-700/50'
+                                }`}
+                              >
+                                {name}
+                              </button>
+                            ))}
+                          </div>
+                        ))
+                      ) : !trimmedSearch ? (
+                        <div className="px-3 py-3 text-sm text-zinc-500 text-center">
+                          No clients yet — type a name to add one
+                        </div>
+                      ) : null}
+                      {/* "Add new client" option when typed name is new */}
+                      {isNewClient && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setFormData(prev => ({ ...prev, internalClient: trimmedSearch, internalClientDept: '' }));
+                            setInternalClientSearch('');
+                            setShowInternalClientDropdown(false);
+                          }}
+                          className="w-full px-3 py-2 text-left text-sm text-cyan-400 hover:bg-zinc-700/50 flex items-center gap-2 border-t border-zinc-700/50"
+                        >
+                          <span className="text-zinc-500 text-base leading-none">+</span>
+                          Add &quot;{trimmedSearch}&quot; as new GCG client
+                        </button>
+                      )}
+                    </div>
+                  )}
+                  {errors.internalClient && <p className="mt-1 text-xs text-red-400">{errors.internalClient}</p>}
+                </div>
+              </div>
+
+              {/* Department row — shown when a client name is committed */}
+              {formData.internalClient && (
+                <div className="grid grid-cols-2 gap-4">
+                  <div /> {/* spacer aligns with External Client column */}
+                  <div>
+                    {formData.internalClientDept ? (
+                      /* Existing client — show dept as read-only */
+                      <div className="flex items-center gap-2 px-3 py-2 bg-zinc-800/30 border border-zinc-700/50 rounded-lg">
+                        <span className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">Dept</span>
+                        <span className="text-sm text-zinc-300">{formData.internalClientDept}</span>
+                      </div>
+                    ) : (
+                      /* New client — dept selector */
+                      <div ref={deptDropdownRef} className="relative">
+                        <label className="block text-sm font-medium text-zinc-300 mb-1.5">
+                          Department <span className="text-red-400">*</span>
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => setShowDeptDropdown(v => !v)}
+                          className="w-full flex items-center justify-between px-3 py-2 bg-zinc-800/40 border border-zinc-700/50 rounded-lg text-sm transition-colors focus:outline-none focus:ring-1 focus:ring-cyan-500/30 text-zinc-500"
+                        >
+                          <span>Select department...</span>
+                          <ChevronDown className={`w-4 h-4 text-zinc-500 transition-transform ${showDeptDropdown ? 'rotate-180' : ''}`} />
+                        </button>
+                        {showDeptDropdown && (
+                          <div className="absolute z-50 mt-1 w-full bg-zinc-900/90 backdrop-blur-md border border-zinc-700/50 rounded-lg shadow-xl overflow-hidden">
+                            {GCG_DEPARTMENTS.map(dept => (
+                              <button
+                                key={dept}
+                                type="button"
+                                onClick={() => {
+                                  setFormData(prev => ({ ...prev, internalClientDept: dept }));
+                                  setShowDeptDropdown(false);
+                                }}
+                                className="w-full text-left px-3 py-2 text-sm text-zinc-200 hover:bg-white/[0.06] transition-colors"
+                              >
+                                {dept}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Row 3: Team Members (4 columns, grouped by office) */}
+              <div>
+                <label className="block text-sm font-medium text-zinc-300 mb-1.5">
+                  Team Members <span className="text-red-400">*</span>
+                </label>
+                {Object.keys(teamMembersByOffice).length === 0 ? (
+                  <p className="text-xs text-zinc-500 py-2">No team members configured yet.</p>
+                ) : (
+                  <div className="space-y-2">
+                    {Object.entries(teamMembersByOffice).map(([office, members]) => (
+                      <div key={office}>
+                        {Object.keys(teamMembersByOffice).length > 1 && (
+                          <p className="text-xs text-zinc-600 uppercase tracking-wider mb-1">{office}</p>
+                        )}
+                        <div className="grid grid-cols-4 gap-1.5">
+                          {members.map((member) => (
+                            <button
+                              key={member.id}
+                              type="button"
+                              onClick={() => toggleTeamMember(member.displayName)}
+                              className={`px-2 py-1.5 text-xs font-medium rounded-md border transition-all flex items-center justify-between ${
+                                formData.teamMembers.includes(member.displayName)
+                                  ? 'bg-cyan-500/20 border-cyan-500/50 text-cyan-400'
+                                  : 'bg-zinc-800/50 border-zinc-700 text-zinc-400 hover:border-zinc-600'
+                              }`}
+                            >
+                              <span className="truncate">{member.displayName}</span>
+                              {formData.teamMembers.includes(member.displayName) && <Check className="w-3 h-3 ml-1 flex-shrink-0" />}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {errors.teamMembers && <p className="mt-1 text-xs text-red-400">{errors.teamMembers}</p>}
+              </div>
+
+              {/* Row 4: Date Started + Date Finished */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-zinc-300 mb-1.5">
+                    Date Started <span className="text-red-400">*</span>
+                  </label>
+                  <input
+                    type="date"
+                    value={formData.dateStarted}
+                    onClick={(e) => e.currentTarget.showPicker()}
+                    onChange={(e) => setFormData(prev => ({ ...prev, dateStarted: e.target.value }))}
+                    className="w-full h-[38px] px-3 bg-zinc-800/50 border border-zinc-700 rounded-lg text-white focus:outline-none focus:border-cyan-500/50 transition-colors [&::-webkit-calendar-picker-indicator]:invert"
+                  />
+                  {errors.dateStarted && <p className="mt-1 text-xs text-red-400">{errors.dateStarted}</p>}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-zinc-300 mb-1.5">
+                    Date Finished <span className="text-zinc-500 font-normal text-xs">(Optional)</span>
+                  </label>
+                  <input
+                    type="date"
+                    value={formData.dateFinished || ''}
+                    onClick={(e) => e.currentTarget.showPicker()}
+                    onChange={(e) => setFormData(prev => ({ ...prev, dateFinished: e.target.value || undefined }))}
+                    className="w-full h-[38px] px-3 bg-zinc-800/50 border border-zinc-700 rounded-lg text-white focus:outline-none focus:border-cyan-500/50 transition-colors [&::-webkit-calendar-picker-indicator]:invert"
+                  />
+                </div>
+              </div>
+
+              {/* Row 5: NNA + Client Portfolio */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-zinc-300 mb-1.5">
+                    Net New Assets <span className="text-zinc-500 font-normal text-xs">(Optional)</span>
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setIsNNAModalOpen(true)}
+                    className={`w-full h-[38px] px-3 bg-zinc-800/50 border rounded-lg text-sm text-left transition-colors flex items-center gap-2 ${
+                      formData.nna
+                        ? 'border-emerald-500/50 text-emerald-400 hover:border-emerald-500/70'
+                        : 'border-zinc-700 text-zinc-400 hover:border-cyan-500/50'
+                    }`}
+                  >
+                    <DollarSign className="w-4 h-4" />
+                    {formData.nna ? formatNNADisplay(formData.nna) : '+ Add NNA'}
+                  </button>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-zinc-300 mb-1.5">
+                    Client Portfolio <span className="text-zinc-500 font-normal text-xs">(Optional)</span>
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setIsPortfolioModalOpen(true)}
+                    className={`w-full h-[38px] px-3 bg-zinc-800/50 border rounded-lg text-sm text-left transition-colors flex items-center gap-2 ${
+                      formData.portfolio && formData.portfolio.length > 0
+                        ? 'border-cyan-500/50 text-cyan-400 hover:border-cyan-500/70'
+                        : 'border-zinc-700 text-zinc-400 hover:border-cyan-500/50'
+                    }`}
+                  >
+                    <Briefcase className="w-4 h-4" />
+                    {formData.portfolio && formData.portfolio.length > 0
+                      ? `${formData.portfolio.length} holding${formData.portfolio.length > 1 ? 's' : ''}`
+                      : '+ Add Portfolio'}
+                  </button>
+                </div>
+              </div>
+
+              {/* Row 6: Notes */}
+              <div>
+                <label className="block text-sm font-medium text-zinc-300 mb-1.5">
+                  Notes <span className="text-zinc-500 font-normal text-xs">(Optional)</span>
+                </label>
+                {!editingEngagement?.id ? (
+                  <div className="w-full h-[38px] px-3 bg-zinc-800/50 border border-zinc-700 rounded-lg text-sm text-zinc-500 flex items-center gap-2 cursor-not-allowed select-none">
+                    <FileText className="w-4 h-4" />
+                    Notes available after saving
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setIsNotesModalOpen(true)}
+                    className={`w-full h-[38px] px-3 bg-zinc-800/50 border rounded-lg text-sm text-left transition-colors flex items-center gap-2 ${
+                      localNoteCount > 0
+                        ? 'border-cyan-500/50 text-cyan-400 hover:border-cyan-500/70'
+                        : 'border-zinc-700 text-zinc-400 hover:border-cyan-500/50'
+                    }`}
+                  >
+                    <FileText className="w-4 h-4" />
+                    {localNoteCount > 0
+                      ? `${localNoteCount} note${localNoteCount === 1 ? '' : 's'}`
+                      : '+ Add Notes'}
+                  </button>
+                )}
+              </div>
+            </div>
+          </form>
+
+          {/* Footer */}
+          <div className="px-6 py-4 border-t border-zinc-800 bg-zinc-900/80">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                {isEditMode && onDelete && (currentUser?.role === 'admin' || currentUser?.id === editingEngagement?.createdById) && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!deleteConfirm) { setDeleteConfirm(true); return; }
+                      onDelete(editingEngagement!.id);
+                      onClose();
+                    }}
+                    onBlur={() => setDeleteConfirm(false)}
+                    className={deleteConfirm
+                      ? 'px-4 py-2 text-sm font-medium bg-red-600 text-white rounded-lg hover:bg-red-500 transition-colors'
+                      : 'px-4 py-2 text-sm font-medium text-red-400 hover:text-red-300 transition-colors'}
+                  >
+                    {deleteConfirm ? 'Confirm Delete' : 'Delete'}
+                  </button>
+                )}
+              </div>
+              <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-4 py-2 text-sm font-medium text-zinc-400 hover:text-white transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                onClick={handleSubmit}
+                className="px-6 py-2 bg-gradient-to-r from-blue-600 to-cyan-500 text-white text-sm font-medium rounded-lg hover:from-blue-500 hover:to-cyan-400 transition-all"
+              >
+                {isEditMode ? 'Save Changes' : 'Create Interaction'}
+              </button>
+              </div>
+            </div>
+          </div>
+        </div>
+        </div>
+      </div>
+
+      {/* NNA Modal */}
+      <NNAModal
+        isOpen={isNNAModalOpen}
+        onClose={() => setIsNNAModalOpen(false)}
+        engagementId={editingEngagement?.id || 0}
+        externalClient={formData.externalClient}
+        internalClient={formData.internalClient}
+        currentNNA={formData.nna ?? undefined}
+        onSave={(_, nna) => {
+          setFormData(prev => ({ ...prev, nna: nna ?? null }));
+        }}
+      />
+
+      {/* Portfolio Modal */}
+      <PortfolioModal
+        isOpen={isPortfolioModalOpen}
+        onClose={() => setIsPortfolioModalOpen(false)}
+        currentPortfolio={formData.portfolio}
+        onSave={(portfolio) => {
+          setFormData(prev => ({
+            ...prev,
+            portfolio,
+            portfolioLogged: portfolio !== undefined && portfolio.length > 0,
+          }));
+        }}
+      />
+
+      {/* Notes Modal */}
+      {editingEngagement?.id ? (
+        <NotesModal
+          isOpen={isNotesModalOpen}
+          onClose={() => setIsNotesModalOpen(false)}
+          title="Engagement Notes"
+          subtitle={`${formData.externalClient || formData.internalClient || 'Engagement'} · ${formData.projectType}`}
+          engagementId={editingEngagement.id}
+          onNoteAdded={() => {
+            setLocalNoteCount(prev => prev + 1);
+            onNoteAdded?.(editingEngagement.id);
+          }}
+          onNoteDeleted={() => {
+            setLocalNoteCount(prev => Math.max(0, prev - 1));
+            onNoteDeleted?.(editingEngagement.id);
+          }}
+        />
+      ) : null}
+    </>
+  );
+}

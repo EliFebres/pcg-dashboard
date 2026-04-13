@@ -45,7 +45,7 @@ export default function LoginModal({ isOpen, onClose, onSwitchToSignup }: LoginM
         return;
       }
 
-      window.location.href = '/dashboard/client-interactions';
+      window.location.href = '/dashboard/interactions-and-trends/client-interactions';
     } catch {
       setError('Unable to connect. Please try again.');
     } finally {

@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import Sidebar from '@/app/components/Sidebar';
+import Sidebar from '@/app/components/dashboard/Sidebar';
 import { AuthProvider } from '@/app/lib/auth/context';
 
 export default function AppShell({ children }: { children: React.ReactNode }) {

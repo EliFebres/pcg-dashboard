@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Users, Plus, LinkIcon, X, AlertCircle } from 'lucide-react';
 import type { TeamMember, User } from '@/app/lib/auth/types';
-import GlassSelect from '@/app/components/pages/shared/GlassSelect';
+import GlassSelect from '@/app/components/GlassSelect';
 
 const TEAMS: User['team'][] = [
   'Portfolio Consulting Group',

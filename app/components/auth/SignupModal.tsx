@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Eye, EyeOff, ArrowRight, CheckCircle, X } from 'lucide-react';
-import GlassSelect from '@/app/components/pages/shared/GlassSelect';
+import GlassSelect from '@/app/components/GlassSelect';
 
 const TEAMS = [
   'Portfolio Consulting Group',
@@ -105,7 +105,7 @@ export default function SignupModal({ isOpen, onClose, onSwitchToLogin }: Signup
       }
 
       if (data.isFirstUser) {
-        window.location.href = '/dashboard/client-interactions';
+        window.location.href = '/dashboard/interactions-and-trends/client-interactions';
         return;
       }
 
