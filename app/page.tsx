@@ -58,7 +58,7 @@ export default function Home() {
       <FeatureSections
         className="scroll-fade-in"
         dashboardHeading={<>Every insight,<br />one dashboard</>}
-        dashboardDescription="Track client interactions, analyze portfolio trends, and identify competitive opportunities all from a single platform, built specifically for ISG."
+        dashboardDescription="Track client interactions, analyze portfolio characteristics, and identify competitive opportunities all from a single platform, built specifically for ISG."
         cards={[
           {
             title: 'Client Interaction Tracking',

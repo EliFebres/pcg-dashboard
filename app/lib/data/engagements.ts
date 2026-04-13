@@ -1,12 +1,13 @@
 // Data and functions for Client Engagements Dashboard
 // Used for mock data (when DUCKDB_DIR is not set) and by scripts/seed-db.ts
 
+
 import type { Engagement, DayData, GCGAdHocChannel, PortfolioHolding, AssetClass } from '../types/engagements';
 
 // Sample tickers for portfolio generation
 const sampleTickers = [
-  'DFAC', 'DFAS', 'DFAT', 'DFAX', 'DFCF', 'DFEM', 'DFEV', 'DFIC', 'DFIP', 'DFIS',
-  'DFIV', 'DFLV', 'DFND', 'DFNM', 'DFSD', 'DFSV', 'DFUV', 'DFVX', 'DISV', 'DSTX',
+  'FMAC', 'FMAS', 'FMAT', 'FMAX', 'FMCF', 'FMEM', 'FMEV', 'FMIC', 'FMIP', 'FMIS',
+  'FMIV', 'FMLV', 'FMND', 'FMNM', 'FMSD', 'FMSV', 'FMUV', 'FMVX', 'FISV', 'FSTX',
   'VTI', 'VOO', 'VEA', 'VWO', 'BND', 'BNDX', 'VNQ', 'VIG', 'VXUS', 'VGT',
   'AGG', 'LQD', 'HYG', 'TIP', 'MUB', 'SHY', 'IEF', 'TLT', 'EMB', 'VCIT',
 ];
@@ -37,7 +38,7 @@ function generatePortfolio(seed: number): PortfolioHolding[] {
 
     // Determine asset class based on ticker prefix
     let assetClass: AssetClass;
-    if (ticker.startsWith('DF') || ['VTI', 'VOO', 'VEA', 'VWO', 'VIG', 'VXUS', 'VGT', 'VNQ'].includes(ticker)) {
+    if (ticker.startsWith('FM') || ticker.startsWith('FI') || ticker.startsWith('FS') || ['VTI', 'VOO', 'VEA', 'VWO', 'VIG', 'VXUS', 'VGT', 'VNQ'].includes(ticker)) {
       assetClass = 'Equity';
     } else if (['AGG', 'LQD', 'HYG', 'TIP', 'MUB', 'SHY', 'IEF', 'TLT', 'EMB', 'VCIT', 'BND', 'BNDX'].includes(ticker)) {
       assetClass = 'Fixed Income';
@@ -59,10 +60,10 @@ function generatePortfolio(seed: number): PortfolioHolding[] {
 // GCG Ad-Hoc interaction channels
 const adHocChannels: GCGAdHocChannel[] = ['In-Person', 'Email', 'Teams'];
 
-// Sample tickers mentioned in GCG Ad-Hoc conversations (mix of DFA, competitors, and popular ETFs)
+// Sample tickers mentioned in GCG Ad-Hoc conversations (mix of firm funds, competitors, and popular ETFs)
 const conversationTickers = [
-  // DFA funds
-  'DFAC', 'DFAS', 'DFAT', 'DFAX', 'DFCF', 'DFEM', 'DFEV', 'DFIC', 'DFIV', 'DFLV', 'DFUV', 'DFSV',
+  // Firm funds
+  'FMAC', 'FMAS', 'FMAT', 'FMAX', 'FMCF', 'FMEM', 'FMEV', 'FMIC', 'FMIV', 'FMLV', 'FMUV', 'FMSV',
   // Popular competitor ETFs
   'VOO', 'VTI', 'SPY', 'IVV', 'QQQ', 'VEA', 'VWO', 'IEMG', 'EFA', 'AGG', 'BND', 'LQD',
   // Large cap stocks often discussed
@@ -95,7 +96,7 @@ function generateTickersMentioned(seed: number): string[] {
 const sampleNotes = [
   'Client requested additional breakdowns by sector. Follow up scheduled for next week.',
   'Discussed portfolio rebalancing strategy. Client prefers conservative approach with 60/40 allocation.',
-  'Meeting went well. Client interested in DFA funds for tax-loss harvesting opportunities.',
+  'Meeting went well. Client interested in firm funds for tax-loss harvesting opportunities.',
   'Need to send updated performance report. Client comparing against Vanguard benchmark.',
   'Client has concerns about interest rate sensitivity. Recommended shorter duration bonds.',
   'Follow-up call to discuss model changes. Client approved new allocation.',

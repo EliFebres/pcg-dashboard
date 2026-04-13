@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
+import Link from 'next/link';
 import { Search, Calendar, ChevronDown, Check, Filter } from 'lucide-react';
 
 export interface FilterOptionGroup {
@@ -34,6 +35,12 @@ export const PERIOD_OPTIONS: PeriodOption[] = [
   { value: 'ALL', label: 'All Time' },
 ];
 
+export interface HeaderTab {
+  label: string;
+  href: string;
+  active: boolean;
+}
+
 interface DashboardHeaderProps {
   title: string;
   subtitle: string;
@@ -41,6 +48,7 @@ interface DashboardHeaderProps {
   searchValue: string;
   onSearchChange: (value: string) => void;
   filters: FilterDropdown[];
+  tabs?: HeaderTab[];
   period?: string;
   onPeriodChange?: (value: string) => void;
   periodOptions?: string[]; // Custom period options (e.g., ['1M', '3M', '6M', '1Y', 'ALL'])
@@ -295,6 +303,7 @@ export default function DashboardHeader({
   searchValue,
   onSearchChange,
   filters,
+  tabs,
   period = '1Y',
   onPeriodChange,
   periodOptions,
@@ -383,7 +392,7 @@ export default function DashboardHeader({
           <h2 className="text-xl font-semibold text-white">{title}</h2>
           <p className="text-zinc-500 text-sm">{subtitle}</p>
         </div>
-        {/* Global Filters */}
+        {/* Global Filters + Tabs */}
         <div className="flex items-center gap-2 h-9">
           <div
             className={`transition-all duration-300 ease-in-out overflow-hidden ${
@@ -449,9 +458,26 @@ export default function DashboardHeader({
             )}
           </div>
 
-          {(actionButtonLabel || secondaryActionButtonLabel) && (
+          {(actionButtonLabel || secondaryActionButtonLabel || (tabs && tabs.length > 0)) && (
             <>
               <div className="flex-1" />
+              {tabs && tabs.length > 0 && (
+                <div className="flex items-center gap-1 bg-zinc-800/60 border border-zinc-700/50 p-1 rounded-lg">
+                  {tabs.map((tab) => (
+                    <Link
+                      key={tab.href}
+                      href={tab.href}
+                      className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all ${
+                        tab.active
+                          ? 'bg-gradient-to-r from-blue-600 to-cyan-500 text-white shadow-sm'
+                          : 'text-zinc-400 hover:text-white hover:bg-zinc-700/50'
+                      }`}
+                    >
+                      {tab.label}
+                    </Link>
+                  ))}
+                </div>
+              )}
               {secondaryActionButtonLabel && onSecondaryActionButtonClick && (
                 <button
                   onClick={onSecondaryActionButtonClick}

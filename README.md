@@ -1,6 +1,6 @@
 # PCG Insights Dashboard
 
-A Next.js dashboard application for tracking client interactions, portfolio trends, and ticker analytics for Dimensional's Portfolio Construction Group.
+A Next.js dashboard application for tracking client interactions, portfolio trends, and ticker analytics for the firm's Portfolio Construction Group.
 
 ## Features
 
@@ -37,8 +37,8 @@ A Next.js dashboard application for tracking client interactions, portfolio tren
 - Logged Portfolios table with expandable position details and fullscreen view
 
 ### Ticker Trends Dashboard *(currently inactive)*
-- Hot Tickers & DFA Competitors comparison table with inline editing (type, notes, talking points, PCR links)
-- Most Popular DFA Tickers ranking
+- Hot Tickers & Firm Competitors comparison table with inline editing (type, notes, talking points, PCR links)
+- Most Popular Firm Tickers ranking
 - Ticker Adoption Trend chart over time
 
 ## Tech Stack

@@ -75,8 +75,8 @@ export default function TickerTrendsDashboard() {
         (t) =>
           t.ticker.toLowerCase().includes(searchQuery.toLowerCase()) ||
           t.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          t.dfaCompetitor.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          t.dfaName.toLowerCase().includes(searchQuery.toLowerCase())
+          t.firmCompetitor.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          t.firmName.toLowerCase().includes(searchQuery.toLowerCase())
       )
     : hotTickers;
 
@@ -165,7 +165,7 @@ export default function TickerTrendsDashboard() {
       {/* Top Bar with Filters */}
       <DashboardHeader
         title="Ticker Trends"
-        subtitle="Popular tickers and DFA comparisons"
+        subtitle="Popular tickers and firm comparisons"
         searchPlaceholder="Search tickers, funds..."
         searchValue={searchQuery}
         onSearchChange={setSearchQuery}
@@ -190,8 +190,8 @@ export default function TickerTrendsDashboard() {
         <div>
           <div className="flex items-center gap-2 mb-4">
             <Flame className="w-5 h-5 text-cyan-400" />
-            <h3 className="text-lg font-semibold text-white">Top 10 Hot Tickers & DFA Competitors</h3>
-            <span className="text-xs text-zinc-500 ml-2">Most requested non-DFA tickers with comparable DFA funds</span>
+            <h3 className="text-lg font-semibold text-white">Top 10 Hot Tickers & Firm Competitors</h3>
+            <span className="text-xs text-zinc-500 ml-2">Most requested non-firm tickers with comparable firm funds</span>
           </div>
 
           {/* Hot Tickers Table */}

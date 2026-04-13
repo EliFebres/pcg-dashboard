@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, BarChart3, ChevronDown, PieChart, Flame, User, LogOut, Users, UserCheck, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
+import { LayoutDashboard, ChevronDown, PieChart, Flame, User, LogOut, Users, UserCheck, PanelLeftClose, PanelLeftOpen, Swords, TrendingUp, Landmark } from 'lucide-react';
 import { useCurrentUser } from '@/app/lib/auth/context';
 import { toDisplayName } from '@/app/lib/auth/types';
 
@@ -13,6 +13,7 @@ interface NavItem {
   icon: React.ComponentType<{ className?: string }>;
   children?: NavItem[];
   disabled?: boolean;
+  activePrefix?: string; // Highlight when pathname starts with this prefix
 }
 
 interface NavSection {
@@ -25,16 +26,16 @@ const navSections: NavSection[] = [
     title: 'Interactions & Trends',
     items: [
       { label: 'Client Interactions', href: '/dashboard/client-interactions', icon: LayoutDashboard },
-      {
-        label: 'Trends',
-        href: '/dashboard/trends',
-        icon: BarChart3,
-        disabled: true,
-        children: [
-          { label: 'Portfolio Trends', href: '/dashboard/trends/portfolio-trends', icon: PieChart },
-          { label: 'Ticker Trends', href: '/dashboard/trends/ticker-trends', icon: Flame },
-        ],
-      },
+      { label: 'Portfolio Trends', href: '/dashboard/trends/portfolio-trends', icon: PieChart, disabled: true },
+      { label: 'Ticker Trends', href: '/dashboard/trends/ticker-trends', icon: Flame, disabled: true },
+    ],
+  },
+  {
+    title: 'Competitive Landscape',
+    items: [
+      { label: 'Equity', href: '/dashboard/competitive/equity', icon: TrendingUp, disabled: true },
+      { label: 'Fixed Income', href: '/dashboard/competitive/fixed-income', icon: Landmark, disabled: true },
+      { label: 'vs. Competitor', href: '/dashboard/competitive/vs-competitor', icon: Swords, disabled: true },
     ],
   },
 ];
@@ -81,9 +82,11 @@ export default function Sidebar({ className = '' }: SidebarProps) {
   };
 
   const [expandedItems, setExpandedItems] = useState<string[]>(() => getExpandedItemsForPath(pathname));
+  const [disabledTooltipPos, setDisabledTooltipPos] = useState<{ x: number; y: number } | null>(null);
   const prevPathnameRef = useRef(pathname);
 
-  const isActive = (href: string) => pathname === href;
+  const isActive = (href: string, activePrefix?: string) =>
+    activePrefix ? pathname.startsWith(activePrefix) : pathname === href;
   const isParentActive = (item: NavItem) => {
     if (item.children) {
       return item.children.some(child => pathname === child.href);
@@ -160,7 +163,7 @@ export default function Sidebar({ className = '' }: SidebarProps) {
             <div className="space-y-0.5">
               {section.items.map((item) => {
                 const Icon = item.icon;
-                const active = isActive(item.href);
+                const active = isActive(item.href, item.activePrefix);
                 const parentActive = isParentActive(item);
                 const hasChildren = item.children && item.children.length > 0;
                 const isExpanded = expandedItems.includes(item.label);
@@ -225,6 +228,22 @@ export default function Sidebar({ className = '' }: SidebarProps) {
                           })}
                         </div>
                       )}
+                    </div>
+                  );
+                }
+
+                if (isDisabled) {
+                  return (
+                    <div
+                      key={item.href}
+                      className="relative"
+                      onMouseMove={(e) => setDisabledTooltipPos({ x: e.clientX, y: e.clientY })}
+                      onMouseLeave={() => setDisabledTooltipPos(null)}
+                    >
+                      <div className={`w-full flex items-center border-l-2 border-transparent opacity-40 cursor-not-allowed ${isCollapsed ? 'justify-center px-0 py-2' : 'px-2 py-2 gap-2.5'}`}>
+                        <Icon className="w-5 h-5 flex-shrink-0 text-zinc-600" />
+                        {!isCollapsed && <span className="text-[0.9rem] font-semibold tracking-wide text-zinc-600">{item.label}</span>}
+                      </div>
                     </div>
                   );
                 }
@@ -342,6 +361,15 @@ export default function Sidebar({ className = '' }: SidebarProps) {
           )}
         </div>
       </div>
+
+      {disabledTooltipPos && (
+        <span
+          className="fixed px-2 py-1 bg-zinc-800 border border-zinc-700 text-zinc-200 text-xs rounded-md whitespace-nowrap pointer-events-none z-50"
+          style={{ left: disabledTooltipPos.x + 14, top: disabledTooltipPos.y + 4 }}
+        >
+          Under Construction
+        </span>
+      )}
     </aside>
   );
 }

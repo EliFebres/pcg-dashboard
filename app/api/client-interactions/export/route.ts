@@ -190,7 +190,7 @@ async function buildXlsx(rows: Record<string, unknown>[], notesMap: Map<number, 
     const teamMembers = JSON.parse((row.team_members as string) || '[]') as string[];
     const tickers = JSON.parse((row.tickers_mentioned as string) || '[]') as string[];
     const nnaRaw = row.nna as number | null;
-    // Format portfolio holdings as readable text: "DFAC (Equity, 35%), DFCF (Fixed Income, 40%)"
+    // Format portfolio holdings as readable text: "FMAC (Equity, 35%), FMCF (Fixed Income, 40%)"
     let portfolioText = '';
     if (row.portfolio) {
       try {

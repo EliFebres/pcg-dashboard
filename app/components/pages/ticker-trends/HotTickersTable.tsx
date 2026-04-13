@@ -64,8 +64,8 @@ export default function HotTickersTable({
       <div className="relative z-10 p-4 border-b border-zinc-800/50">
         <div className="flex items-center justify-between">
           <div>
-            <h4 className="text-sm font-medium text-white">Hot Tickers & DFA Competitors</h4>
-            <p className="text-xs text-zinc-500">Most requested non-DFA tickers with comparable DFA funds</p>
+            <h4 className="text-sm font-medium text-white">Hot Tickers & Firm Competitors</h4>
+            <p className="text-xs text-zinc-500">Most requested non-firm tickers with comparable firm funds</p>
           </div>
           <button className="flex items-center gap-1.5 px-2 py-1 text-xs text-zinc-400 hover:text-cyan-400 transition-colors">
             <Download className="w-3.5 h-3.5" />
@@ -96,7 +96,7 @@ export default function HotTickersTable({
                 <th className="text-left text-xs font-medium text-zinc-400 uppercase tracking-wider px-4 py-3">Type</th>
                 <th className="text-left text-xs font-medium text-zinc-400 uppercase tracking-wider px-4 py-3">Competitor Ticker</th>
                 <th className="text-left text-xs font-medium text-zinc-400 uppercase tracking-wider px-4 py-3 w-0">Requests</th>
-                <th className="text-left text-xs font-medium text-zinc-400 uppercase tracking-wider px-4 py-3">DFA Alternative</th>
+                <th className="text-left text-xs font-medium text-zinc-400 uppercase tracking-wider px-4 py-3">Firm Alternative</th>
                 <th className="text-left text-xs font-medium text-zinc-400 uppercase tracking-wider px-4 py-3">1YR Return Δ</th>
                 <th className="text-left text-xs font-medium text-zinc-400 uppercase tracking-wider px-4 py-3">AUM</th>
                 <th className="text-left text-xs font-medium text-zinc-400 uppercase tracking-wider px-4 py-3">Flows</th>
@@ -152,8 +152,8 @@ export default function HotTickersTable({
                   </td>
                   <td className="px-4 py-3">
                     <div>
-                      <span className="text-sm font-bold text-amber-400">{ticker.dfaCompetitor}</span>
-                      <p className="text-xs text-zinc-500">{ticker.dfaName}</p>
+                      <span className="text-sm font-bold text-amber-400">{ticker.firmCompetitor}</span>
+                      <p className="text-xs text-zinc-500">{ticker.firmName}</p>
                     </div>
                   </td>
                   <td className="px-4 py-3">
@@ -165,14 +165,14 @@ export default function HotTickersTable({
                       {ticker.returnComparison.delta}
                     </span>
                     <p className="text-xs text-zinc-500">
-                      {ticker.returnComparison.competitor}% vs {ticker.returnComparison.dfa}%
+                      {ticker.returnComparison.competitor}% vs {ticker.returnComparison.firm}%
                     </p>
                   </td>
                   <td className="px-4 py-3">
                     <div className="text-sm text-zinc-300">
                       <span className="text-cyan-400">${ticker.aum.competitor}</span>
                       <span className="text-zinc-500"> vs </span>
-                      <span className="text-amber-400">${ticker.aum.dfa}</span>
+                      <span className="text-amber-400">${ticker.aum.firm}</span>
                     </div>
                   </td>
                   <td className="px-4 py-3">
@@ -187,12 +187,12 @@ export default function HotTickersTable({
                       </span>
                       <span className="text-zinc-500"> vs </span>
                       <span className="inline-flex items-center text-amber-400">
-                        {ticker.flows.dfa.startsWith('+') ? (
+                        {ticker.flows.firm.startsWith('+') ? (
                           <ArrowUp className="w-3 h-3 text-emerald-400 mr-0.5" />
                         ) : (
                           <ArrowDown className="w-3 h-3 text-red-400 mr-0.5" />
                         )}
-                        {ticker.flows.dfa}
+                        {ticker.flows.firm}
                       </span>
                     </div>
                   </td>
@@ -200,7 +200,7 @@ export default function HotTickersTable({
                     <div className="text-sm text-zinc-300">
                       <span className="text-cyan-400">{ticker.expenseRatio.competitor}%</span>
                       <span className="text-zinc-500"> vs </span>
-                      <span className="text-amber-400">{ticker.expenseRatio.dfa}%</span>
+                      <span className="text-amber-400">{ticker.expenseRatio.firm}%</span>
                     </div>
                   </td>
                   <td className="px-4 py-3 text-center">
