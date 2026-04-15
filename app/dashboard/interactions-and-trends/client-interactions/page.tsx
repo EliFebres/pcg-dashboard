@@ -113,7 +113,14 @@ export default function EngagementsDashboard() {
   const [teamMemberFilter, setTeamMemberFilter] = useState('All Team Members');
   const [departmentFilter, setDepartmentFilter] = useState<string[]>([]);
   const [intakeTypeFilter, setIntakeTypeFilter] = useState<string[]>([]);
-  const [projectTypeFilter, setProjectTypeFilter] = useState<string[]>([]);
+  // Default view excludes PCRs — users can click 'All Project Types' in the filter
+  // to clear this and see everything, including PCRs.
+  const [projectTypeFilter, setProjectTypeFilter] = useState<string[]>([
+    'Meeting',
+    'Discovery Meeting',
+    'Data Request',
+    'Other',
+  ]);
   const [statusFilter, setStatusFilter] = useState('All Statuses');
   const [period, setPeriod] = useState('1Y');
   const [sortColumn, setSortColumn] = useState<string | null>('dateStarted');
