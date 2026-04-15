@@ -183,7 +183,7 @@ export default function Home() {
               <path d="M50 24A26 26 0 1 0 72 66" stroke="url(#logoGrad)" strokeWidth="7" strokeLinecap="round" fill="none" opacity="0.4"/>
               <circle cx="50" cy="50" r="7" fill="url(#logoGrad)"/>
             </svg>
-            <span className="text-[12px] text-[#6b6b76]">PCG Tools &copy; {new Date().getFullYear()} Portfolio Consulting Group</span>
+            <span className="text-[12px] text-[#6b6b76]">ISG Insights &copy; {new Date().getFullYear()} Portfolio Consulting Group</span>
           </div>
           <span className="text-[12px] text-[#6b6b76]">Developed by Eli Febres</span>
         </div>

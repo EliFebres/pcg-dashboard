@@ -116,17 +116,10 @@ export default function Sidebar({ className = '' }: SidebarProps) {
   return (
     <aside className={`${isCollapsed ? 'w-14' : 'w-56'} transition-all duration-200 ${isCollapsed ? '' : 'overflow-x-hidden'} bg-[#111113] flex flex-col font-[family-name:var(--font-inter)] ${className}`}>
 
-      {/* Header: dashboard icon (left) + collapse toggle (right) */}
+      {/* Header: brand (left) + collapse toggle (right) */}
       <div className={`px-2 pt-6 pb-3 flex items-center flex-shrink-0 ${isCollapsed ? 'justify-center' : 'justify-between'}`}>
         {!isCollapsed && (
-          <div className="flex items-center gap-2">
-            <svg width="24" height="24" viewBox="0 0 100 100" fill="none" className="flex-shrink-0">
-              <path d="M50 5A45 45 0 1 1 12 32" stroke="url(#sidebar-icon-gradient)" strokeWidth="8" strokeLinecap="round" fill="none"/>
-              <path d="M50 24A26 26 0 1 0 72 66" stroke="url(#sidebar-icon-gradient)" strokeWidth="7" strokeLinecap="round" fill="none" opacity="0.4"/>
-              <circle cx="50" cy="50" r="7" fill="url(#sidebar-icon-gradient)"/>
-            </svg>
-            <span className="text-[1.05rem] font-semibold tracking-wide text-white">PCG Tools</span>
-          </div>
+          <span className="ml-2 text-[1.05rem] font-semibold tracking-wide text-white">ISG Insights</span>
         )}
         <button
           onClick={toggleCollapsed}
@@ -138,15 +131,6 @@ export default function Sidebar({ className = '' }: SidebarProps) {
             : <PanelLeftClose className="w-4 h-4" />
           }
         </button>
-        {/* SVG gradient definition for icon stroke */}
-        <svg width="0" height="0" className="absolute">
-          <defs>
-            <linearGradient id="sidebar-icon-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="#2563eb" />
-              <stop offset="100%" stopColor="#06b6d4" />
-            </linearGradient>
-          </defs>
-        </svg>
       </div>
 
       <div className="border-t border-zinc-800/50 mx-2 my-1.5" />
