@@ -188,12 +188,11 @@ app/
 │       └── vs-competitor/              # DISABLED in sidebar
 ├── components/
 │   ├── AppShell.tsx                    # Auth provider + sidebar + radial glow background
-│   ├── GlassSelect.tsx                 # Shared glassmorphism select used by admin and auth
 │   ├── auth/                           # LoginModal, SignupModal
 │   ├── landing-page/                   # Hero, DashboardPreview, FeatureSections, PlatformRoadmap
 │   ├── ui/
-│   │   ├── RichTextEditor.tsx          # TipTap-based rich text input
-│   │   └── RichTextDisplay.tsx         # Sanitized HTML renderer for rich text
+│   │   ├── Select.tsx                  # Radix Select wrapper with glass styling
+│   │   └── Popover.tsx                 # Radix Popover wrapper with glass styling
 │   └── dashboard/
 │       ├── Sidebar.tsx                 # Collapsible nav, admin section visible to admins only
 │       ├── shared/

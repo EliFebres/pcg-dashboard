@@ -5,6 +5,7 @@ import { X, ChevronDown, Check, DollarSign, Briefcase, FileText } from 'lucide-r
 import NNAModal from '@/app/components/dashboard/interactions-and-trends/client-interactions/NNAModal';
 import PortfolioModal from '@/app/components/dashboard/interactions-and-trends/client-interactions/PortfolioModal';
 import NotesModal from '@/app/components/dashboard/interactions-and-trends/client-interactions/NotesModal';
+import { Select } from '@/app/components/ui/Select';
 import { PortfolioHolding } from '@/app/lib/types/engagements';
 import { getGcgClients, GcgClient } from '@/app/lib/api/client-interactions';
 import { useCurrentUser } from '@/app/lib/auth/context';
@@ -128,8 +129,6 @@ export default function NewInteractionForm({ isOpen, onClose, onSubmit, onUpdate
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [gcgClients, setGcgClients] = useState<GcgClient[]>([]);
   const [gcgClientsLoading, setGcgClientsLoading] = useState(false);
-  const [showDeptDropdown, setShowDeptDropdown] = useState(false);
-  const deptDropdownRef = useRef<HTMLDivElement>(null);
   const [internalClientSearch, setInternalClientSearch] = useState('');
   const [showInternalClientDropdown, setShowInternalClientDropdown] = useState(false);
   const [isNNAModalOpen, setIsNNAModalOpen] = useState(false);
@@ -141,14 +140,11 @@ export default function NewInteractionForm({ isOpen, onClose, onSubmit, onUpdate
   const internalClientRef = useRef<HTMLDivElement>(null);
   const [teamMembersByOffice, setTeamMembersByOffice] = useState<Record<string, TeamMember[]>>({});
 
-  // Close dropdowns when clicking outside
+  // Close the searchable internal-client dropdown when clicking outside.
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (internalClientRef.current && !internalClientRef.current.contains(event.target as Node)) {
         setShowInternalClientDropdown(false);
-      }
-      if (deptDropdownRef.current && !deptDropdownRef.current.contains(event.target as Node)) {
-        setShowDeptDropdown(false);
       }
     }
     document.addEventListener('mousedown', handleClickOutside);
@@ -579,35 +575,16 @@ export default function NewInteractionForm({ isOpen, onClose, onSubmit, onUpdate
                       </div>
                     ) : (
                       /* New client — dept selector */
-                      <div ref={deptDropdownRef} className="relative">
+                      <div>
                         <label className="block text-sm font-medium text-zinc-300 mb-1.5">
                           Department <span className="text-red-400">*</span>
                         </label>
-                        <button
-                          type="button"
-                          onClick={() => setShowDeptDropdown(v => !v)}
-                          className="w-full flex items-center justify-between px-3 py-2 bg-zinc-800/40 border border-zinc-700/50 rounded-lg text-sm transition-colors focus:outline-none focus:ring-1 focus:ring-cyan-500/30 text-zinc-500"
-                        >
-                          <span>Select department...</span>
-                          <ChevronDown className={`w-4 h-4 text-zinc-500 transition-transform ${showDeptDropdown ? 'rotate-180' : ''}`} />
-                        </button>
-                        {showDeptDropdown && (
-                          <div className="absolute z-50 mt-1 w-full bg-zinc-900/90 backdrop-blur-md border border-zinc-700/50 rounded-lg shadow-xl overflow-hidden">
-                            {GCG_DEPARTMENTS.map(dept => (
-                              <button
-                                key={dept}
-                                type="button"
-                                onClick={() => {
-                                  setFormData(prev => ({ ...prev, internalClientDept: dept }));
-                                  setShowDeptDropdown(false);
-                                }}
-                                className="w-full text-left px-3 py-2 text-sm text-zinc-200 hover:bg-white/[0.06] transition-colors"
-                              >
-                                {dept}
-                              </button>
-                            ))}
-                          </div>
-                        )}
+                        <Select
+                          value={formData.internalClientDept}
+                          onValueChange={(v) => setFormData(prev => ({ ...prev, internalClientDept: v as typeof prev.internalClientDept }))}
+                          options={GCG_DEPARTMENTS}
+                          placeholder="Select department..."
+                        />
                       </div>
                     )}
                   </div>

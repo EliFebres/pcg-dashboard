@@ -11,6 +11,8 @@ const VALID_TEAMS: User['team'][] = [
   'Portfolio Consulting Group',
   'Equity Specialist',
   'Fixed Income Specialist',
+  'Leadership',
+  'Guest',
 ];
 const VALID_OFFICES: User['office'][] = ['Austin', 'Charlotte', 'Santa Monica', 'UK', 'Sydney'];
 

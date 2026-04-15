@@ -23,7 +23,7 @@ import type { DashboardData, DashboardMetrics, EngagementFilters } from '@/app/l
 import type { EngagementMetric, Engagement } from '@/app/lib/types/engagements';
 import DashboardHeader from '@/app/components/dashboard/shared/DashboardHeader';
 import { useCurrentUser } from '@/app/lib/auth/context';
-import { toDisplayName } from '@/app/lib/auth/types';
+import { toDisplayName, isReadOnlyUser } from '@/app/lib/auth/types';
 import { useDashboardChanges } from '@/app/lib/hooks/useDashboardChanges';
 
 // =============================================================================
@@ -104,6 +104,7 @@ function parseISODate(dateStr: string): string {
 
 export default function EngagementsDashboard() {
   const { user } = useCurrentUser();
+  const readOnly = isReadOnlyUser(user);
   const [isLoading, setIsLoading] = useState(true);
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -515,8 +516,8 @@ export default function EngagementsDashboard() {
         ]}
         period={period}
         onPeriodChange={(v: string) => handleFilterChange(setPeriod, v)}
-        actionButtonLabel="+ Interaction"
-        onActionButtonClick={() => setIsNewInteractionOpen(true)}
+        actionButtonLabel={readOnly ? undefined : '+ Interaction'}
+        onActionButtonClick={readOnly ? undefined : () => setIsNewInteractionOpen(true)}
       />
 
       {conflictError && (
@@ -597,6 +598,7 @@ export default function EngagementsDashboard() {
               newRowIds={dashboardChanges.newRowIds}
               removedRowIds={dashboardChanges.removedRowIds}
               rowFieldChanges={dashboardChanges.rowFieldChanges}
+              readOnly={readOnly}
             />
           </>
         )}

@@ -3,6 +3,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { Search, Calendar, ChevronDown, Check, Filter } from 'lucide-react';
+import { Popover, PopoverTrigger, PopoverContent } from '@/app/components/ui/Popover';
+import { Select } from '@/app/components/ui/Select';
 
 export interface FilterOptionGroup {
   label: string;
@@ -59,36 +61,23 @@ interface DashboardHeaderProps {
   onSecondaryActionButtonClick?: () => void;
 }
 
-// Dropdown component for filters
+// Dropdown component for filters — Popover-based so portal, click-outside,
+// keyboard nav, and positioning all come from Radix for free. The body JSX
+// (grouped / multi-select / flat) is unchanged.
 function FilterDropdownButton({ filter }: { filter: FilterDropdown }) {
   const [isOpen, setIsOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
   const IconComponent = filter.icon;
 
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
-  // Multi-select helpers
   const isMultiSelect = filter.multiSelect ?? false;
   const selectedValues = isMultiSelect
     ? (Array.isArray(filter.value) ? filter.value : [])
     : [];
   const allOption = filter.options[0]; // First option is "All"
 
-  // Check if filtered (for single-select: value !== first option, for multi-select: has selections)
   const isFiltered = isMultiSelect
     ? selectedValues.length > 0
     : filter.value !== allOption;
 
-  // Display text for button
   const getDisplayText = () => {
     if (isMultiSelect) {
       if (selectedValues.length === 0) return allOption;
@@ -98,60 +87,50 @@ function FilterDropdownButton({ filter }: { filter: FilterDropdown }) {
     return filter.value as string;
   };
 
-  // Handle option click for multi-select
   const handleMultiSelectClick = (option: string) => {
     if (option === allOption) {
-      // Clicking "All" clears selection
       filter.onChange([]);
       return;
     }
-
     const newValues = selectedValues.includes(option)
       ? selectedValues.filter(v => v !== option)
       : [...selectedValues, option];
     filter.onChange(newValues);
   };
 
-  // Check if option is selected (for multi-select)
   const isOptionSelected = (option: string) => {
-    if (option === allOption) {
-      return selectedValues.length === 0;
-    }
+    if (option === allOption) return selectedValues.length === 0;
     return selectedValues.includes(option);
   };
 
-  return (
-    <div className="relative" ref={dropdownRef}>
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className={`flex items-center gap-1.5 px-3 py-2 backdrop-blur-sm border text-sm transition-colors ${
-          isFiltered
-            ? 'bg-cyan-500/10 border-cyan-500/30 text-cyan-400'
-            : 'bg-zinc-900/50 border-zinc-700/50 text-zinc-300 hover:bg-zinc-800/50 hover:border-zinc-600/50'
-        }`}
-      >
-        <IconComponent className={`w-4 h-4 ${isFiltered ? 'text-cyan-400' : 'text-zinc-500'}`} />
-        {getDisplayText()}
-        <ChevronDown className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''} ${isFiltered ? 'text-cyan-400' : 'text-zinc-500'}`} />
-      </button>
+  // Select an option in single-select mode and close the popover.
+  const selectSingle = (option: string) => {
+    filter.onChange(option);
+    setIsOpen(false);
+  };
 
-      <div
-        className={`absolute top-full left-0 mt-1 min-w-full w-max bg-zinc-900 border border-zinc-700/50 shadow-xl z-[100] origin-top transition-all duration-200 ease-in ${
-          isOpen
-            ? 'opacity-100 scale-y-100 scale-x-100 translate-y-0 pointer-events-auto'
-            : 'opacity-0 scale-y-50 scale-x-95 -translate-y-4 pointer-events-none'
-        }`}
-      >
+  return (
+    <Popover open={isOpen} onOpenChange={setIsOpen}>
+      <PopoverTrigger asChild>
+        <button
+          className={`flex items-center gap-1.5 px-3 py-2 backdrop-blur-sm border text-sm transition-colors ${
+            isFiltered
+              ? 'bg-cyan-500/10 border-cyan-500/30 text-cyan-400'
+              : 'bg-zinc-900/50 border-zinc-700/50 text-zinc-300 hover:bg-zinc-800/50 hover:border-zinc-600/50'
+          }`}
+        >
+          <IconComponent className={`w-4 h-4 ${isFiltered ? 'text-cyan-400' : 'text-zinc-500'}`} />
+          {getDisplayText()}
+          <ChevronDown className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''} ${isFiltered ? 'text-cyan-400' : 'text-zinc-500'}`} />
+        </button>
+      </PopoverTrigger>
+      <PopoverContent className="min-w-[var(--radix-popover-trigger-width)] w-max">
         {filter.optionGroups ? (
-          // Render grouped options with category headers (single-select only)
+          // Grouped options with category headers (single-select only)
           <>
-            {/* First option (e.g., "All Team Members") without indentation */}
             <button
               key={filter.options[0]}
-              onClick={() => {
-                filter.onChange(filter.options[0]);
-                setIsOpen(false);
-              }}
+              onClick={() => selectSingle(filter.options[0])}
               className={`w-full flex items-center justify-between px-3 py-2 text-sm text-left transition-colors ${
                 filter.value === filter.options[0]
                   ? 'bg-cyan-500/10 text-cyan-400'
@@ -161,7 +140,6 @@ function FilterDropdownButton({ filter }: { filter: FilterDropdown }) {
               {filter.options[0]}
               {filter.value === filter.options[0] && <Check className="w-4 h-4" />}
             </button>
-            {/* Grouped options */}
             {filter.optionGroups.map((group) => (
               <div key={group.label}>
                 <div className="px-3 py-1.5 text-[10px] font-semibold text-zinc-500 uppercase tracking-wider">
@@ -170,10 +148,7 @@ function FilterDropdownButton({ filter }: { filter: FilterDropdown }) {
                 {group.options.map((option) => (
                   <button
                     key={option}
-                    onClick={() => {
-                      filter.onChange(option);
-                      setIsOpen(false);
-                    }}
+                    onClick={() => selectSingle(option)}
                     className={`w-full flex items-center justify-between pl-5 pr-3 py-2 text-sm text-left transition-colors ${
                       filter.value === option
                         ? 'bg-cyan-500/10 text-cyan-400'
@@ -188,7 +163,7 @@ function FilterDropdownButton({ filter }: { filter: FilterDropdown }) {
             ))}
           </>
         ) : isMultiSelect ? (
-          // Render multi-select options with checkboxes
+          // Multi-select options with checkboxes
           filter.options.map((option) => (
             <button
               key={option}
@@ -210,14 +185,11 @@ function FilterDropdownButton({ filter }: { filter: FilterDropdown }) {
             </button>
           ))
         ) : (
-          // Render flat options (default single-select behavior)
+          // Flat single-select options
           filter.options.map((option) => (
             <button
               key={option}
-              onClick={() => {
-                filter.onChange(option);
-                setIsOpen(false);
-              }}
+              onClick={() => selectSingle(option)}
               className={`w-full flex items-center justify-between px-3 py-2 text-sm text-left transition-colors ${
                 filter.value === option
                   ? 'bg-cyan-500/10 text-cyan-400'
@@ -229,70 +201,27 @@ function FilterDropdownButton({ filter }: { filter: FilterDropdown }) {
             </button>
           ))
         )}
-      </div>
-    </div>
+      </PopoverContent>
+    </Popover>
   );
 }
 
-// Period dropdown component
+// Period dropdown — thin wrapper over Select to preserve the blue→cyan gradient trigger.
 function PeriodDropdown({ value, onChange, customOptions }: { value: string; onChange: (value: string) => void; customOptions?: string[] }) {
-  const [isOpen, setIsOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
-  // Use custom options if provided, otherwise use default PERIOD_OPTIONS
   const options = customOptions
     ? customOptions.map(val => ({ value: val, label: PERIOD_OPTIONS.find(p => p.value === val)?.label || val }))
     : PERIOD_OPTIONS;
 
-  const currentOption = options.find((p) => p.value === value) || options[0];
-
   return (
-    <div className="relative" ref={dropdownRef}>
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-1.5 px-3 py-2 bg-gradient-to-r from-blue-600 to-cyan-500 text-white text-sm font-medium hover:from-blue-500 hover:to-cyan-400 transition-all"
-      >
-        <Calendar className="w-4 h-4" />
-        {currentOption.value}
-        <ChevronDown className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
-      </button>
-
-      <div
-        className={`absolute top-full left-0 mt-1 min-w-full w-max bg-zinc-900 border border-zinc-700/50 shadow-xl z-[100] origin-top transition-all duration-200 ease-in ${
-          isOpen
-            ? 'opacity-100 scale-y-100 scale-x-100 translate-y-0 pointer-events-auto'
-            : 'opacity-0 scale-y-50 scale-x-95 -translate-y-4 pointer-events-none'
-        }`}
-      >
-        {options.map((option) => (
-          <button
-            key={option.value}
-            onClick={() => {
-              onChange(option.value);
-              setIsOpen(false);
-            }}
-            className={`w-full flex items-center justify-between px-3 py-2 text-sm text-left transition-colors ${
-              value === option.value
-                ? 'bg-cyan-500/10 text-cyan-400'
-                : 'text-zinc-300 hover:bg-white/[0.05]'
-            }`}
-          >
-            {option.label}
-            {value === option.value && <Check className="w-4 h-4" />}
-          </button>
-        ))}
-      </div>
-    </div>
+    <Select
+      value={value}
+      onValueChange={onChange}
+      options={options}
+      matchTriggerWidth={false}
+      triggerClassName="flex items-center gap-1.5 px-3 py-2 bg-gradient-to-r from-blue-600 to-cyan-500 text-white text-sm font-medium hover:from-blue-500 hover:to-cyan-400 transition-all focus:outline-none"
+      triggerIcon={<Calendar className="w-4 h-4" />}
+      triggerLabel={value}
+    />
   );
 }
 

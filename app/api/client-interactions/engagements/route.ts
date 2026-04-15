@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { query, execute } from '@/app/lib/db';
 import { buildFilterClause, rowToEngagement } from '@/app/lib/db/queries';
 import { computeEngagementsList } from '@/app/lib/db/aggregations';
-import { requireAuth, teamConstraint } from '@/app/lib/auth/require-auth';
+import { requireAuth, teamConstraint, canModify, readOnlyError } from '@/app/lib/auth/require-auth';
 import { toISODate } from '@/app/lib/db/dateUtils';
 import type { EngagementFilters } from '@/app/lib/api/client-interactions';
 import { emitEngagementChange } from '@/app/lib/events';
@@ -49,6 +49,7 @@ export async function POST(req: NextRequest) {
   }
   const auth = await requireAuth(req);
   if (auth.error) return auth.error;
+  if (!canModify(auth.payload)) return readOnlyError();
 
   try {
     const body = await req.json();

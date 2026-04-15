@@ -3,12 +3,14 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Users, Plus, LinkIcon, X, AlertCircle } from 'lucide-react';
 import type { TeamMember, User } from '@/app/lib/auth/types';
-import GlassSelect from '@/app/components/GlassSelect';
+import { Select } from '@/app/components/ui/Select';
 
 const TEAMS: User['team'][] = [
   'Portfolio Consulting Group',
   'Equity Specialist',
   'Fixed Income Specialist',
+  'Leadership',
+  'Guest',
 ];
 const OFFICES: User['office'][] = ['Austin', 'Charlotte', 'Santa Monica', 'UK', 'Sydney'];
 
@@ -133,17 +135,17 @@ function AddModal({ onClose, onAdded }: AddModalProps) {
           </div>
           <div>
             <label className="block text-xs font-medium text-zinc-400 mb-1">Team</label>
-            <GlassSelect
+            <Select
               value={team}
-              onChange={v => setTeam(v as User['team'])}
+              onValueChange={v => setTeam(v as User['team'])}
               options={TEAMS}
             />
           </div>
           <div>
             <label className="block text-xs font-medium text-zinc-400 mb-1">Office</label>
-            <GlassSelect
+            <Select
               value={office}
-              onChange={v => setOffice(v as User['office'])}
+              onValueChange={v => setOffice(v as User['office'])}
               options={OFFICES}
             />
           </div>
@@ -229,13 +231,10 @@ function LinkModal({ member, users, onClose, onLinked }: LinkModalProps) {
           ) : (
             <div>
               <label className="block text-xs font-medium text-zinc-400 mb-1">Select user account</label>
-              <GlassSelect
-                value={selectedUserId ? (eligible.find(u => u.id === selectedUserId)?.firstName + ' ' + eligible.find(u => u.id === selectedUserId)?.lastName + ' (' + eligible.find(u => u.id === selectedUserId)?.email + ')') : ''}
-                onChange={v => {
-                  const match = eligible.find(u => `${u.firstName} ${u.lastName} (${u.email})` === v);
-                  if (match) setSelectedUserId(match.id);
-                }}
-                options={eligible.map(u => `${u.firstName} ${u.lastName} (${u.email})`)}
+              <Select
+                value={selectedUserId}
+                onValueChange={setSelectedUserId}
+                options={eligible.map(u => ({ value: u.id, label: `${u.firstName} ${u.lastName} (${u.email})` }))}
                 placeholder="— Select —"
               />
             </div>
@@ -372,14 +371,13 @@ export default function AdminTeamMembersPage() {
                           <td className="px-4 py-3">
                             {editingOfficeId === m.id ? (
                               <div className="w-36">
-                                <GlassSelect
+                                <Select
                                   value={m.office}
-                                  onChange={v => {
+                                  onValueChange={v => {
                                     patch(m.id, { office: v });
                                     setEditingOfficeId(null);
                                   }}
                                   options={OFFICES}
-                                  menuFixed
                                 />
                               </div>
                             ) : (

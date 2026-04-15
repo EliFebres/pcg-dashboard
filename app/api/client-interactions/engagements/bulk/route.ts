@@ -2,7 +2,7 @@ export const runtime = 'nodejs';
 
 import { NextRequest, NextResponse } from 'next/server';
 import { executeTransaction } from '@/app/lib/db';
-import { requireAuth } from '@/app/lib/auth/require-auth';
+import { requireAuth, canModify, readOnlyError } from '@/app/lib/auth/require-auth';
 import { parseUploadedFile } from '@/app/lib/bulk-upload/parser';
 import { validateRows } from '@/app/lib/bulk-upload/validator';
 import type { ParsedRow } from '@/app/lib/bulk-upload/parser';
@@ -19,6 +19,7 @@ export async function POST(req: NextRequest) {
   }
   const auth = await requireAuth(req);
   if (auth.error) return auth.error;
+  if (!canModify(auth.payload)) return readOnlyError();
 
   const commit = req.nextUrl.searchParams.get('commit') === 'true';
 

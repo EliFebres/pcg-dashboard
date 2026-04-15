@@ -3,6 +3,7 @@ export const runtime = 'nodejs';
 import { NextRequest, NextResponse } from 'next/server';
 import { query, execute } from '@/app/lib/db';
 import { verifyJWT, SESSION_COOKIE } from '@/app/lib/auth/jwt';
+import { canModify, readOnlyError } from '@/app/lib/auth/require-auth';
 import type { NoteEntry } from '@/app/lib/types/engagements';
 import { emitEngagementChange } from '@/app/lib/events';
 
@@ -62,6 +63,7 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
     try { payload = await verifyJWT(token); } catch {
       return NextResponse.json({ error: 'Invalid or expired session.' }, { status: 401 });
     }
+    if (!canModify(payload)) return readOnlyError();
 
     const { id } = await params;
     const engagementId = Number(id);

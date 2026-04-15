@@ -2,12 +2,14 @@
 
 import React, { useState, useEffect } from 'react';
 import { Eye, EyeOff, ArrowRight, CheckCircle, X } from 'lucide-react';
-import GlassSelect from '@/app/components/GlassSelect';
+import { Select } from '@/app/components/ui/Select';
 
 const TEAMS = [
   'Portfolio Consulting Group',
   'Equity Specialist',
   'Fixed Income Specialist',
+  'Leadership',
+  'Guest',
 ] as const;
 
 const OFFICES = ['Austin', 'Charlotte', 'Santa Monica', 'UK', 'Sydney'] as const;
@@ -48,12 +50,19 @@ export default function SignupModal({ isOpen, onClose, onSwitchToLogin }: Signup
     }
   }, [isOpen]);
 
-  function set(field: keyof typeof form) {
+  function set(
+    field: keyof typeof form,
+    transform?: (raw: string) => string
+  ) {
     return (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-      setForm(prev => ({ ...prev, [field]: e.target.value }));
+      const next = transform ? transform(e.target.value) : e.target.value;
+      setForm(prev => ({ ...prev, [field]: next }));
       setFieldErrors(prev => ({ ...prev, [field]: '' }));
     };
   }
+
+  const capitalizeFirst = (s: string) =>
+    s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
 
   function validate(): boolean {
     const errors: Record<string, string> = {};
@@ -223,7 +232,7 @@ export default function SignupModal({ isOpen, onClose, onSwitchToLogin }: Signup
                   <input
                     type="text"
                     value={form.firstName}
-                    onChange={set('firstName')}
+                    onChange={set('firstName', capitalizeFirst)}
                     className={inputClass('firstName')}
                     placeholder="First"
                     autoComplete="given-name"
@@ -235,7 +244,7 @@ export default function SignupModal({ isOpen, onClose, onSwitchToLogin }: Signup
                   <input
                     type="text"
                     value={form.lastName}
-                    onChange={set('lastName')}
+                    onChange={set('lastName', capitalizeFirst)}
                     className={inputClass('lastName')}
                     placeholder="Last"
                     autoComplete="family-name"
@@ -314,9 +323,9 @@ export default function SignupModal({ isOpen, onClose, onSwitchToLogin }: Signup
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-[13px] font-medium text-[#9b9ba4] mb-2">Team</label>
-                  <GlassSelect
+                  <Select
                     value={form.team}
-                    onChange={v => { setForm(prev => ({ ...prev, team: v })); setFieldErrors(prev => ({ ...prev, team: '' })); }}
+                    onValueChange={v => { setForm(prev => ({ ...prev, team: v })); setFieldErrors(prev => ({ ...prev, team: '' })); }}
                     options={TEAMS}
                     placeholder="Select team"
                     hasError={!!fieldErrors.team}
@@ -325,9 +334,9 @@ export default function SignupModal({ isOpen, onClose, onSwitchToLogin }: Signup
                 </div>
                 <div>
                   <label className="block text-[13px] font-medium text-[#9b9ba4] mb-2">Office</label>
-                  <GlassSelect
+                  <Select
                     value={form.office}
-                    onChange={v => { setForm(prev => ({ ...prev, office: v })); setFieldErrors(prev => ({ ...prev, office: '' })); }}
+                    onValueChange={v => { setForm(prev => ({ ...prev, office: v })); setFieldErrors(prev => ({ ...prev, office: '' })); }}
                     options={OFFICES}
                     placeholder="Select office"
                     hasError={!!fieldErrors.office}

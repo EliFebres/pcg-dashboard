@@ -14,6 +14,7 @@ interface NotesModalProps {
   title: string;
   subtitle: ReactNode;
   engagementId: number;
+  readOnly?: boolean;
   onNoteAdded?: () => void;
   onNoteDeleted?: () => void;
 }
@@ -30,6 +31,7 @@ const NotesModal: React.FC<NotesModalProps> = ({
   title,
   subtitle,
   engagementId,
+  readOnly = false,
   onNoteAdded,
   onNoteDeleted,
 }) => {
@@ -173,7 +175,7 @@ const NotesModal: React.FC<NotesModalProps> = ({
                       <span className="text-zinc-600 text-xs">·</span>
                       <span className="text-xs text-zinc-500">{formatNoteDate(entry.createdAt)}</span>
                     </div>
-                    {isOwner && !isEditing && (
+                    {isOwner && !isEditing && !readOnly && (
                       <div className="flex items-center gap-1">
                         <button
                           onClick={() => startEdit(entry)}
@@ -233,41 +235,52 @@ const NotesModal: React.FC<NotesModalProps> = ({
           )}
         </div>
 
-        {/* Add new note */}
-        <div className="relative z-10 px-5 pt-3 pb-5 border-t border-zinc-800/50 flex-shrink-0 space-y-3">
-          <RichTextEditor
-            value={newText}
-            onChange={setNewText}
-            onCtrlEnter={handleAddNote}
-            placeholder="Add a new note... (Ctrl+Enter to save)"
-            minHeight="6rem"
-            autoFocus={!loading}
-          />
-          <div className="flex items-center justify-end gap-3">
+        {/* Add new note (hidden for read-only users) */}
+        {readOnly ? (
+          <div className="relative z-10 px-5 pt-3 pb-5 border-t border-zinc-800/50 flex-shrink-0 flex items-center justify-end">
             <button
               onClick={onClose}
               className="px-4 py-2 text-sm text-zinc-400 hover:text-white transition-colors"
             >
               Close
             </button>
-            <button
-              onClick={handleAddNote}
-              disabled={!newText || saving}
-              className={`flex items-center gap-2 px-4 py-2 text-sm font-medium transition-all ${
-                newText && !saving
-                  ? 'bg-gradient-to-r from-blue-600 to-cyan-500 text-white hover:from-blue-500 hover:to-cyan-400'
-                  : 'bg-zinc-800 text-zinc-500 cursor-not-allowed'
-              }`}
-            >
-              {saving ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <Plus className="w-4 h-4" />
-              )}
-              Add Note
-            </button>
           </div>
-        </div>
+        ) : (
+          <div className="relative z-10 px-5 pt-3 pb-5 border-t border-zinc-800/50 flex-shrink-0 space-y-3">
+            <RichTextEditor
+              value={newText}
+              onChange={setNewText}
+              onCtrlEnter={handleAddNote}
+              placeholder="Add a new note... (Ctrl+Enter to save)"
+              minHeight="6rem"
+              autoFocus={!loading}
+            />
+            <div className="flex items-center justify-end gap-3">
+              <button
+                onClick={onClose}
+                className="px-4 py-2 text-sm text-zinc-400 hover:text-white transition-colors"
+              >
+                Close
+              </button>
+              <button
+                onClick={handleAddNote}
+                disabled={!newText || saving}
+                className={`flex items-center gap-2 px-4 py-2 text-sm font-medium transition-all ${
+                  newText && !saving
+                    ? 'bg-gradient-to-r from-blue-600 to-cyan-500 text-white hover:from-blue-500 hover:to-cyan-400'
+                    : 'bg-zinc-800 text-zinc-500 cursor-not-allowed'
+                }`}
+              >
+                {saving ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Plus className="w-4 h-4" />
+                )}
+                Add Note
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

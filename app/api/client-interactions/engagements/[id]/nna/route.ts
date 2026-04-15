@@ -2,7 +2,7 @@ export const runtime = 'nodejs';
 
 import { NextRequest, NextResponse } from 'next/server';
 import { execute } from '@/app/lib/db';
-import { requireAuth, teamConstraint } from '@/app/lib/auth/require-auth';
+import { requireAuth, teamConstraint, canModify, readOnlyError } from '@/app/lib/auth/require-auth';
 import { emitEngagementChange } from '@/app/lib/events';
 
 // PATCH /api/client-interactions/engagements/:id/nna
@@ -16,6 +16,7 @@ export async function PATCH(
   }
   const auth = await requireAuth(req);
   if (auth.error) return auth.error;
+  if (!canModify(auth.payload)) return readOnlyError();
   const sc = teamConstraint(auth.payload);
 
   try {

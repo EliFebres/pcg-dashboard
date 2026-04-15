@@ -1,10 +1,10 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { createPortal } from 'react-dom';
 import { FileText, Download, Check, X, ChevronUp, ChevronDown, ChevronsUpDown, Maximize2, Minimize2, Plus, Loader2 } from 'lucide-react';
 import NotesModal from '@/app/components/dashboard/interactions-and-trends/client-interactions/NotesModal';
 import NNAModal from '@/app/components/dashboard/interactions-and-trends/client-interactions/NNAModal';
+import { Select } from '@/app/components/ui/Select';
 import type { Engagement } from '@/app/lib/types/engagements';
 import type { ChangeFlash, EngagementField } from '@/app/lib/hooks/useDashboardChanges';
 import { FLASH_CLASS, FLASH_TEXT_CLASS } from '@/app/lib/hooks/useDashboardChanges';
@@ -79,6 +79,7 @@ interface InteractionsTableProps {
   newRowIds?: Map<number, ChangeFlash>;
   removedRowIds?: Map<number, ChangeFlash>;
   rowFieldChanges?: Map<number, Partial<Record<EngagementField, ChangeFlash>>>;
+  readOnly?: boolean;
 }
 
 interface GhostRow {
@@ -86,19 +87,15 @@ interface GhostRow {
   expiresAt: number;
 }
 
-const InteractionsTable: React.FC<InteractionsTableProps> = ({ engagements, sortColumn, sortDirection, onSort, onStatusChange, onNoteAdded, onNoteDeleted, onNNAChange, onRowClick, onExport, isExporting, newRowIds, removedRowIds, rowFieldChanges }) => {
+const InteractionsTable: React.FC<InteractionsTableProps> = ({ engagements, sortColumn, sortDirection, onSort, onStatusChange, onNoteAdded, onNoteDeleted, onNNAChange, onRowClick, onExport, isExporting, newRowIds, removedRowIds, rowFieldChanges, readOnly = false }) => {
   const sortConfig: SortConfig = useMemo(
     () => ({ column: sortColumn as SortColumn, direction: sortDirection as SortDirection }),
     [sortColumn, sortDirection]
   );
   const [currentPage, setCurrentPage] = useState(1);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [openStatusDropdown, setOpenStatusDropdown] = useState<number | null>(null);
-  const [dropdownPos, setDropdownPos] = useState<{ top: number; left: number } | null>(null);
   const [notesModalEngagement, setNotesModalEngagement] = useState<Engagement | null>(null);
   const [nnaModalEngagement, setNnaModalEngagement] = useState<Engagement | null>(null);
-  const statusDropdownRef = useRef<HTMLDivElement>(null);
-  const dropdownPortalRef = useRef<HTMLDivElement>(null);
   const pageSize = 10;
 
   // Ghost-row tracking: keep just-removed rows around briefly so they can fade out red.
@@ -139,21 +136,6 @@ const InteractionsTable: React.FC<InteractionsTableProps> = ({ engagements, sort
   }, [ghostRows]);
 
   const statusOptions = ['In Progress', 'Awaiting Meeting', 'Follow Up', 'Completed'];
-
-  // Close status dropdown when clicking outside
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      const target = event.target as Node;
-      if (
-        !statusDropdownRef.current?.contains(target) &&
-        !dropdownPortalRef.current?.contains(target)
-      ) {
-        setOpenStatusDropdown(null);
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
 
   // Handle column sort — cycles asc → desc → null (reset), then notifies parent to re-fetch
   const handleSort = useCallback((column: SortColumn) => {
@@ -261,8 +243,8 @@ case 'PCR': return 'bg-rose-500/15 text-rose-400';
     return (
     <tr
       key={`${keyPrefix}${isGhost ? 'ghost-' : ''}${engagement.id}`}
-      className={`hover:bg-white/[0.02] transition-colors cursor-pointer ${rowFlash} ${ghostClass}`.trim()}
-      onClick={isGhost ? undefined : () => onRowClick(engagement)}
+      className={`hover:bg-white/[0.02] transition-colors ${readOnly ? '' : 'cursor-pointer'} ${rowFlash} ${ghostClass}`.trim()}
+      onClick={isGhost || readOnly ? undefined : () => onRowClick(engagement)}
     >
       <td className="px-4 py-3">
         <span className={`text-sm font-medium ${engagement.externalClient ? 'text-zinc-200' : 'text-zinc-600'}`}>
@@ -328,71 +310,51 @@ case 'PCR': return 'bg-rose-500/15 text-rose-400';
         )}
       </td>
       <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
-        <button
-          onClick={() => setNnaModalEngagement(engagement)}
-          className={`inline-flex items-center gap-1.5 px-2 py-1 text-sm font-mono transition-colors ${
-            engagement.nna
-              ? 'text-emerald-400 hover:bg-emerald-500/10'
-              : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-700/30'
-          } ${flashTextFor(engagement.id, 'nna')}`}
-          title={engagement.nna ? 'Edit NNA' : 'Add NNA'}
-        >
-          {engagement.nna ? (
-            formatTableNNA(engagement.nna)
-          ) : (
-            <>
-              <Plus className="w-3 h-3" />
-              <span className="text-xs">Add</span>
-            </>
-          )}
-        </button>
+        {readOnly ? (
+          <span
+            className={`inline-flex items-center gap-1.5 px-2 py-1 text-sm font-mono ${
+              engagement.nna ? 'text-emerald-400' : 'text-zinc-600'
+            } ${flashTextFor(engagement.id, 'nna')}`}
+          >
+            {engagement.nna ? formatTableNNA(engagement.nna) : '—'}
+          </span>
+        ) : (
+          <button
+            onClick={() => setNnaModalEngagement(engagement)}
+            className={`inline-flex items-center gap-1.5 px-2 py-1 text-sm font-mono transition-colors ${
+              engagement.nna
+                ? 'text-emerald-400 hover:bg-emerald-500/10'
+                : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-700/30'
+            } ${flashTextFor(engagement.id, 'nna')}`}
+            title={engagement.nna ? 'Edit NNA' : 'Add NNA'}
+          >
+            {engagement.nna ? (
+              formatTableNNA(engagement.nna)
+            ) : (
+              <>
+                <Plus className="w-3 h-3" />
+                <span className="text-xs">Add</span>
+              </>
+            )}
+          </button>
+        )}
       </td>
       <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
-        <div className="relative" ref={openStatusDropdown === engagement.id ? statusDropdownRef : null}>
-          <button
-            onClick={(e) => {
-                const rect = (e.currentTarget as HTMLButtonElement).getBoundingClientRect();
-                if (openStatusDropdown !== engagement.id) {
-                  const dropdownHeight = statusOptions.length * 32 + 8;
-                  const spaceBelow = window.innerHeight - rect.bottom;
-                  const top = spaceBelow < dropdownHeight
-                    ? rect.top - dropdownHeight - 4
-                    : rect.bottom + 4;
-                  setDropdownPos({ top, left: rect.left });
-                }
-                setOpenStatusDropdown(openStatusDropdown === engagement.id ? null : engagement.id);
-              }}
-            className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium backdrop-blur-sm cursor-pointer hover:ring-1 hover:ring-white/20 transition-all ${getStatusStyle(engagement.status)} ${flashTextFor(engagement.id, 'status')}`}
+        {readOnly ? (
+          <span
+            className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium backdrop-blur-sm ${getStatusStyle(engagement.status)} ${flashTextFor(engagement.id, 'status')}`}
           >
             {engagement.status}
-            <ChevronDown className={`w-3 h-3 transition-transform ${openStatusDropdown === engagement.id ? 'rotate-180' : ''}`} />
-          </button>
-          {openStatusDropdown === engagement.id && dropdownPos && createPortal(
-            <div
-              ref={dropdownPortalRef}
-              className="fixed w-max bg-zinc-800 border border-zinc-700 rounded-lg shadow-xl z-[9999] overflow-hidden"
-              style={{ top: dropdownPos.top, left: dropdownPos.left }}
-            >
-              {statusOptions.map(status => (
-                <button
-                  key={status}
-                  onClick={() => {
-                    onStatusChange(engagement.id, status);
-                    setOpenStatusDropdown(null);
-                  }}
-                  className={`block w-full px-3 py-2 text-left text-xs whitespace-nowrap transition-colors ${
-                    engagement.status === status
-                      ? 'bg-cyan-500/20 text-cyan-400'
-                      : 'text-zinc-300 hover:bg-zinc-700/50'
-                  }`}
-                >
-                  {status}
-                </button>
-              ))}
-            </div>,
-            document.body
-          )}
-        </div>
+          </span>
+        ) : (
+          <Select
+            value={engagement.status}
+            onValueChange={(next) => onStatusChange(engagement.id, next)}
+            options={statusOptions}
+            matchTriggerWidth={false}
+            triggerClassName={`inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium backdrop-blur-sm cursor-pointer hover:ring-1 hover:ring-white/20 transition-all focus:outline-none focus:ring-1 focus:ring-white/20 ${getStatusStyle(engagement.status)} ${flashTextFor(engagement.id, 'status')}`}
+          />
+        )}
       </td>
       <td className="px-4 py-3 text-center" onClick={(e) => e.stopPropagation()}>
         <button
@@ -490,6 +452,7 @@ case 'PCR': return 'bg-rose-500/15 text-rose-400';
         title="Notes"
         subtitle={notesModalEngagement?.externalClient || notesModalEngagement?.internalClient.name || ''}
         engagementId={notesModalEngagement?.id ?? 0}
+        readOnly={readOnly}
         onNoteAdded={() => {
           if (notesModalEngagement) {
             onNoteAdded(notesModalEngagement.id);

@@ -7,7 +7,12 @@ export interface JWTPayload {
   lastName: string;
   role: 'user' | 'admin';
   status: 'pending' | 'active' | 'inactive';
-  team: 'Portfolio Consulting Group' | 'Equity Specialist' | 'Fixed Income Specialist';
+  team:
+    | 'Portfolio Consulting Group'
+    | 'Equity Specialist'
+    | 'Fixed Income Specialist'
+    | 'Leadership'
+    | 'Guest';
 }
 
 export const SESSION_COOKIE = 'pcg_session';

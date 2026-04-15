@@ -8,7 +8,13 @@ import { signJWT, SESSION_COOKIE, COOKIE_OPTIONS } from '@/app/lib/auth/jwt';
 import { rowToUser } from '@/app/lib/auth/types';
 import { emitUserChange } from '@/app/lib/events';
 
-const VALID_TEAMS = ['Portfolio Consulting Group', 'Equity Specialist', 'Fixed Income Specialist'];
+const VALID_TEAMS = [
+  'Portfolio Consulting Group',
+  'Equity Specialist',
+  'Fixed Income Specialist',
+  'Leadership',
+  'Guest',
+];
 const VALID_OFFICES = ['Austin', 'Charlotte', 'Santa Monica', 'UK', 'Sydney'];
 
 export async function POST(req: NextRequest) {

@@ -3,6 +3,7 @@ export const runtime = 'nodejs';
 import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/app/lib/db';
 import { verifyJWT, SESSION_COOKIE } from '@/app/lib/auth/jwt';
+import { canModify, readOnlyError } from '@/app/lib/auth/require-auth';
 import type { NoteEntry } from '@/app/lib/types/engagements';
 
 type RouteParams = { params: Promise<{ id: string; noteId: string }> };
@@ -33,6 +34,7 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
     try { payload = await verifyJWT(token); } catch {
       return NextResponse.json({ error: 'Invalid or expired session.' }, { status: 401 });
     }
+    if (!canModify(payload)) return readOnlyError();
 
     const { noteId } = await params;
     const id = Number(noteId);
@@ -77,6 +79,7 @@ export async function DELETE(req: NextRequest, { params }: RouteParams) {
     try { payload = await verifyJWT(token); } catch {
       return NextResponse.json({ error: 'Invalid or expired session.' }, { status: 401 });
     }
+    if (!canModify(payload)) return readOnlyError();
 
     const { noteId } = await params;
     const id = Number(noteId);
