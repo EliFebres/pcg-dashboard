@@ -105,6 +105,7 @@ function parseISODate(dateStr: string): string {
 export default function EngagementsDashboard() {
   const { user } = useCurrentUser();
   const readOnly = isReadOnlyUser(user);
+  const isGuest = user?.team === 'Guest';
   const [isLoading, setIsLoading] = useState(true);
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -472,7 +473,7 @@ export default function EngagementsDashboard() {
         onSearchChange={setSearchQuery}
         className="sticky top-0 z-10"
         filters={[
-          {
+          ...(!isGuest ? [{
             id: 'teamMember',
             icon: User,
             label: 'Team Member',
@@ -484,7 +485,7 @@ export default function EngagementsDashboard() {
               : [{ label: 'Members', options: [currentUser] }],
             value: teamMemberFilter,
             onChange: (v: string | string[]) => handleFilterChange(setTeamMemberFilter, v as string),
-          },
+          }] : []),
           {
             id: 'department',
             icon: Building2,

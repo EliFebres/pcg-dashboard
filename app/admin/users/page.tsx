@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Users, CheckCircle, XCircle, ShieldCheck, ShieldOff, RotateCcw, Clock } from 'lucide-react';
+import { Users, CheckCircle, XCircle, ShieldCheck, ShieldOff, RotateCcw, Clock, Trash2 } from 'lucide-react';
 import { useCurrentUser } from '@/app/lib/auth/context';
 import type { User } from '@/app/lib/auth/types';
 
@@ -56,7 +56,7 @@ function ActionButton({
   onClick: () => void;
   disabled?: boolean;
   title?: string;
-  variant: 'approve' | 'deactivate' | 'reactivate' | 'makeAdmin' | 'removeAdmin';
+  variant: 'approve' | 'deactivate' | 'reactivate' | 'makeAdmin' | 'removeAdmin' | 'delete';
   children: React.ReactNode;
 }) {
   const styles = {
@@ -65,6 +65,7 @@ function ActionButton({
     reactivate: 'text-cyan-400 hover:bg-cyan-500/10 border-cyan-500/20',
     makeAdmin: 'text-cyan-400 hover:bg-cyan-500/10 border-cyan-500/20',
     removeAdmin: 'text-zinc-400 hover:bg-zinc-500/10 border-zinc-500/20',
+    delete: 'text-red-400 hover:bg-red-500/10 border-red-500/20',
   };
 
   return (
@@ -122,6 +123,21 @@ export default function AdminUsersPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
       });
+      if (res.ok) {
+        await fetchUsers();
+      }
+    } finally {
+      setActionLoading(null);
+    }
+  }
+
+  async function deleteUser(id: string, name: string) {
+    if (!window.confirm(`Permanently delete the pending account for ${name}? This cannot be undone.`)) {
+      return;
+    }
+    setActionLoading(id);
+    try {
+      const res = await fetch(`/api/admin/users/${id}`, { method: 'DELETE' });
       if (res.ok) {
         await fetchUsers();
       }
@@ -207,14 +223,24 @@ export default function AdminUsersPage() {
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-1.5 flex-wrap">
                         {u.status === 'pending' && (
-                          <ActionButton
-                            variant="approve"
-                            onClick={() => patch(u.id, { status: 'active' })}
-                            disabled={busy}
-                          >
-                            <CheckCircle className="w-3 h-3" />
-                            Approve
-                          </ActionButton>
+                          <>
+                            <ActionButton
+                              variant="approve"
+                              onClick={() => patch(u.id, { status: 'active' })}
+                              disabled={busy}
+                            >
+                              <CheckCircle className="w-3 h-3" />
+                              Approve
+                            </ActionButton>
+                            <ActionButton
+                              variant="delete"
+                              onClick={() => deleteUser(u.id, `${u.firstName} ${u.lastName}`)}
+                              disabled={busy}
+                            >
+                              <Trash2 className="w-3 h-3" />
+                              Delete
+                            </ActionButton>
+                          </>
                         )}
                         {u.status === 'active' && (
                           <ActionButton

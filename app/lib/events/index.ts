@@ -25,7 +25,7 @@ export const engagementEmitter = global._engagementEmitter;
 export const userEmitter = global._userEmitter;
 
 export type EngagementEventType = 'created' | 'updated' | 'deleted';
-export type UserEventType = 'created';
+export type UserEventType = 'created' | 'deleted';
 
 export function emitEngagementChange(type: EngagementEventType) {
   engagementEmitter.emit('change', type);
