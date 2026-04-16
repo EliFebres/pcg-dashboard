@@ -3,9 +3,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, ChevronDown, PieChart, Flame, User, LogOut, Users, UserCheck, PanelLeftClose, PanelLeftOpen, Swords, TrendingUp, Landmark } from 'lucide-react';
+import { LayoutDashboard, ChevronDown, PieChart, Flame, User, LogOut, Users, UserCheck, PanelLeftClose, PanelLeftOpen, Swords, TrendingUp, Landmark, Bell } from 'lucide-react';
 import { useCurrentUser } from '@/app/lib/auth/context';
 import { toDisplayName } from '@/app/lib/auth/types';
+import { useAlerts } from '@/app/lib/hooks/useAlerts';
+import { NotificationsPopover } from '@/app/components/dashboard/NotificationsPopover';
 
 interface NavItem {
   label: string;
@@ -54,6 +56,7 @@ function formatDisplayName(fullName: string): string {
 export default function Sidebar({ className = '' }: SidebarProps) {
   const pathname = usePathname();
   const { user } = useCurrentUser();
+  const { alerts, refetch: refetchAlerts, dismiss: dismissAlert, clearAll: clearAllAlerts } = useAlerts();
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   useEffect(() => {
@@ -121,16 +124,39 @@ export default function Sidebar({ className = '' }: SidebarProps) {
         {!isCollapsed && (
           <span className="ml-2 text-[1.05rem] font-semibold tracking-wide text-white">ISG Insights</span>
         )}
-        <button
-          onClick={toggleCollapsed}
-          title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-          className="p-1.5 rounded-md text-zinc-500 hover:text-zinc-200 hover:bg-white/[0.05] transition-colors flex-shrink-0"
-        >
-          {isCollapsed
-            ? <PanelLeftOpen className="w-4 h-4" />
-            : <PanelLeftClose className="w-4 h-4" />
-          }
-        </button>
+        <div className="flex items-center gap-0.5 flex-shrink-0">
+          {!isCollapsed && (
+            <NotificationsPopover
+              alerts={alerts}
+              onDismiss={dismissAlert}
+              onClearAll={clearAllAlerts}
+              onOpen={refetchAlerts}
+            >
+              <button
+                type="button"
+                title="Notifications"
+                className="relative p-1.5 rounded-md text-zinc-500 hover:text-zinc-200 hover:bg-white/[0.05] transition-colors"
+              >
+                <Bell className="w-4 h-4" />
+                {alerts.length > 0 && (
+                  <span className="absolute -top-1 -left-1 min-w-[14px] h-[14px] px-0.5 bg-red-600 text-white text-[9px] font-bold flex items-center justify-center rounded-full leading-none">
+                    {alerts.length > 9 ? '9+' : alerts.length}
+                  </span>
+                )}
+              </button>
+            </NotificationsPopover>
+          )}
+          <button
+            onClick={toggleCollapsed}
+            title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            className="p-1.5 rounded-md text-zinc-500 hover:text-zinc-200 hover:bg-white/[0.05] transition-colors"
+          >
+            {isCollapsed
+              ? <PanelLeftOpen className="w-4 h-4" />
+              : <PanelLeftClose className="w-4 h-4" />
+            }
+          </button>
+        </div>
       </div>
 
       <div className="border-t border-zinc-800/50 mx-2 my-1.5" />
