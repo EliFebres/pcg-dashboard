@@ -139,7 +139,7 @@ export default function Sidebar({ className = '' }: SidebarProps) {
               >
                 <Bell className="w-4 h-4" />
                 {alerts.length > 0 && (
-                  <span className="absolute -top-1 -left-1 min-w-[14px] h-[14px] px-0.5 bg-red-600 text-white text-[9px] font-bold flex items-center justify-center rounded-full leading-none">
+                  <span className="absolute -top-1 -right-1 min-w-[14px] h-[14px] px-0.5 bg-red-600 text-white text-[9px] font-bold flex items-center justify-center rounded-full leading-none">
                     {alerts.length > 9 ? '9+' : alerts.length}
                   </span>
                 )}

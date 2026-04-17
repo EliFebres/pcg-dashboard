@@ -11,6 +11,7 @@ interface AlertState {
   seenFollowUps: string[];
   seenNoteCounts: Record<string, number>;
   dismissedNoteIds: string[];
+  seenPendingUsers: string[];
   bootstrapped: boolean;
 }
 
@@ -20,6 +21,7 @@ function emptyState(): AlertState {
     seenFollowUps: [],
     seenNoteCounts: {},
     dismissedNoteIds: [],
+    seenPendingUsers: [],
     bootstrapped: false,
   };
 }
@@ -162,6 +164,42 @@ export function useAlerts() {
       }
       await Promise.all(notePromises);
 
+      // Alert 4: Pending signups (admin-only)
+      if (user.role === 'admin') {
+        try {
+          const res = await fetch('/api/admin/users');
+          if (res.ok) {
+            const users = await res.json();
+            const pending = users.filter(
+              (u: { status: string; id: string }) => u.status === 'pending' && u.id !== user.id,
+            );
+            for (const pu of pending) {
+              if (isBootstrap) {
+                addUnique(state.seenPendingUsers, pu.id);
+                continue;
+              }
+              if (state.seenPendingUsers.includes(pu.id)) continue;
+              result.push({
+                id: `pending-signup-${pu.id}`,
+                type: 'pending-signup',
+                pendingUser: {
+                  id: pu.id,
+                  firstName: pu.firstName,
+                  lastName: pu.lastName,
+                  email: pu.email,
+                  team: pu.team,
+                  office: pu.office,
+                  createdAt: pu.createdAt,
+                },
+                timestamp: new Date(pu.createdAt).getTime(),
+              });
+            }
+          }
+        } catch (err) {
+          console.error('[useAlerts] failed to fetch pending users', err);
+        }
+      }
+
       if (isBootstrap) state.bootstrapped = true;
       saveState(user.id, state);
 
@@ -178,21 +216,36 @@ export function useAlerts() {
     if (user) compute();
   }, [user, compute]);
 
+  // Admin-only: listen for user changes (approvals, deletions) to refresh alerts in real-time
+  useEffect(() => {
+    if (!user || user.role !== 'admin') return;
+    const es = new EventSource('/api/admin/users/events');
+    es.onmessage = (e) => {
+      if (e.data !== 'connected') compute();
+    };
+    es.onerror = () => es.close();
+    return () => es.close();
+  }, [user, compute]);
+
   const dismiss = useCallback(
     (alert: Alert) => {
       if (!user) return;
       const state = stateRef.current ?? loadState(user.id);
-      const key = String(alert.engagement.id);
-      if (alert.type === 'follow-up-stale') {
-        addUnique(state.seenFollowUps, key);
-      } else if (alert.type === 'assigned') {
-        addUnique(state.seenAssignments, key);
-      } else if (alert.type === 'note-added') {
-        addUnique(state.dismissedNoteIds, alert.id);
-        state.seenNoteCounts[key] = Math.max(
-          state.seenNoteCounts[key] ?? 0,
-          alert.engagement.noteCount ?? 0,
-        );
+      if (alert.type === 'pending-signup') {
+        addUnique(state.seenPendingUsers, alert.pendingUser.id);
+      } else {
+        const key = String(alert.engagement.id);
+        if (alert.type === 'follow-up-stale') {
+          addUnique(state.seenFollowUps, key);
+        } else if (alert.type === 'assigned') {
+          addUnique(state.seenAssignments, key);
+        } else if (alert.type === 'note-added') {
+          addUnique(state.dismissedNoteIds, alert.id);
+          state.seenNoteCounts[key] = Math.max(
+            state.seenNoteCounts[key] ?? 0,
+            alert.engagement.noteCount ?? 0,
+          );
+        }
       }
       stateRef.current = state;
       saveState(user.id, state);
@@ -205,17 +258,21 @@ export function useAlerts() {
     if (!user) return;
     const state = stateRef.current ?? loadState(user.id);
     for (const alert of alerts) {
-      const key = String(alert.engagement.id);
-      if (alert.type === 'follow-up-stale') {
-        addUnique(state.seenFollowUps, key);
-      } else if (alert.type === 'assigned') {
-        addUnique(state.seenAssignments, key);
-      } else if (alert.type === 'note-added') {
-        addUnique(state.dismissedNoteIds, alert.id);
-        state.seenNoteCounts[key] = Math.max(
-          state.seenNoteCounts[key] ?? 0,
-          alert.engagement.noteCount ?? 0,
-        );
+      if (alert.type === 'pending-signup') {
+        addUnique(state.seenPendingUsers, alert.pendingUser.id);
+      } else {
+        const key = String(alert.engagement.id);
+        if (alert.type === 'follow-up-stale') {
+          addUnique(state.seenFollowUps, key);
+        } else if (alert.type === 'assigned') {
+          addUnique(state.seenAssignments, key);
+        } else if (alert.type === 'note-added') {
+          addUnique(state.dismissedNoteIds, alert.id);
+          state.seenNoteCounts[key] = Math.max(
+            state.seenNoteCounts[key] ?? 0,
+            alert.engagement.noteCount ?? 0,
+          );
+        }
       }
     }
     stateRef.current = state;

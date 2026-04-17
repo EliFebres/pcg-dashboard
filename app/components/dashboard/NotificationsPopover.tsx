@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useLayoutEffect, useRef, useState } from 'react';
-import { Clock, FileText, UserPlus, X } from 'lucide-react';
+import { Clock, FileText, UserPlus, UserRoundPlus, X } from 'lucide-react';
 import { Popover, PopoverTrigger, PopoverContent } from '@/app/components/ui/Popover';
 import type { Alert } from '@/app/lib/types/alerts';
 
@@ -85,39 +85,68 @@ export function NotificationsPopover({
 }
 
 function AlertRow({ alert, onDismiss }: { alert: Alert; onDismiss: () => void }) {
-  const eng = alert.engagement;
-
   const { Icon, accent, title } =
     alert.type === 'follow-up-stale'
       ? { Icon: Clock, accent: 'text-amber-300', title: 'Stale Follow-Up' }
       : alert.type === 'assigned'
       ? { Icon: UserPlus, accent: 'text-emerald-400', title: 'Assigned to Project' }
+      : alert.type === 'pending-signup'
+      ? { Icon: UserRoundPlus, accent: 'text-violet-400', title: 'New Signup' }
       : { Icon: FileText, accent: 'text-cyan-500', title: 'New Note' };
 
+  let infoLine: React.ReactNode;
   let body: React.ReactNode;
-  if (alert.type === 'follow-up-stale') {
-    body = (
+
+  if (alert.type === 'pending-signup') {
+    const pu = alert.pendingUser;
+    infoLine = (
       <>
-        This project has been in <span className="text-amber-300 font-semibold">Follow Up</span>{' '}
-        since <span className="text-white font-semibold">{eng.dateStarted}</span>. Reach out to{' '}
-        <span className="text-white font-semibold">{eng.internalClient.name}</span> to ask if
-        there have been any NNA winnings from the client.
+        <span className="font-semibold">{pu.firstName} {pu.lastName}</span>
+        <span className="text-white/90"> · {pu.email}</span>
       </>
     );
-  } else if (alert.type === 'assigned') {
     body = (
       <>
-        <span className="text-white font-semibold">{eng.createdByName ?? 'Someone'}</span> added
-        you to this project.
+        <span className="text-white/90">{pu.team}</span>
+        <span className="text-white/90"> · {pu.office}</span>
+        <span className="text-violet-400 font-semibold"> — awaiting approval</span>
       </>
     );
   } else {
-    body = (
+    const eng = alert.engagement;
+    infoLine = (
       <>
-        <span className="text-cyan-500 font-semibold">{alert.note?.authorName} added a note:</span>{' '}
-        <span className="text-white italic">&ldquo;{alert.note?.noteText}&rdquo;</span>
+        <span className="font-semibold">{eng.type}</span>
+        {eng.externalClient && (
+          <span className="text-white/90"> · {eng.externalClient}</span>
+        )}
+        <span className="text-white/90"> · {eng.internalClient.name}</span>
       </>
     );
+    if (alert.type === 'follow-up-stale') {
+      body = (
+        <>
+          This project has been in <span className="text-amber-300 font-semibold">Follow Up</span>{' '}
+          since <span className="text-white font-semibold">{eng.dateStarted}</span>. Reach out to{' '}
+          <span className="text-white font-semibold">{eng.internalClient.name}</span> to ask if
+          there have been any NNA winnings from the client.
+        </>
+      );
+    } else if (alert.type === 'assigned') {
+      body = (
+        <>
+          <span className="text-white font-semibold">{eng.createdByName ?? 'Someone'}</span> added
+          you to this project.
+        </>
+      );
+    } else {
+      body = (
+        <>
+          <span className="text-cyan-500 font-semibold">{alert.note.authorName} added a note:</span>{' '}
+          <span className="text-white italic">&ldquo;{alert.note.noteText}&rdquo;</span>
+        </>
+      );
+    }
   }
 
   return (
@@ -133,11 +162,7 @@ function AlertRow({ alert, onDismiss }: { alert: Alert; onDismiss: () => void })
             </span>
           </div>
           <div className="text-[0.825rem] text-white mb-1 truncate">
-            <span className="font-semibold">{eng.type}</span>
-            {eng.externalClient && (
-              <span className="text-white/90"> · {eng.externalClient}</span>
-            )}
-            <span className="text-white/90"> · {eng.internalClient.name}</span>
+            {infoLine}
           </div>
           <div className="text-[0.825rem] text-white leading-relaxed">{body}</div>
         </div>
