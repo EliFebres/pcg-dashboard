@@ -153,11 +153,12 @@ export async function PATCH(
     );
     emitEngagementChange('updated');
     const changedFields = Object.keys(body).filter(k => k !== 'version' && k !== 'id');
+    const internalClient = (rows[0].internal_client_name as string | null) ?? null;
     void logActivity(req, {
       action: 'engagement.update',
       entityType: 'engagement',
       entityId: engagementId,
-      details: { fields: changedFields },
+      details: { fields: changedFields, internalClient },
     });
     return NextResponse.json(rowToEngagement(rows[0]));
   } catch (err) {
@@ -199,12 +200,19 @@ export async function DELETE(
 
     const teamClause = sc.team ? 'AND team = ?' : '';
     const teamParams = sc.team ? [sc.team] : [];
+    // Capture internalClient for the activity log before the row is gone.
+    const preDelete = await query<{ internal_client_name: string | null }>(
+      `SELECT internal_client_name FROM engagements WHERE id = ?`,
+      [engagementId]
+    );
+    const internalClient = preDelete[0]?.internal_client_name ?? null;
     await query(`DELETE FROM engagements WHERE id = ? ${teamClause}`, [engagementId, ...teamParams]);
     emitEngagementChange('deleted');
     void logActivity(req, {
       action: 'engagement.delete',
       entityType: 'engagement',
       entityId: engagementId,
+      details: { internalClient },
     });
     return new Response(null, { status: 204 });
   } catch (err) {

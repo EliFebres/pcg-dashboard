@@ -60,11 +60,18 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
     }
 
     const updatedNote = rowToNoteEntry(updated[0]);
+    const clientRows = await query<{ internal_client_name: string | null }>(
+      `SELECT internal_client_name FROM engagements WHERE id = ?`,
+      [updatedNote.engagementId]
+    );
     void logActivity(req, {
       action: 'note.update',
       entityType: 'note',
       entityId: updatedNote.id,
-      details: { engagementId: updatedNote.engagementId },
+      details: {
+        engagementId: updatedNote.engagementId,
+        internalClient: clientRows[0]?.internal_client_name ?? null,
+      },
     });
     return NextResponse.json(updatedNote);
   } catch (err) {
@@ -89,8 +96,9 @@ export async function DELETE(req: NextRequest, { params }: RouteParams) {
     }
     if (!canModify(payload)) return readOnlyError();
 
-    const { noteId } = await params;
+    const { id: engagementIdParam, noteId } = await params;
     const id = Number(noteId);
+    const engagementId = Number(engagementIdParam);
 
     // Atomic ownership check + delete: if author_id doesn't match, 0 rows returned
     const deleted = await query(
@@ -106,10 +114,18 @@ export async function DELETE(req: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'You can only delete your own notes.' }, { status: 403 });
     }
 
+    const clientRows = await query<{ internal_client_name: string | null }>(
+      `SELECT internal_client_name FROM engagements WHERE id = ?`,
+      [engagementId]
+    );
     void logActivity(req, {
       action: 'note.delete',
       entityType: 'note',
       entityId: id,
+      details: {
+        engagementId,
+        internalClient: clientRows[0]?.internal_client_name ?? null,
+      },
     });
     return new NextResponse(null, { status: 204 });
   } catch (err) {

@@ -59,9 +59,22 @@ export async function GET(req: NextRequest) {
       `SELECT COUNT(*) AS count FROM user_presence WHERE last_seen >= now() - INTERVAL 5 MINUTE`
     );
 
-    // Per-entity breakdown over selected range
+    // Per-category breakdown over selected range.
+    // Categories are synthesized from action so that create/update/delete on
+    // engagements appear as distinct slices in the pie chart.
     const byEntity = await queryActivity<{ entity_type: string | null; count: number }>(
-      `SELECT COALESCE(entity_type, 'other') AS entity_type, COUNT(*) AS count
+      `SELECT
+         CASE
+           WHEN action IN ('engagement.create', 'engagement.bulk_upload') THEN 'interaction_created'
+           WHEN action = 'engagement.delete' THEN 'interaction_deleted'
+           WHEN action LIKE 'engagement.%' THEN 'interaction_updated'
+           WHEN action LIKE 'note.%' THEN 'interaction_updated'
+           WHEN action LIKE 'user.%' THEN 'user'
+           WHEN action LIKE 'team_member.%' THEN 'team_member'
+           WHEN action LIKE 'page.%' THEN 'page'
+           ELSE 'other'
+         END AS entity_type,
+         COUNT(*) AS count
        FROM activity_logs
        WHERE timestamp >= now() - INTERVAL ${interval}
        GROUP BY 1
@@ -84,6 +97,19 @@ export async function GET(req: NextRequest) {
        FROM activity_logs
        WHERE timestamp >= now() - INTERVAL ${interval}
        GROUP BY 1
+       ORDER BY 1 ASC`
+    );
+
+    // Per-day page.view timeseries split by path (for Activity by Page chart)
+    const byDayByPage = await queryActivity<{ day: string; path: string | null; count: number }>(
+      `SELECT
+         CAST(date_trunc('day', timestamp) AS VARCHAR) AS day,
+         entity_id AS path,
+         COUNT(*) AS count
+       FROM activity_logs
+       WHERE action = 'page.view'
+         AND timestamp >= now() - INTERVAL ${interval}
+       GROUP BY 1, 2
        ORDER BY 1 ASC`
     );
 
@@ -115,6 +141,11 @@ export async function GET(req: NextRequest) {
       byEntity: byEntity.map(r => ({ entityType: r.entity_type, count: Number(r.count) })),
       byAction: byAction.map(r => ({ action: r.action, count: Number(r.count) })),
       byDay: byDay.map(r => ({ day: r.day, count: Number(r.count) })),
+      byDayByPage: byDayByPage.map(r => ({
+        day: r.day,
+        path: r.path ?? 'unknown',
+        count: Number(r.count),
+      })),
       topUsers: topUsers.map(r => ({
         userName: r.user_name,
         userEmail: r.user_email,

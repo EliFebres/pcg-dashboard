@@ -37,6 +37,7 @@ export async function getActivityConnection(): Promise<DuckDBConnection> {
           user_id      VARCHAR,
           user_email   VARCHAR,
           user_name    VARCHAR,
+          user_office  VARCHAR,
           action       VARCHAR     NOT NULL,
           entity_type  VARCHAR,
           entity_id    VARCHAR,
@@ -45,9 +46,19 @@ export async function getActivityConnection(): Promise<DuckDBConnection> {
           user_agent   VARCHAR
         )
       `);
+      // Additive migration for pre-existing databases created before user_office existed.
+      try { await conn.run(`ALTER TABLE activity_logs ADD COLUMN user_office VARCHAR`); } catch { /* already exists */ }
       await conn.run(`CREATE INDEX IF NOT EXISTS idx_activity_ts     ON activity_logs (timestamp)`);
       await conn.run(`CREATE INDEX IF NOT EXISTS idx_activity_user   ON activity_logs (user_id)`);
       await conn.run(`CREATE INDEX IF NOT EXISTS idx_activity_action ON activity_logs (action)`);
+
+      // Retention: drop activity_logs older than 30 days on connection init.
+      // Client Interactions (engagements) live in a separate DB and are untouched.
+      try {
+        await conn.run(`DELETE FROM activity_logs WHERE timestamp < now() - INTERVAL 30 DAY`);
+      } catch (err) {
+        console.error('[activity] retention cleanup failed at init:', err);
+      }
 
       await conn.run(`
         CREATE TABLE IF NOT EXISTS user_presence (

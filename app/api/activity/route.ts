@@ -80,6 +80,7 @@ export async function GET(req: NextRequest) {
       userId: r.user_id,
       userEmail: r.user_email,
       userName: r.user_name,
+      userOffice: r.user_office ?? null,
       action: r.action,
       entityType: r.entity_type,
       entityId: r.entity_id,

@@ -42,7 +42,7 @@ export async function PATCH(
 
     // Verify the row exists
     const rows = await query<Record<string, unknown>>(
-      `SELECT id, status, date_finished FROM engagements WHERE id = ?`,
+      `SELECT id, status, date_finished, internal_client_name FROM engagements WHERE id = ?`,
       [engagementId]
     );
     if (rows.length === 0) {
@@ -54,7 +54,7 @@ export async function PATCH(
       action: 'engagement.status_change',
       entityType: 'engagement',
       entityId: engagementId,
-      details: { status },
+      details: { status, internalClient: (rows[0].internal_client_name as string | null) ?? null },
     });
     return NextResponse.json({
       id: engagementId,

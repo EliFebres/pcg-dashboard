@@ -38,6 +38,7 @@ export interface ActivityLogRow {
   userId: string | null;
   userEmail: string | null;
   userName: string | null;
+  userOffice: string | null;
   action: string;
   entityType: string | null;
   entityId: string | null;

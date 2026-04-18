@@ -93,11 +93,19 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
 
     emitEngagementChange('updated');
     const newNote = rowToNoteEntry(rows[0]);
+    const clientRows = await query<{ internal_client_name: string | null }>(
+      `SELECT internal_client_name FROM engagements WHERE id = ?`,
+      [engagementId]
+    );
     void logActivity(req, {
       action: 'note.create',
       entityType: 'note',
       entityId: newNote.id,
-      details: { engagementId, length: newNote.noteText.length },
+      details: {
+        engagementId,
+        length: newNote.noteText.length,
+        internalClient: clientRows[0]?.internal_client_name ?? null,
+      },
     });
     return NextResponse.json(newNote, { status: 201 });
   } catch (err) {

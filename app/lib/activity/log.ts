@@ -3,6 +3,7 @@ import type { NextRequest } from 'next/server';
 import { verifyJWT, SESSION_COOKIE } from '../auth/jwt';
 import type { JWTPayload } from '../auth/jwt';
 import { executeActivity } from '../db/activity';
+import { queryUsers } from '../db/users';
 import { emitActivityLog, type ActivityLogRow } from '../events';
 
 export interface LogActivityParams {
@@ -15,7 +16,43 @@ export interface LogActivityParams {
     id?: string | null;
     email?: string | null;
     name?: string | null;
+    office?: string | null;
   };
+}
+
+// In-memory cache to avoid hitting the users DB on every log write.
+const officeCache = new Map<string, string | null>();
+
+// Retention sweep — drop rows older than 30 days. Throttled to at most once per hour
+// so we don't pay for a DELETE on every insert. Does NOT touch Client Interactions
+// (engagements) — those live in a separate DB.
+const RETENTION_DAYS = 30;
+const CLEANUP_INTERVAL_MS = 60 * 60 * 1000;
+let _lastCleanup = 0;
+
+function maybeRunRetentionSweep(): void {
+  const now = Date.now();
+  if (now - _lastCleanup < CLEANUP_INTERVAL_MS) return;
+  _lastCleanup = now;
+  void executeActivity(
+    `DELETE FROM activity_logs WHERE timestamp < now() - INTERVAL ${RETENTION_DAYS} DAY`
+  ).catch(err => console.error('[activity] retention sweep failed:', err));
+}
+
+async function resolveOffice(userId: string | null): Promise<string | null> {
+  if (!userId) return null;
+  if (officeCache.has(userId)) return officeCache.get(userId) ?? null;
+  try {
+    const rows = await queryUsers<{ office: string | null }>(
+      `SELECT office FROM users WHERE id = ?`,
+      [userId]
+    );
+    const office = rows[0]?.office ?? null;
+    officeCache.set(userId, office);
+    return office;
+  } catch {
+    return null;
+  }
 }
 
 function extractIp(req: NextRequest | null): string | null {
@@ -52,6 +89,7 @@ export async function logActivity(
     const userEmail = params.userOverride?.email ?? payload?.email ?? null;
     const userName = params.userOverride?.name
       ?? (payload ? `${payload.firstName} ${payload.lastName}`.trim() : null);
+    const userOffice = params.userOverride?.office ?? await resolveOffice(userId);
 
     const id = randomUUID();
     const timestamp = new Date().toISOString();
@@ -62,14 +100,15 @@ export async function logActivity(
 
     await executeActivity(
       `INSERT INTO activity_logs
-       (id, timestamp, user_id, user_email, user_name, action, entity_type, entity_id, details, ip, user_agent)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+       (id, timestamp, user_id, user_email, user_name, user_office, action, entity_type, entity_id, details, ip, user_agent)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         id,
         timestamp,
         userId,
         userEmail,
         userName,
+        userOffice,
         params.action,
         params.entityType ?? null,
         entityId,
@@ -85,6 +124,7 @@ export async function logActivity(
       userId,
       userEmail,
       userName,
+      userOffice,
       action: params.action,
       entityType: params.entityType ?? null,
       entityId,
@@ -93,6 +133,7 @@ export async function logActivity(
       userAgent,
     };
     emitActivityLog(row);
+    maybeRunRetentionSweep();
   } catch (err) {
     // Logging must never break the request path.
     console.error('[activity] logActivity failed:', err);
