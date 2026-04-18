@@ -441,7 +441,7 @@ export default function ActivityDashboardPage() {
       </div>
 
       {/* Chart row */}
-      <div className="grid grid-cols-[35fr_65fr] gap-4">
+      <div className="grid grid-cols-[40fr_60fr] gap-4">
         <CardShell className="p-5">
           <div className="mb-4">
             <h3 className="text-sm font-semibold text-white">App Useage by Category</h3>
