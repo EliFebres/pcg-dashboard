@@ -1,7 +1,7 @@
 export const runtime = 'nodejs';
 
 import { NextRequest, NextResponse } from 'next/server';
-import { query } from '@/app/lib/db';
+import { query, queryWrite } from '@/app/lib/db';
 import { rowToEngagement } from '@/app/lib/db/queries';
 import { requireAuth, teamConstraint, canModify, readOnlyError } from '@/app/lib/auth/require-auth';
 import { toISODate } from '@/app/lib/db/dateUtils';
@@ -131,7 +131,7 @@ export async function PATCH(
     if (clientVersion !== null) values.push(clientVersion);
     if (sc.team) values.push(sc.team);
 
-    const updated = await query<Record<string, unknown>>(
+    const updated = await queryWrite<Record<string, unknown>>(
       `UPDATE engagements SET ${setClauses.join(', ')} ${whereClause} RETURNING id`,
       values
     );
@@ -206,7 +206,7 @@ export async function DELETE(
       [engagementId]
     );
     const internalClient = preDelete[0]?.internal_client_name ?? null;
-    await query(`DELETE FROM engagements WHERE id = ? ${teamClause}`, [engagementId, ...teamParams]);
+    await queryWrite(`DELETE FROM engagements WHERE id = ? ${teamClause}`, [engagementId, ...teamParams]);
     emitEngagementChange('deleted');
     void logActivity(req, {
       action: 'engagement.delete',

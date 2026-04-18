@@ -2,6 +2,9 @@ import { DuckDBInstance } from '@duckdb/node-api';
 import type { DuckDBConnection } from '@duckdb/node-api';
 import path from 'path';
 import fs from 'fs';
+import { serializeWrite } from './writeQueue';
+
+const QUEUE_KEY = 'users';
 
 // Store on `global` so the connection survives Next.js hot reloads in dev mode.
 const g = global as typeof globalThis & {
@@ -82,6 +85,22 @@ export async function executeUsers(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   params: any[] = []
 ): Promise<void> {
-  const conn = await getUsersConnection();
-  await conn.run(sql, params.length ? params : undefined);
+  return serializeWrite(QUEUE_KEY, async () => {
+    const conn = await getUsersConnection();
+    await conn.run(sql, params.length ? params : undefined);
+  });
+}
+
+// Use for mutations that return rows (UPDATE/DELETE/INSERT ... RETURNING).
+// Goes through the users write queue.
+export async function queryWriteUsers<T = Record<string, unknown>>(
+  sql: string,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  params: any[] = []
+): Promise<T[]> {
+  return serializeWrite(QUEUE_KEY, async () => {
+    const conn = await getUsersConnection();
+    const reader = await conn.runAndReadAll(sql, params.length ? params : undefined);
+    return reader.getRowObjects() as T[];
+  });
 }

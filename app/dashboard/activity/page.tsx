@@ -383,35 +383,36 @@ export default function ActivityDashboardPage() {
   return (
     <>
       <header className="flex-shrink-0 bg-transparent backdrop-blur-md border-b border-zinc-800/50 relative z-50 sticky top-0">
-        <div className="px-6 pt-4 pb-3">
-          <div className="flex items-center gap-2 h-9 mb-3">
-            <div className="flex-1" />
-            <div className="flex bg-zinc-900/60 border border-zinc-800/50 rounded-lg p-0.5">
-              {(['24h', '7d', '30d'] as Range[]).map(r => (
-                <button
-                  key={r}
-                  onClick={() => setRange(r)}
-                  className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-                    range === r
-                      ? 'bg-gradient-to-l from-blue-600 to-cyan-500 text-white'
-                      : 'text-muted hover:text-zinc-200'
-                  }`}
-                >
-                  {r.toUpperCase()}
-                </button>
-              ))}
+        <div className="px-6 pt-6 pb-3">
+          <div className="flex items-end justify-between gap-4">
+            <div>
+              <h2 className="text-xl font-semibold text-white">Activity</h2>
+              <p className="text-muted text-sm">Real-time usage, user activity, and signup telemetry</p>
             </div>
-            <button
-              onClick={() => { void loadStats(); void loadLogs(); }}
-              className="p-2 bg-zinc-900/60 border border-zinc-800/50 rounded-lg text-muted hover:text-cyan-400 hover:border-cyan-500/30 transition-colors"
-              title="Refresh"
-            >
-              <RefreshCw className="w-4 h-4" />
-            </button>
-          </div>
-          <div>
-            <h2 className="text-xl font-semibold text-white">Activity</h2>
-            <p className="text-muted text-sm">Real-time usage, user activity, and signup telemetry</p>
+            <div className="flex items-center gap-2">
+              <div className="flex bg-zinc-900/60 border border-zinc-800/50 rounded-lg p-0.5">
+                {(['24h', '7d', '30d'] as Range[]).map(r => (
+                  <button
+                    key={r}
+                    onClick={() => setRange(r)}
+                    className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                      range === r
+                        ? 'bg-gradient-to-l from-blue-600 to-cyan-500 text-white'
+                        : 'text-muted hover:text-zinc-200'
+                    }`}
+                  >
+                    {r.toUpperCase()}
+                  </button>
+                ))}
+              </div>
+              <button
+                onClick={() => { void loadStats(); void loadLogs(); }}
+                className="p-2 bg-zinc-900/60 border border-zinc-800/50 rounded-lg text-muted hover:text-cyan-400 hover:border-cyan-500/30 transition-colors"
+                title="Refresh"
+              >
+                <RefreshCw className="w-4 h-4" />
+              </button>
+            </div>
           </div>
         </div>
       </header>

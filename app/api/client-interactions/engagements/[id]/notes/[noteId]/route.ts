@@ -1,7 +1,7 @@
 export const runtime = 'nodejs';
 
 import { NextRequest, NextResponse } from 'next/server';
-import { query } from '@/app/lib/db';
+import { query, queryWrite } from '@/app/lib/db';
 import { verifyJWT, SESSION_COOKIE } from '@/app/lib/auth/jwt';
 import { canModify, readOnlyError } from '@/app/lib/auth/require-auth';
 import type { NoteEntry } from '@/app/lib/types/engagements';
@@ -46,7 +46,7 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
     }
 
     // Atomic ownership check + update: if author_id doesn't match, 0 rows returned
-    const updated = await query<Record<string, unknown>>(
+    const updated = await queryWrite<Record<string, unknown>>(
       `UPDATE engagement_notes SET note_text = ? WHERE id = ? AND author_id = ? RETURNING *`,
       [noteText.trim(), id, payload.sub]
     );
@@ -101,7 +101,7 @@ export async function DELETE(req: NextRequest, { params }: RouteParams) {
     const engagementId = Number(engagementIdParam);
 
     // Atomic ownership check + delete: if author_id doesn't match, 0 rows returned
-    const deleted = await query(
+    const deleted = await queryWrite(
       `DELETE FROM engagement_notes WHERE id = ? AND author_id = ? RETURNING id`,
       [id, payload.sub]
     );

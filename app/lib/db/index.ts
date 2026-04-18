@@ -2,6 +2,7 @@ import { DuckDBInstance } from '@duckdb/node-api';
 import type { DuckDBConnection } from '@duckdb/node-api';
 import path from 'path';
 import fs from 'fs';
+import { serializeWrite } from './writeQueue';
 
 // Store on `global` so the connection survives Next.js hot reloads in dev mode.
 // Module-level variables get reset on each reload, leaving the old connection
@@ -10,14 +11,12 @@ const g = global as typeof globalThis & {
   _engagementsConnectionPromise?: Promise<DuckDBConnection>;
 };
 
-// Write serializer — ensures all DuckDB write operations execute one at a time,
-// preventing concurrent write conflicts on the single-file DuckDB database.
-let _writeQueue: Promise<unknown> = Promise.resolve();
+const QUEUE_KEY = 'engagements';
 
+// Backwards-compat re-export for any legacy caller; new code should use the
+// per-DB helpers below or `serializeWrite` from ./writeQueue directly.
 export function serializedWrite<T>(fn: () => Promise<T>): Promise<T> {
-  const result = _writeQueue.then(fn);
-  _writeQueue = result.then(() => {}, () => {}); // keep queue alive on errors
-  return result;
+  return serializeWrite(QUEUE_KEY, fn);
 }
 
 // Use for multi-statement transactions. Wraps the callback in a single serialized
@@ -25,7 +24,7 @@ export function serializedWrite<T>(fn: () => Promise<T>): Promise<T> {
 export async function executeTransaction(
   fn: (conn: DuckDBConnection) => Promise<void>
 ): Promise<void> {
-  return serializedWrite(async () => {
+  return serializeWrite(QUEUE_KEY, async () => {
     const conn = await getConnection();
     await conn.run('BEGIN');
     try {
@@ -166,12 +165,26 @@ export async function query<T = Record<string, unknown>>(
   return reader.getRowObjects() as T[];
 }
 
+// Use for mutations that return rows (UPDATE/DELETE/INSERT ... RETURNING).
+// Goes through the engagements write queue so it can't interleave with other writes.
+export async function queryWrite<T = Record<string, unknown>>(
+  sql: string,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  params: any[] = []
+): Promise<T[]> {
+  return serializeWrite(QUEUE_KEY, async () => {
+    const conn = await getConnection();
+    const reader = await conn.runAndReadAll(sql, params.length ? params : undefined);
+    return reader.getRowObjects() as T[];
+  });
+}
+
 export async function execute(
   sql: string,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   params: any[] = []
 ): Promise<void> {
-  return serializedWrite(async () => {
+  return serializeWrite(QUEUE_KEY, async () => {
     const conn = await getConnection();
     await conn.run(sql, params.length ? params : undefined);
   });
