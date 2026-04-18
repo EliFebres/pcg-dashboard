@@ -92,9 +92,14 @@ export async function computeMetrics(filters: EngagementFilters, serverConstrain
         COALESCE(SUM(nna), 0)                                                    AS prev_nna
       FROM engagements ${prevAndClause}
     `, prevParams),
-    // In-progress count (respects all active filters except status)
+    // In-progress: current count + last week's count (currently in-progress OR finished this week)
     query<Record<string, unknown>>(`
-      SELECT COUNT(*) AS count FROM engagements ${inProgressAndClause}
+      SELECT
+        COUNT(*) FILTER (WHERE status = 'In Progress') AS count,
+        COUNT(*) FILTER (WHERE status = 'In Progress'
+          OR (date_finished >= date_trunc('week', CURRENT_DATE) AND status != 'In Progress')
+        ) AS last_week
+      FROM engagements ${ipWhere || ''}
     `, ipParams),
     // Weekly in-progress sparkline (last 8 weeks, same filters)
     query<Record<string, unknown>>(`
@@ -148,9 +153,8 @@ export async function computeMetrics(filters: EngagementFilters, serverConstrain
   while (sparklineValues.length < 8) {
     sparklineValues.unshift({ value: 0 });
   }
-  const inProgressChange = sparklineValues.length >= 2
-    ? sparklineValues[sparklineValues.length - 1].value - sparklineValues[sparklineValues.length - 2].value
-    : 0;
+  const lastWeekInProgress = Number(inProgressRows[0]?.last_week ?? 0);
+  const inProgressChange = inProgressCount - lastWeekInProgress;
 
   const INTAKE_COLORS: Record<string, string> = {
     'In-Person': '#a5f3fc',
