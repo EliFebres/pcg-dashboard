@@ -5,6 +5,7 @@ import { query } from '@/app/lib/db';
 import { verifyJWT, SESSION_COOKIE } from '@/app/lib/auth/jwt';
 import { canModify, readOnlyError } from '@/app/lib/auth/require-auth';
 import type { NoteEntry } from '@/app/lib/types/engagements';
+import { logActivity } from '@/app/lib/activity/log';
 
 type RouteParams = { params: Promise<{ id: string; noteId: string }> };
 
@@ -58,7 +59,14 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'You can only edit your own notes.' }, { status: 403 });
     }
 
-    return NextResponse.json(rowToNoteEntry(updated[0]));
+    const updatedNote = rowToNoteEntry(updated[0]);
+    void logActivity(req, {
+      action: 'note.update',
+      entityType: 'note',
+      entityId: updatedNote.id,
+      details: { engagementId: updatedNote.engagementId },
+    });
+    return NextResponse.json(updatedNote);
   } catch (err) {
     console.error('PATCH .../notes/:noteId error:', err);
     return NextResponse.json({ error: 'Failed to update note' }, { status: 500 });
@@ -98,6 +106,11 @@ export async function DELETE(req: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'You can only delete your own notes.' }, { status: 403 });
     }
 
+    void logActivity(req, {
+      action: 'note.delete',
+      entityType: 'note',
+      entityId: id,
+    });
     return new NextResponse(null, { status: 204 });
   } catch (err) {
     console.error('DELETE .../notes/:noteId error:', err);

@@ -8,6 +8,7 @@ import { requireAuth, teamConstraint, canModify, readOnlyError } from '@/app/lib
 import { toISODate } from '@/app/lib/db/dateUtils';
 import type { EngagementFilters } from '@/app/lib/api/client-interactions';
 import { emitEngagementChange } from '@/app/lib/events';
+import { logActivity } from '@/app/lib/activity/log';
 
 // GET /api/client-interactions/engagements
 // Query params: page, page_size, period, search, team_member, status,
@@ -99,6 +100,18 @@ export async function POST(req: NextRequest) {
     );
 
     emitEngagementChange('created');
+    void logActivity(req, {
+      action: 'engagement.create',
+      entityType: 'engagement',
+      entityId: id,
+      details: {
+        internalClient: body.internalClient?.name ?? null,
+        department,
+        intakeType: body.intakeType,
+        type: body.type,
+        status: body.status,
+      },
+    });
     return NextResponse.json(rowToEngagement(rows[0]), { status: 201 });
   } catch (err) {
     console.error('POST /api/client-interactions/engagements error:', err);

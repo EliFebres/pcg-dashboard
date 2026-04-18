@@ -3,10 +3,17 @@
 import React from 'react';
 import Sidebar from '@/app/components/dashboard/Sidebar';
 import { AuthProvider } from '@/app/lib/auth/context';
+import { usePageView } from '@/app/lib/activity/usePageView';
+
+function PageViewTracker() {
+  usePageView();
+  return null;
+}
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <AuthProvider>
+      <PageViewTracker />
       <div className="h-screen bg-[#111113] flex overflow-hidden">
         <Sidebar className="flex-shrink-0" />
 

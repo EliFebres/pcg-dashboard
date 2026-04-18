@@ -5,6 +5,7 @@ import { queryUsers, executeUsers } from '@/app/lib/db/users';
 import { verifyJWT, SESSION_COOKIE } from '@/app/lib/auth/jwt';
 import { rowToUser, toDisplayName } from '@/app/lib/auth/types';
 import { emitUserChange } from '@/app/lib/events';
+import { logActivity } from '@/app/lib/activity/log';
 
 const VALID_STATUSES = ['pending', 'active', 'inactive'];
 const VALID_ROLES = ['user', 'admin'];
@@ -116,6 +117,17 @@ export async function PATCH(
       }
     }
 
+    void logActivity(req, {
+      action: 'user.update',
+      entityType: 'user',
+      entityId: id,
+      details: {
+        targetEmail: user.email,
+        status: status ?? undefined,
+        role: role ?? undefined,
+      },
+    });
+
     return NextResponse.json(user, { status: 200 });
   } catch (err) {
     console.error('[PATCH /api/admin/users/[id]]', err);
@@ -163,6 +175,12 @@ export async function DELETE(
 
     await executeUsers('DELETE FROM users WHERE id = ?', [id]);
     emitUserChange('deleted');
+    void logActivity(req, {
+      action: 'user.delete',
+      entityType: 'user',
+      entityId: id,
+      details: { targetEmail: target.email as string },
+    });
 
     return new Response(null, { status: 204 });
   } catch (err) {

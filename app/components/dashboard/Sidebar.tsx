@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, ChevronDown, PieChart, Flame, User, LogOut, Users, UserCheck, PanelLeftClose, PanelLeftOpen, Swords, TrendingUp, Landmark, Bell } from 'lucide-react';
+import { LayoutDashboard, ChevronDown, PieChart, Flame, User, LogOut, Users, UserCheck, PanelLeftClose, PanelLeftOpen, Swords, TrendingUp, Landmark, Bell, Activity } from 'lucide-react';
 import { useCurrentUser } from '@/app/lib/auth/context';
 import { toDisplayName } from '@/app/lib/auth/types';
 import { useAlerts } from '@/app/lib/hooks/useAlerts';
@@ -288,6 +288,20 @@ export default function Sidebar({ className = '' }: SidebarProps) {
             {!isCollapsed && (
               <p className="px-2 text-xs font-medium text-muted uppercase tracking-wider mb-0.5 opacity-70">Admin</p>
             )}
+            <div className="relative group">
+              <Link
+                href="/dashboard/activity"
+                className={`w-full flex items-center transition-colors border-l-2 ${isCollapsed ? `justify-center px-0 py-2 ${pathname === '/dashboard/activity' ? 'bg-gradient-to-r from-blue-600/20 to-cyan-600/10 text-cyan-400 border-cyan-400 backdrop-blur-sm' : 'text-muted hover:bg-white/[0.03] hover:text-zinc-200 border-transparent'}` : `px-2 py-2 gap-2.5 ${pathname === '/dashboard/activity' ? 'bg-gradient-to-r from-blue-600/20 to-cyan-600/10 text-cyan-400 border-cyan-400 backdrop-blur-sm' : 'text-muted hover:bg-white/[0.03] hover:text-zinc-200 border-transparent'}`}`}
+              >
+                <Activity className="w-5 h-5 flex-shrink-0" />
+                {!isCollapsed && <span className="text-[0.9rem] font-semibold tracking-wide">Activity</span>}
+              </Link>
+              {isCollapsed && (
+                <span className="absolute left-full ml-3 top-1/2 -translate-y-1/2 px-2 py-1 bg-zinc-800 border border-zinc-700 text-zinc-200 text-xs rounded-md opacity-0 group-hover:opacity-100 whitespace-nowrap pointer-events-none z-50 transition-opacity">
+                  Activity
+                </span>
+              )}
+            </div>
             <div className="relative group">
               <Link
                 href="/admin/users"

@@ -25,7 +25,7 @@ import fs from 'fs';
 import path from 'path';
 import readline from 'readline';
 
-const DB_FILES = ['engagements.duckdb', 'users.duckdb'];
+const DB_FILES = ['engagements.duckdb', 'users.duckdb', 'activity.duckdb'];
 
 function isBackupDir(name: string): boolean {
   return /^\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}$/.test(name);
@@ -108,8 +108,10 @@ async function main() {
     filesToRestore = ['engagements.duckdb'];
   } else if (dbArg === 'users') {
     filesToRestore = ['users.duckdb'];
+  } else if (dbArg === 'activity') {
+    filesToRestore = ['activity.duckdb'];
   } else {
-    console.error(`ERROR: Unknown --db value "${dbArg}". Use: engagements, users, or both`);
+    console.error(`ERROR: Unknown --db value "${dbArg}". Use: engagements, users, activity, or both`);
     process.exit(1);
   }
 

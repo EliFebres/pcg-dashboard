@@ -6,6 +6,8 @@ import { requireAuth, canModify, readOnlyError } from '@/app/lib/auth/require-au
 import { parseUploadedFile } from '@/app/lib/bulk-upload/parser';
 import { validateRows } from '@/app/lib/bulk-upload/validator';
 import type { ParsedRow } from '@/app/lib/bulk-upload/parser';
+import { emitEngagementChange } from '@/app/lib/events';
+import { logActivity } from '@/app/lib/activity/log';
 
 // POST /api/client-interactions/engagements/bulk
 // Query: ?commit=true to actually insert (otherwise returns preview/errors only)
@@ -150,6 +152,12 @@ export async function POST(req: NextRequest) {
       }
     });
 
+    emitEngagementChange('created');
+    void logActivity(req, {
+      action: 'engagement.bulk_upload',
+      entityType: 'engagement',
+      details: { inserted: validRows.length, filename },
+    });
     return NextResponse.json({ inserted: validRows.length, warnings }, { status: 201 });
   } catch (err) {
     console.error('Bulk insert error:', err);

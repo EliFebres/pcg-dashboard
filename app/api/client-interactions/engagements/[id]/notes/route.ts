@@ -6,6 +6,7 @@ import { verifyJWT, SESSION_COOKIE } from '@/app/lib/auth/jwt';
 import { canModify, readOnlyError } from '@/app/lib/auth/require-auth';
 import type { NoteEntry } from '@/app/lib/types/engagements';
 import { emitEngagementChange } from '@/app/lib/events';
+import { logActivity } from '@/app/lib/activity/log';
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -91,7 +92,14 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
     );
 
     emitEngagementChange('updated');
-    return NextResponse.json(rowToNoteEntry(rows[0]), { status: 201 });
+    const newNote = rowToNoteEntry(rows[0]);
+    void logActivity(req, {
+      action: 'note.create',
+      entityType: 'note',
+      entityId: newNote.id,
+      details: { engagementId, length: newNote.noteText.length },
+    });
+    return NextResponse.json(newNote, { status: 201 });
   } catch (err) {
     console.error('POST .../notes error:', err);
     return NextResponse.json({ error: 'Failed to add note' }, { status: 500 });

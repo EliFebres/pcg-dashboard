@@ -5,10 +5,9 @@ import { EventEmitter } from 'events';
 // NOTE: This approach does not work in serverless/edge deployments.
 
 declare global {
-  // eslint-disable-next-line no-var
   var _engagementEmitter: EventEmitter | undefined;
-  // eslint-disable-next-line no-var
   var _userEmitter: EventEmitter | undefined;
+  var _activityEmitter: EventEmitter | undefined;
 }
 
 if (!global._engagementEmitter) {
@@ -21,11 +20,31 @@ if (!global._userEmitter) {
   global._userEmitter.setMaxListeners(100);
 }
 
+if (!global._activityEmitter) {
+  global._activityEmitter = new EventEmitter();
+  global._activityEmitter.setMaxListeners(100);
+}
+
 export const engagementEmitter = global._engagementEmitter;
 export const userEmitter = global._userEmitter;
+export const activityEmitter = global._activityEmitter;
 
 export type EngagementEventType = 'created' | 'updated' | 'deleted';
 export type UserEventType = 'created' | 'deleted';
+
+export interface ActivityLogRow {
+  id: string;
+  timestamp: string;
+  userId: string | null;
+  userEmail: string | null;
+  userName: string | null;
+  action: string;
+  entityType: string | null;
+  entityId: string | null;
+  details: Record<string, unknown> | null;
+  ip: string | null;
+  userAgent: string | null;
+}
 
 export function emitEngagementChange(type: EngagementEventType) {
   engagementEmitter.emit('change', type);
@@ -33,4 +52,8 @@ export function emitEngagementChange(type: EngagementEventType) {
 
 export function emitUserChange(type: UserEventType) {
   userEmitter.emit('change', type);
+}
+
+export function emitActivityLog(row: ActivityLogRow) {
+  activityEmitter.emit('log', row);
 }

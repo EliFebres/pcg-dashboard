@@ -3,6 +3,7 @@ import { verifyJWT, SESSION_COOKIE } from './jwt';
 import type { JWTPayload } from './jwt';
 import type { ServerConstraints } from '../db/queries';
 import { READ_ONLY_TEAMS } from './types';
+import { touchPresence } from '../activity/log';
 
 export type AuthResult =
   | { payload: JWTPayload; error: null }
@@ -18,6 +19,11 @@ export async function requireAuth(req: NextRequest): Promise<AuthResult> {
     if (!payload.team && payload.role !== 'admin') {
       return { payload: null, error: NextResponse.json({ error: 'Session expired. Please log in again.' }, { status: 401 }) };
     }
+    void touchPresence(
+      payload.sub,
+      payload.email,
+      `${payload.firstName} ${payload.lastName}`.trim()
+    );
     return { payload, error: null };
   } catch {
     return { payload: null, error: NextResponse.json({ error: 'Invalid or expired session.' }, { status: 401 }) };

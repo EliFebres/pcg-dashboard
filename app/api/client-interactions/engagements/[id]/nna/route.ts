@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { execute } from '@/app/lib/db';
 import { requireAuth, teamConstraint, canModify, readOnlyError } from '@/app/lib/auth/require-auth';
 import { emitEngagementChange } from '@/app/lib/events';
+import { logActivity } from '@/app/lib/activity/log';
 
 // PATCH /api/client-interactions/engagements/:id/nna
 // Body: { nna: number | null }
@@ -39,6 +40,12 @@ export async function PATCH(
     );
 
     emitEngagementChange('updated');
+    void logActivity(req, {
+      action: 'engagement.nna_change',
+      entityType: 'engagement',
+      entityId: engagementId,
+      details: { nna: nna ?? null },
+    });
     return NextResponse.json({ id: engagementId, nna: nna ?? undefined });
   } catch (err) {
     console.error('PATCH .../nna error:', err);

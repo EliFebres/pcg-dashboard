@@ -7,6 +7,7 @@ import { hashPassword } from '@/app/lib/auth/password';
 import { signJWT, SESSION_COOKIE, COOKIE_OPTIONS } from '@/app/lib/auth/jwt';
 import { rowToUser } from '@/app/lib/auth/types';
 import { emitUserChange } from '@/app/lib/events';
+import { logActivity } from '@/app/lib/activity/log';
 
 const VALID_TEAMS = [
   'Portfolio Consulting Group',
@@ -85,6 +86,13 @@ export async function POST(req: NextRequest) {
 
     if (!isFirstUser) {
       emitUserChange('created');
+      void logActivity(req, {
+        action: 'auth.signup',
+        entityType: 'user',
+        entityId: id,
+        details: { team, office, firstUser: false },
+        userOverride: { id, email: email.toLowerCase(), name: `${firstName.trim()} ${lastName.trim()}` },
+      });
       return NextResponse.json(
         { message: 'Registration successful. Your account is pending admin approval.' },
         { status: 201 }
@@ -104,6 +112,14 @@ export async function POST(req: NextRequest) {
 
     const rows = await queryUsers('SELECT * FROM users WHERE id = ?', [id]);
     const user = rowToUser(rows[0] as Record<string, unknown>);
+
+    void logActivity(req, {
+      action: 'auth.signup',
+      entityType: 'user',
+      entityId: id,
+      details: { team, office, firstUser: true },
+      userOverride: { id, email: email.toLowerCase(), name: `${firstName.trim()} ${lastName.trim()}` },
+    });
 
     const response = NextResponse.json({ user, isFirstUser: true }, { status: 201 });
     response.cookies.set(SESSION_COOKIE, jwt, COOKIE_OPTIONS);

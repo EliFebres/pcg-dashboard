@@ -36,7 +36,7 @@ import fs from 'fs';
 import path from 'path';
 
 const KEEP_BACKUPS = 8;
-const DB_FILES = ['engagements.duckdb', 'users.duckdb'];
+const DB_FILES = ['engagements.duckdb', 'users.duckdb', 'activity.duckdb'];
 
 function pad(n: number) {
   return String(n).padStart(2, '0');

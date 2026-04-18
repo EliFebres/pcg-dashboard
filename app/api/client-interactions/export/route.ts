@@ -6,6 +6,7 @@ import { query } from '@/app/lib/db';
 import { buildFilterClause } from '@/app/lib/db/queries';
 import { requireAuth, teamConstraint } from '@/app/lib/auth/require-auth';
 import type { EngagementFilters } from '@/app/lib/api/client-interactions';
+import { logActivity } from '@/app/lib/activity/log';
 
 // GET /api/client-interactions/export
 // Same query params as the engagements list route (no pagination — exports all matching rows)
@@ -64,6 +65,12 @@ export async function GET(req: NextRequest) {
     }
 
     const buffer = await buildXlsx(rows, notesMap);
+
+    void logActivity(req, {
+      action: 'engagement.export',
+      entityType: 'engagement',
+      details: { rowCount: rows.length, filters },
+    });
 
     return new NextResponse(new Uint8Array(buffer), {
       headers: {

@@ -5,6 +5,7 @@ import { execute, query } from '@/app/lib/db';
 import { requireAuth, teamConstraint, canModify, readOnlyError } from '@/app/lib/auth/require-auth';
 import { toDisplayDate } from '@/app/lib/db/dateUtils';
 import { emitEngagementChange } from '@/app/lib/events';
+import { logActivity } from '@/app/lib/activity/log';
 
 // PATCH /api/client-interactions/engagements/:id/status
 // Body: { status: string }
@@ -49,6 +50,12 @@ export async function PATCH(
     }
 
     emitEngagementChange('updated');
+    void logActivity(req, {
+      action: 'engagement.status_change',
+      entityType: 'engagement',
+      entityId: engagementId,
+      details: { status },
+    });
     return NextResponse.json({
       id: engagementId,
       status,

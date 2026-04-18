@@ -6,6 +6,7 @@ import { rowToEngagement } from '@/app/lib/db/queries';
 import { requireAuth, teamConstraint, canModify, readOnlyError } from '@/app/lib/auth/require-auth';
 import { toISODate } from '@/app/lib/db/dateUtils';
 import { emitEngagementChange } from '@/app/lib/events';
+import { logActivity } from '@/app/lib/activity/log';
 
 // GET /api/client-interactions/engagements/:id
 export async function GET(
@@ -151,6 +152,13 @@ export async function PATCH(
       [engagementId]
     );
     emitEngagementChange('updated');
+    const changedFields = Object.keys(body).filter(k => k !== 'version' && k !== 'id');
+    void logActivity(req, {
+      action: 'engagement.update',
+      entityType: 'engagement',
+      entityId: engagementId,
+      details: { fields: changedFields },
+    });
     return NextResponse.json(rowToEngagement(rows[0]));
   } catch (err) {
     console.error('PATCH /api/client-interactions/engagements/[id] error:', err);
@@ -193,6 +201,11 @@ export async function DELETE(
     const teamParams = sc.team ? [sc.team] : [];
     await query(`DELETE FROM engagements WHERE id = ? ${teamClause}`, [engagementId, ...teamParams]);
     emitEngagementChange('deleted');
+    void logActivity(req, {
+      action: 'engagement.delete',
+      entityType: 'engagement',
+      entityId: engagementId,
+    });
     return new Response(null, { status: 204 });
   } catch (err) {
     console.error('DELETE /api/client-interactions/engagements/[id] error:', err);
