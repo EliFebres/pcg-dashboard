@@ -59,9 +59,9 @@ const SimpleNotesModal: React.FC<SimpleNotesModalProps> = ({
         <div className="relative z-10 px-5 py-4 border-b border-zinc-800/50 flex items-center justify-between">
           <div>
             <h2 className="text-base font-medium text-white">{title}</h2>
-            <p className="text-xs text-zinc-400 mt-0.5">{subtitle}</p>
+            <p className="text-xs text-muted mt-0.5">{subtitle}</p>
           </div>
-          <button onClick={onClose} className="p-1.5 text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors">
+          <button onClick={onClose} className="p-1.5 text-muted hover:text-white hover:bg-zinc-800 transition-colors">
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -75,7 +75,7 @@ const SimpleNotesModal: React.FC<SimpleNotesModalProps> = ({
           />
         </div>
         <div className="relative z-10 px-5 py-4 border-t border-zinc-800/50 flex items-center justify-end gap-3">
-          <button onClick={onClose} className="px-4 py-2 text-sm text-zinc-400 hover:text-white transition-colors">
+          <button onClick={onClose} className="px-4 py-2 text-sm text-muted hover:text-white transition-colors">
             Cancel
           </button>
           <button
@@ -84,7 +84,7 @@ const SimpleNotesModal: React.FC<SimpleNotesModalProps> = ({
             className={`flex items-center gap-2 px-4 py-2 text-sm font-medium transition-all ${
               hasChanges
                 ? 'bg-gradient-to-r from-blue-600 to-cyan-500 text-white hover:from-blue-500 hover:to-cyan-400'
-                : 'bg-zinc-800 text-zinc-500 cursor-not-allowed'
+                : 'bg-zinc-800 text-muted cursor-not-allowed'
             }`}
           >
             <Save className="w-4 h-4" />

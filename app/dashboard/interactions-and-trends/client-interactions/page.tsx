@@ -540,7 +540,7 @@ export default function EngagementsDashboard() {
           <div className="flex-1 flex items-center justify-center">
             <div className="flex flex-col items-center gap-4">
               <Loader2 className="w-8 h-8 text-cyan-400 animate-spin" />
-              <p className="text-zinc-400 text-sm">Loading dashboard...</p>
+              <p className="text-muted text-sm">Loading dashboard...</p>
             </div>
           </div>
         ) : (
@@ -561,9 +561,9 @@ export default function EngagementsDashboard() {
                   <div className="flex items-center justify-between mb-3 flex-shrink-0">
                     <div>
                       <h3 className="text-sm font-medium text-white">Completed Interactions</h3>
-                      <p className="text-xs text-zinc-500">Daily completed projects & touch points (1YR)</p>
+                      <p className="text-xs text-muted">Daily completed projects & touch points (1YR)</p>
                     </div>
-                    <button className="p-1.5 bg-zinc-800/50 backdrop-blur-sm text-zinc-400 hover:text-cyan-400 transition-colors" title="Download chart data">
+                    <button className="p-1.5 bg-zinc-800/50 backdrop-blur-sm text-muted hover:text-cyan-400 transition-colors" title="Download chart data">
                       <Download className="w-3.5 h-3.5" />
                     </button>
                   </div>
@@ -580,9 +580,9 @@ export default function EngagementsDashboard() {
                   <div className="flex items-center justify-between mb-4 flex-shrink-0">
                     <div>
                       <h3 className="text-sm font-medium text-white">GCG Department</h3>
-                      <p className="text-xs text-zinc-500">Total projects (1YR)</p>
+                      <p className="text-xs text-muted">Total projects (1YR)</p>
                     </div>
-                    <button className="p-1.5 bg-zinc-800/50 backdrop-blur-sm text-zinc-400 hover:text-cyan-400 transition-colors" title="Download chart data">
+                    <button className="p-1.5 bg-zinc-800/50 backdrop-blur-sm text-muted hover:text-cyan-400 transition-colors" title="Download chart data">
                       <Download className="w-3.5 h-3.5" />
                     </button>
                   </div>

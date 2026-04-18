@@ -256,13 +256,13 @@ const PortfolioModal: React.FC<PortfolioModalProps> = ({
         <div className="relative z-10 px-5 py-4 border-b border-zinc-800/50 flex items-center justify-between">
           <div>
             <h2 className="text-base font-medium text-white">Client Portfolio</h2>
-            <p className="text-xs text-zinc-400 mt-0.5">
+            <p className="text-xs text-muted mt-0.5">
               Add holdings with identifier, constituent type, asset class, and weight
             </p>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors"
+            className="p-1.5 text-muted hover:text-white hover:bg-zinc-800 transition-colors"
           >
             <X className="w-4 h-4" />
           </button>
@@ -277,14 +277,14 @@ const PortfolioModal: React.FC<PortfolioModalProps> = ({
           {/* Paste hint */}
           <div className="mb-4 p-3 bg-zinc-800/30 border border-zinc-700/30 rounded-lg">
             <div className="flex items-center justify-between gap-2">
-              <div className="flex items-center gap-2 text-xs text-zinc-400">
+              <div className="flex items-center gap-2 text-xs text-muted">
                 <ClipboardPaste className="w-4 h-4 flex-shrink-0" />
                 <span>Paste from Excel: columns should be Identifier, Constituent Type, Asset Class, Weight</span>
               </div>
               <a
                 href="/api/client-interactions/engagements/portfolio-template"
                 download
-                className="flex-shrink-0 flex items-center gap-1 text-xs text-zinc-500 hover:text-cyan-400 transition-colors"
+                className="flex-shrink-0 flex items-center gap-1 text-xs text-muted hover:text-cyan-400 transition-colors"
                 onClick={(e) => e.stopPropagation()}
               >
                 <Download className="w-3.5 h-3.5" />
@@ -303,10 +303,10 @@ const PortfolioModal: React.FC<PortfolioModalProps> = ({
           <div className="border border-zinc-700/50 rounded-lg overflow-hidden">
             {/* Header */}
             <div className="grid grid-cols-[1fr_1fr_1fr_100px_40px] gap-2 px-3 py-2 bg-zinc-800/50 border-b border-zinc-700/50">
-              <div className="text-xs font-medium text-zinc-400 uppercase tracking-wider">Identifier</div>
-              <div className="text-xs font-medium text-zinc-400 uppercase tracking-wider">Constituent Type</div>
-              <div className="text-xs font-medium text-zinc-400 uppercase tracking-wider">Asset Class</div>
-              <div className="text-xs font-medium text-zinc-400 uppercase tracking-wider">Weight</div>
+              <div className="text-xs font-medium text-muted uppercase tracking-wider">Identifier</div>
+              <div className="text-xs font-medium text-muted uppercase tracking-wider">Constituent Type</div>
+              <div className="text-xs font-medium text-muted uppercase tracking-wider">Asset Class</div>
+              <div className="text-xs font-medium text-muted uppercase tracking-wider">Weight</div>
               <div></div>
             </div>
 
@@ -362,14 +362,14 @@ const PortfolioModal: React.FC<PortfolioModalProps> = ({
                       placeholder="10"
                       className="w-full px-2 py-1.5 pr-6 bg-zinc-800/50 border border-zinc-700/50 rounded text-sm text-white placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-cyan-500/50 focus:border-cyan-500/50 transition-colors text-right font-mono"
                     />
-                    <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-zinc-500">
+                    <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted">
                       %
                     </span>
                   </div>
                   <button
                     type="button"
                     onClick={() => removeRow(holding.id)}
-                    className="p-1.5 text-zinc-500 hover:text-red-400 hover:bg-red-500/10 rounded transition-colors"
+                    className="p-1.5 text-muted hover:text-red-400 hover:bg-red-500/10 rounded transition-colors"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
@@ -393,7 +393,7 @@ const PortfolioModal: React.FC<PortfolioModalProps> = ({
           {/* Preview */}
           {hasValidHoldings && (
             <div className="mt-4 p-3 bg-zinc-800/30 border border-zinc-700/30 rounded-lg">
-              <p className="text-xs text-zinc-400 mb-2">
+              <p className="text-xs text-muted mb-2">
                 Normalized Preview (weights sum to 100%):
               </p>
               <div className="space-y-1">
@@ -403,8 +403,8 @@ const PortfolioModal: React.FC<PortfolioModalProps> = ({
                     className="grid grid-cols-[1fr_1fr_1fr_80px] gap-2 text-sm"
                   >
                     <span className="font-mono text-white">{h.identifier}</span>
-                    <span className="text-zinc-400">{h.constituentType}</span>
-                    <span className="text-zinc-400">{h.assetClass}</span>
+                    <span className="text-muted">{h.constituentType}</span>
+                    <span className="text-muted">{h.assetClass}</span>
                     <span className="font-mono text-cyan-400 text-right">
                       {(h.weight * 100).toFixed(2)}%
                     </span>
@@ -430,7 +430,7 @@ const PortfolioModal: React.FC<PortfolioModalProps> = ({
           <div className="flex items-center gap-3">
             <button
               onClick={onClose}
-              className="px-4 py-2 text-sm text-zinc-400 hover:text-white transition-colors"
+              className="px-4 py-2 text-sm text-muted hover:text-white transition-colors"
             >
               Cancel
             </button>
@@ -440,7 +440,7 @@ const PortfolioModal: React.FC<PortfolioModalProps> = ({
               className={`flex items-center gap-2 px-4 py-2 text-sm font-medium transition-all ${
                 hasChanges
                   ? 'bg-gradient-to-r from-blue-600 to-cyan-500 text-white hover:from-blue-500 hover:to-cyan-400'
-                  : 'bg-zinc-800 text-zinc-500 cursor-not-allowed'
+                  : 'bg-zinc-800 text-muted cursor-not-allowed'
               }`}
             >
               <Briefcase className="w-4 h-4" />

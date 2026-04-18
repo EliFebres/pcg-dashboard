@@ -24,7 +24,7 @@ const getTypeStyle = (type: string): string => {
     case 'Complement':
       return 'bg-amber-500/15 text-amber-400 border border-amber-500/30';
     default:
-      return 'bg-zinc-500/15 text-zinc-400 border border-zinc-500/30';
+      return 'bg-zinc-500/15 text-muted border border-zinc-500/30';
   }
 };
 
@@ -65,9 +65,9 @@ export default function HotTickersTable({
         <div className="flex items-center justify-between">
           <div>
             <h4 className="text-sm font-medium text-white">Hot Tickers & Firm Competitors</h4>
-            <p className="text-xs text-zinc-500">Most requested non-firm tickers with comparable firm funds</p>
+            <p className="text-xs text-muted">Most requested non-firm tickers with comparable firm funds</p>
           </div>
-          <button className="flex items-center gap-1.5 px-2 py-1 text-xs text-zinc-400 hover:text-cyan-400 transition-colors">
+          <button className="flex items-center gap-1.5 px-2 py-1 text-xs text-muted hover:text-cyan-400 transition-colors">
             <Download className="w-3.5 h-3.5" />
             Export
           </button>
@@ -78,7 +78,7 @@ export default function HotTickersTable({
         {isLoading ? (
           <div className="flex items-center justify-center py-16">
             <Loader2 className="w-6 h-6 text-cyan-400 animate-spin" />
-            <span className="ml-2 text-sm text-zinc-400">Loading hot tickers...</span>
+            <span className="ml-2 text-sm text-muted">Loading hot tickers...</span>
           </div>
         ) : error ? (
           <div className="flex items-center justify-center py-16">
@@ -86,24 +86,24 @@ export default function HotTickersTable({
           </div>
         ) : tickers.length === 0 ? (
           <div className="flex items-center justify-center py-16">
-            <span className="text-sm text-zinc-500">No tickers found</span>
+            <span className="text-sm text-muted">No tickers found</span>
           </div>
         ) : (
           <table className="w-full">
             <thead>
               <tr className="bg-zinc-800/30">
-                <th className="text-left text-xs font-medium text-zinc-400 uppercase tracking-wider px-4 py-3">#</th>
-                <th className="text-left text-xs font-medium text-zinc-400 uppercase tracking-wider px-4 py-3">Type</th>
-                <th className="text-left text-xs font-medium text-zinc-400 uppercase tracking-wider px-4 py-3">Competitor Ticker</th>
-                <th className="text-left text-xs font-medium text-zinc-400 uppercase tracking-wider px-4 py-3 w-0">Requests</th>
-                <th className="text-left text-xs font-medium text-zinc-400 uppercase tracking-wider px-4 py-3">Firm Alternative</th>
-                <th className="text-left text-xs font-medium text-zinc-400 uppercase tracking-wider px-4 py-3">1YR Return Δ</th>
-                <th className="text-left text-xs font-medium text-zinc-400 uppercase tracking-wider px-4 py-3">AUM</th>
-                <th className="text-left text-xs font-medium text-zinc-400 uppercase tracking-wider px-4 py-3">Flows</th>
-                <th className="text-left text-xs font-medium text-zinc-400 uppercase tracking-wider px-4 py-3">Expense Ratio</th>
-                <th className="text-center text-xs font-medium text-zinc-400 uppercase tracking-wider px-4 py-3">Notes</th>
-                <th className="text-center text-xs font-medium text-zinc-400 uppercase tracking-wider px-4 py-3">Talking Pts</th>
-                <th className="text-center text-xs font-medium text-zinc-400 uppercase tracking-wider px-4 py-3">PCR</th>
+                <th className="text-left text-xs font-medium text-muted uppercase tracking-wider px-4 py-3">#</th>
+                <th className="text-left text-xs font-medium text-muted uppercase tracking-wider px-4 py-3">Type</th>
+                <th className="text-left text-xs font-medium text-muted uppercase tracking-wider px-4 py-3">Competitor Ticker</th>
+                <th className="text-left text-xs font-medium text-muted uppercase tracking-wider px-4 py-3 w-0">Requests</th>
+                <th className="text-left text-xs font-medium text-muted uppercase tracking-wider px-4 py-3">Firm Alternative</th>
+                <th className="text-left text-xs font-medium text-muted uppercase tracking-wider px-4 py-3">1YR Return Δ</th>
+                <th className="text-left text-xs font-medium text-muted uppercase tracking-wider px-4 py-3">AUM</th>
+                <th className="text-left text-xs font-medium text-muted uppercase tracking-wider px-4 py-3">Flows</th>
+                <th className="text-left text-xs font-medium text-muted uppercase tracking-wider px-4 py-3">Expense Ratio</th>
+                <th className="text-center text-xs font-medium text-muted uppercase tracking-wider px-4 py-3">Notes</th>
+                <th className="text-center text-xs font-medium text-muted uppercase tracking-wider px-4 py-3">Talking Pts</th>
+                <th className="text-center text-xs font-medium text-muted uppercase tracking-wider px-4 py-3">PCR</th>
                 <th className="px-4 py-3"></th>
               </tr>
             </thead>
@@ -111,7 +111,7 @@ export default function HotTickersTable({
               {tickers.map((ticker) => (
                 <tr key={ticker.rank} className="hover:bg-white/[0.02] transition-colors">
                   <td className="px-4 py-3">
-                    <span className="text-sm font-medium text-zinc-500">{ticker.rank}</span>
+                    <span className="text-sm font-medium text-muted">{ticker.rank}</span>
                   </td>
                   <td className="px-4 py-3">
                     <div className="relative" ref={openTypeDropdown === ticker.ticker ? typeDropdownRef : null}>
@@ -131,7 +131,7 @@ export default function HotTickersTable({
                               className={`w-full px-3 py-2 text-left text-xs transition-colors ${
                                 ticker.type === type
                                   ? 'bg-cyan-500/20 text-cyan-400'
-                                  : 'text-zinc-300 hover:bg-zinc-700/50'
+                                  : 'text-muted hover:bg-zinc-700/50'
                               }`}
                             >
                               {type}
@@ -144,7 +144,7 @@ export default function HotTickersTable({
                   <td className="px-4 py-3">
                     <div>
                       <span className="text-sm font-bold text-cyan-400">{ticker.ticker}</span>
-                      <p className="text-xs text-zinc-500">{ticker.name}</p>
+                      <p className="text-xs text-muted">{ticker.name}</p>
                     </div>
                   </td>
                   <td className="px-4 py-3 text-center">
@@ -153,7 +153,7 @@ export default function HotTickersTable({
                   <td className="px-4 py-3">
                     <div>
                       <span className="text-sm font-bold text-amber-400">{ticker.firmCompetitor}</span>
-                      <p className="text-xs text-zinc-500">{ticker.firmName}</p>
+                      <p className="text-xs text-muted">{ticker.firmName}</p>
                     </div>
                   </td>
                   <td className="px-4 py-3">
@@ -164,19 +164,19 @@ export default function HotTickersTable({
                     >
                       {ticker.returnComparison.delta}
                     </span>
-                    <p className="text-xs text-zinc-500">
+                    <p className="text-xs text-muted">
                       {ticker.returnComparison.competitor}% vs {ticker.returnComparison.firm}%
                     </p>
                   </td>
                   <td className="px-4 py-3">
-                    <div className="text-sm text-zinc-300">
+                    <div className="text-sm text-muted">
                       <span className="text-cyan-400">${ticker.aum.competitor}</span>
-                      <span className="text-zinc-500"> vs </span>
+                      <span className="text-muted"> vs </span>
                       <span className="text-amber-400">${ticker.aum.firm}</span>
                     </div>
                   </td>
                   <td className="px-4 py-3">
-                    <div className="text-sm text-zinc-300">
+                    <div className="text-sm text-muted">
                       <span className="inline-flex items-center text-cyan-400">
                         {ticker.flows.competitor.startsWith('+') ? (
                           <ArrowUp className="w-3 h-3 text-emerald-400 mr-0.5" />
@@ -185,7 +185,7 @@ export default function HotTickersTable({
                         )}
                         {ticker.flows.competitor}
                       </span>
-                      <span className="text-zinc-500"> vs </span>
+                      <span className="text-muted"> vs </span>
                       <span className="inline-flex items-center text-amber-400">
                         {ticker.flows.firm.startsWith('+') ? (
                           <ArrowUp className="w-3 h-3 text-emerald-400 mr-0.5" />
@@ -197,9 +197,9 @@ export default function HotTickersTable({
                     </div>
                   </td>
                   <td className="px-4 py-3">
-                    <div className="text-sm text-zinc-300">
+                    <div className="text-sm text-muted">
                       <span className="text-cyan-400">{ticker.expenseRatio.competitor}%</span>
-                      <span className="text-zinc-500"> vs </span>
+                      <span className="text-muted"> vs </span>
                       <span className="text-amber-400">{ticker.expenseRatio.firm}%</span>
                     </div>
                   </td>
@@ -209,7 +209,7 @@ export default function HotTickersTable({
                       className={`p-1.5 transition-colors ${
                         ticker.notes
                           ? 'bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400'
-                          : 'bg-zinc-800/50 hover:bg-zinc-700/50 text-zinc-500 hover:text-zinc-300'
+                          : 'bg-zinc-800/50 hover:bg-zinc-700/50 text-muted hover:text-muted'
                       }`}
                       title={ticker.notes ? 'View/edit notes' : 'Add notes'}
                     >
@@ -222,7 +222,7 @@ export default function HotTickersTable({
                       className={`p-1.5 transition-colors ${
                         ticker.talkingPointsUrl
                           ? 'bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400'
-                          : 'bg-zinc-800/50 hover:bg-zinc-700/50 text-zinc-500 hover:text-zinc-300'
+                          : 'bg-zinc-800/50 hover:bg-zinc-700/50 text-muted hover:text-muted'
                       }`}
                       title={ticker.talkingPointsUrl ? 'View/edit talking points link' : 'Add talking points link'}
                     >
@@ -235,7 +235,7 @@ export default function HotTickersTable({
                       className={`p-1.5 transition-colors ${
                         ticker.pcrUrl
                           ? 'bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400'
-                          : 'bg-zinc-800/50 hover:bg-zinc-700/50 text-zinc-500 hover:text-zinc-300'
+                          : 'bg-zinc-800/50 hover:bg-zinc-700/50 text-muted hover:text-muted'
                       }`}
                       title={ticker.pcrUrl ? 'View/edit PCR link' : 'Add PCR link'}
                     >
@@ -243,7 +243,7 @@ export default function HotTickersTable({
                     </button>
                   </td>
                   <td className="px-4 py-3">
-                    <button className="p-1.5 hover:bg-white/[0.05] text-zinc-500 hover:text-zinc-300 transition-colors">
+                    <button className="p-1.5 hover:bg-white/[0.05] text-muted hover:text-muted transition-colors">
                       <MoreHorizontal className="w-4 h-4" />
                     </button>
                   </td>

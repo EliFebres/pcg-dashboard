@@ -140,11 +140,11 @@ const NNAModal: React.FC<NNAModalProps> = ({
         <div className="relative z-10 px-5 py-4 border-b border-zinc-800/50 flex items-center justify-between">
           <div>
             <h2 className="text-base font-medium text-white">Net New Assets</h2>
-            <p className="text-xs text-zinc-400 mt-0.5">{clientDisplay}</p>
+            <p className="text-xs text-muted mt-0.5">{clientDisplay}</p>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors"
+            className="p-1.5 text-muted hover:text-white hover:bg-zinc-800 transition-colors"
           >
             <X className="w-4 h-4" />
           </button>
@@ -154,11 +154,11 @@ const NNAModal: React.FC<NNAModalProps> = ({
         <div className="relative z-10 p-5">
           <div className="space-y-4">
             <div>
-              <label className="block text-xs font-medium text-zinc-400 mb-2">
+              <label className="block text-xs font-medium text-muted mb-2">
                 Enter NNA Amount
               </label>
               <div className="relative">
-                <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
+                <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
                 <input
                   ref={inputRef}
                   type="text"
@@ -168,7 +168,7 @@ const NNAModal: React.FC<NNAModalProps> = ({
                   className="w-full pl-9 pr-3 py-2.5 bg-zinc-800/50 border border-zinc-700/50 text-sm text-white placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-colors font-mono"
                 />
               </div>
-              <p className="mt-2 text-xs text-zinc-500">
+              <p className="mt-2 text-xs text-muted">
                 Supports formats: 50M, 1.5B, 500K, or exact numbers like 50,000,000
               </p>
             </div>
@@ -176,7 +176,7 @@ const NNAModal: React.FC<NNAModalProps> = ({
             {/* Preview */}
             {nnaValue && (
               <div className="p-3 bg-zinc-800/30 border border-zinc-700/30">
-                <p className="text-xs text-zinc-400 mb-1">Preview:</p>
+                <p className="text-xs text-muted mb-1">Preview:</p>
                 <p className={`text-lg font-mono ${parsedPreview ? 'text-emerald-400' : 'text-red-400'}`}>
                   {parsedPreview ? formatNNADisplay(parsedPreview) : 'Invalid format'}
                 </p>
@@ -200,7 +200,7 @@ const NNAModal: React.FC<NNAModalProps> = ({
           <div className="flex items-center gap-3">
             <button
               onClick={onClose}
-              className="px-4 py-2 text-sm text-zinc-400 hover:text-white transition-colors"
+              className="px-4 py-2 text-sm text-muted hover:text-white transition-colors"
             >
               Cancel
             </button>
@@ -210,7 +210,7 @@ const NNAModal: React.FC<NNAModalProps> = ({
               className={`flex items-center gap-2 px-4 py-2 text-sm font-medium transition-all ${
                 hasChanges && (!nnaValue || parsedPreview)
                   ? 'bg-gradient-to-r from-emerald-600 to-cyan-500 text-white hover:from-emerald-500 hover:to-cyan-400'
-                  : 'bg-zinc-800 text-zinc-500 cursor-not-allowed'
+                  : 'bg-zinc-800 text-muted cursor-not-allowed'
               }`}
             >
               <DollarSign className="w-4 h-4" />

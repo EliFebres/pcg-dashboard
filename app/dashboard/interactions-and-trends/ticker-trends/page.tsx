@@ -191,7 +191,7 @@ export default function TickerTrendsDashboard() {
           <div className="flex items-center gap-2 mb-4">
             <Flame className="w-5 h-5 text-cyan-400" />
             <h3 className="text-lg font-semibold text-white">Top 10 Hot Tickers & Firm Competitors</h3>
-            <span className="text-xs text-zinc-500 ml-2">Most requested non-firm tickers with comparable firm funds</span>
+            <span className="text-xs text-muted ml-2">Most requested non-firm tickers with comparable firm funds</span>
           </div>
 
           {/* Hot Tickers Table */}
@@ -214,13 +214,13 @@ export default function TickerTrendsDashboard() {
             <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
             <div className="relative z-10 p-4 border-b border-zinc-800/50">
               <h4 className="text-sm font-medium text-white">Top 10 Hot Tickers Request Breakdown by Ticker</h4>
-              <p className="text-xs text-zinc-500">Distribution of request types across top tickers</p>
+              <p className="text-xs text-muted">Distribution of request types across top tickers</p>
             </div>
             <div className="relative z-10 p-4" style={{ height: 420 }}>
               {isLoading ? (
                 <div className="flex items-center justify-center h-full">
                   <Loader2 className="w-6 h-6 text-cyan-400 animate-spin" />
-                  <span className="ml-2 text-sm text-zinc-400">Loading chart...</span>
+                  <span className="ml-2 text-sm text-muted">Loading chart...</span>
                 </div>
               ) : (
                 <RequestBreakdownChart tickers={filteredTickers} />
@@ -241,7 +241,7 @@ export default function TickerTrendsDashboard() {
         subtitle={
           <>
             <span className="text-cyan-400 font-medium">{notesModalTicker?.ticker}</span>
-            <span className="text-zinc-500 mx-1">·</span>
+            <span className="text-muted mx-1">·</span>
             {notesModalTicker?.name}
           </>
         }

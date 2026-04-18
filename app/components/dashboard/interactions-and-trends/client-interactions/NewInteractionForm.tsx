@@ -348,7 +348,7 @@ export default function NewInteractionForm({ isOpen, onClose, onSubmit, onUpdate
               <h2 className="text-lg font-semibold text-white">
                 {isEditMode ? 'Edit Interaction' : 'New Interaction'}
               </h2>
-              <p className="text-sm text-zinc-500">
+              <p className="text-sm text-muted">
                 {isEditMode ? 'Update the client interaction record' : 'Create a new client interaction record'}
               </p>
             </div>
@@ -357,14 +357,14 @@ export default function NewInteractionForm({ isOpen, onClose, onSubmit, onUpdate
                 <button
                   type="button"
                   onClick={onBulkUploadClick}
-                  className="px-3 py-1.5 text-sm text-zinc-400 hover:text-white bg-zinc-800 hover:bg-zinc-700 rounded-lg transition-colors"
+                  className="px-3 py-1.5 text-sm text-muted hover:text-white bg-zinc-800 hover:bg-zinc-700 rounded-lg transition-colors"
                 >
                   ↑ Bulk Upload
                 </button>
               )}
               <button
                 onClick={onClose}
-                className="p-2 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-lg transition-colors"
+                className="p-2 text-muted hover:text-white hover:bg-zinc-800 rounded-lg transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -377,7 +377,7 @@ export default function NewInteractionForm({ isOpen, onClose, onSubmit, onUpdate
               {/* Row 1: Intake Type + Project Type + Interaction Type for Ad-Hoc */}
               <div className={`grid gap-4 ${formData.intakeType === 'GCG Ad-Hoc' ? 'grid-cols-3' : 'grid-cols-2'}`}>
                 <div>
-                  <label className="block text-sm font-medium text-zinc-300 mb-1.5">
+                  <label className="block text-sm font-medium text-muted mb-1.5">
                     Intake Type <span className="text-red-400">*</span>
                   </label>
                   <div className="relative">
@@ -391,12 +391,12 @@ export default function NewInteractionForm({ isOpen, onClose, onSubmit, onUpdate
                       <option value="SRRF" className="bg-zinc-800">SRRF</option>
                       <option value="GCG Ad-Hoc" className="bg-zinc-800">GCG Ad-Hoc</option>
                     </select>
-                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 pointer-events-none" />
+                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted pointer-events-none" />
                   </div>
                   {errors.intakeType && <p className="mt-1 text-xs text-red-400">{errors.intakeType}</p>}
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-zinc-300 mb-1.5">
+                  <label className="block text-sm font-medium text-muted mb-1.5">
                     Project Type <span className="text-red-400">*</span>
                   </label>
                   <div className="relative">
@@ -410,13 +410,13 @@ export default function NewInteractionForm({ isOpen, onClose, onSubmit, onUpdate
                         <option key={type} value={type} className="bg-zinc-800">{type}</option>
                       ))}
                     </select>
-                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 pointer-events-none" />
+                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted pointer-events-none" />
                   </div>
                   {errors.projectType && <p className="mt-1 text-xs text-red-400">{errors.projectType}</p>}
                 </div>
                 {formData.intakeType === 'GCG Ad-Hoc' && (
                   <div>
-                    <label className="block text-sm font-medium text-zinc-300 mb-1.5">
+                    <label className="block text-sm font-medium text-muted mb-1.5">
                       Interaction Type <span className="text-red-400">*</span>
                     </label>
                     <div className="relative">
@@ -430,7 +430,7 @@ export default function NewInteractionForm({ isOpen, onClose, onSubmit, onUpdate
                         <option value="Email" className="bg-zinc-800">Email</option>
                         <option value="Teams" className="bg-zinc-800">Teams</option>
                       </select>
-                      <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 pointer-events-none" />
+                      <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted pointer-events-none" />
                     </div>
                     {errors.adHocChannel && <p className="mt-1 text-xs text-red-400">{errors.adHocChannel}</p>}
                   </div>
@@ -440,8 +440,8 @@ export default function NewInteractionForm({ isOpen, onClose, onSubmit, onUpdate
               {/* Tickers Mentioned - Only for GCG Ad-Hoc */}
               {formData.intakeType === 'GCG Ad-Hoc' && (
                 <div>
-                  <label className="block text-sm font-medium text-zinc-300 mb-1.5">
-                    Tickers Mentioned <span className="text-zinc-500 font-normal text-xs">(Optional - for Ticker Trends)</span>
+                  <label className="block text-sm font-medium text-muted mb-1.5">
+                    Tickers Mentioned <span className="text-muted font-normal text-xs">(Optional - for Ticker Trends)</span>
                   </label>
                   <div className="flex flex-wrap gap-1.5 p-2 bg-zinc-800/50 border border-zinc-700 rounded-lg min-h-[42px] focus-within:border-cyan-500/50 transition-colors">
                     {formData.tickersMentioned?.map((ticker) => (
@@ -469,15 +469,15 @@ export default function NewInteractionForm({ isOpen, onClose, onSubmit, onUpdate
                       className="flex-1 min-w-[120px] bg-transparent border-none text-white text-sm placeholder-zinc-500 focus:outline-none"
                     />
                   </div>
-                  <p className="mt-1 text-xs text-zinc-500">Press Enter or comma to add. Used for Ticker Trends analytics.</p>
+                  <p className="mt-1 text-xs text-muted">Press Enter or comma to add. Used for Ticker Trends analytics.</p>
                 </div>
               )}
 
               {/* Row 2: External Client + Internal Client */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-zinc-300 mb-1.5">
-                    External Client <span className="text-zinc-500 font-normal text-xs">(Optional)</span>
+                  <label className="block text-sm font-medium text-muted mb-1.5">
+                    External Client <span className="text-muted font-normal text-xs">(Optional)</span>
                   </label>
                   <input
                     type="text"
@@ -488,7 +488,7 @@ export default function NewInteractionForm({ isOpen, onClose, onSubmit, onUpdate
                   />
                 </div>
                 <div className="relative" ref={internalClientRef}>
-                  <label className="block text-sm font-medium text-zinc-300 mb-1.5">
+                  <label className="block text-sm font-medium text-muted mb-1.5">
                     Internal Client (GCG) <span className="text-red-400">*</span>
                   </label>
                   <div className="relative">
@@ -504,7 +504,7 @@ export default function NewInteractionForm({ isOpen, onClose, onSubmit, onUpdate
                       placeholder={gcgClientsLoading ? 'Loading...' : 'Search or add a client...'}
                       className="w-full px-3 py-2 bg-zinc-800/50 border border-zinc-700 rounded-lg text-white placeholder-zinc-500 focus:outline-none focus:border-cyan-500/50 transition-colors"
                     />
-                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 pointer-events-none" />
+                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted pointer-events-none" />
                   </div>
                   {/* Dropdown */}
                   {showInternalClientDropdown && !gcgClientsLoading && (
@@ -512,7 +512,7 @@ export default function NewInteractionForm({ isOpen, onClose, onSubmit, onUpdate
                       {filteredClientGroups.length > 0 ? (
                         filteredClientGroups.map(([dept, names]) => (
                           <div key={dept}>
-                            <div className="px-3 py-1.5 text-xs font-semibold text-zinc-500 uppercase tracking-wider bg-zinc-800/80 sticky top-0">
+                            <div className="px-3 py-1.5 text-xs font-semibold text-muted uppercase tracking-wider bg-zinc-800/80 sticky top-0">
                               {dept}
                             </div>
                             {names.map(name => (
@@ -528,7 +528,7 @@ export default function NewInteractionForm({ isOpen, onClose, onSubmit, onUpdate
                                 className={`w-full px-3 py-2 text-left text-sm transition-colors ${
                                   formData.internalClient === name
                                     ? 'bg-cyan-500/20 text-cyan-400'
-                                    : 'text-zinc-300 hover:bg-zinc-700/50'
+                                    : 'text-muted hover:bg-zinc-700/50'
                                 }`}
                               >
                                 {name}
@@ -537,7 +537,7 @@ export default function NewInteractionForm({ isOpen, onClose, onSubmit, onUpdate
                           </div>
                         ))
                       ) : !trimmedSearch ? (
-                        <div className="px-3 py-3 text-sm text-zinc-500 text-center">
+                        <div className="px-3 py-3 text-sm text-muted text-center">
                           No clients yet — type a name to add one
                         </div>
                       ) : null}
@@ -552,7 +552,7 @@ export default function NewInteractionForm({ isOpen, onClose, onSubmit, onUpdate
                           }}
                           className="w-full px-3 py-2 text-left text-sm text-cyan-400 hover:bg-zinc-700/50 flex items-center gap-2 border-t border-zinc-700/50"
                         >
-                          <span className="text-zinc-500 text-base leading-none">+</span>
+                          <span className="text-muted text-base leading-none">+</span>
                           Add &quot;{trimmedSearch}&quot; as new GCG client
                         </button>
                       )}
@@ -570,13 +570,13 @@ export default function NewInteractionForm({ isOpen, onClose, onSubmit, onUpdate
                     {formData.internalClientDept ? (
                       /* Existing client — show dept as read-only */
                       <div className="flex items-center gap-2 px-3 py-2 bg-zinc-800/30 border border-zinc-700/50 rounded-lg">
-                        <span className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">Dept</span>
-                        <span className="text-sm text-zinc-300">{formData.internalClientDept}</span>
+                        <span className="text-xs font-semibold text-muted uppercase tracking-wider">Dept</span>
+                        <span className="text-sm text-muted">{formData.internalClientDept}</span>
                       </div>
                     ) : (
                       /* New client — dept selector */
                       <div>
-                        <label className="block text-sm font-medium text-zinc-300 mb-1.5">
+                        <label className="block text-sm font-medium text-muted mb-1.5">
                           Department <span className="text-red-400">*</span>
                         </label>
                         <Select
@@ -593,17 +593,17 @@ export default function NewInteractionForm({ isOpen, onClose, onSubmit, onUpdate
 
               {/* Row 3: Team Members (4 columns, grouped by office) */}
               <div>
-                <label className="block text-sm font-medium text-zinc-300 mb-1.5">
+                <label className="block text-sm font-medium text-muted mb-1.5">
                   Team Members <span className="text-red-400">*</span>
                 </label>
                 {Object.keys(teamMembersByOffice).length === 0 ? (
-                  <p className="text-xs text-zinc-500 py-2">No team members configured yet.</p>
+                  <p className="text-xs text-muted py-2">No team members configured yet.</p>
                 ) : (
                   <div className="space-y-2">
                     {Object.entries(teamMembersByOffice).map(([office, members]) => (
                       <div key={office}>
                         {Object.keys(teamMembersByOffice).length > 1 && (
-                          <p className="text-xs text-zinc-600 uppercase tracking-wider mb-1">{office}</p>
+                          <p className="text-xs text-muted uppercase tracking-wider mb-1">{office}</p>
                         )}
                         <div className="grid grid-cols-4 gap-1.5">
                           {members.map((member) => (
@@ -614,7 +614,7 @@ export default function NewInteractionForm({ isOpen, onClose, onSubmit, onUpdate
                               className={`px-2 py-1.5 text-xs font-medium rounded-md border transition-all flex items-center justify-between ${
                                 formData.teamMembers.includes(member.displayName)
                                   ? 'bg-cyan-500/20 border-cyan-500/50 text-cyan-400'
-                                  : 'bg-zinc-800/50 border-zinc-700 text-zinc-400 hover:border-zinc-600'
+                                  : 'bg-zinc-800/50 border-zinc-700 text-muted hover:border-zinc-600'
                               }`}
                             >
                               <span className="truncate">{member.displayName}</span>
@@ -632,7 +632,7 @@ export default function NewInteractionForm({ isOpen, onClose, onSubmit, onUpdate
               {/* Row 4: Date Started + Date Finished */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-zinc-300 mb-1.5">
+                  <label className="block text-sm font-medium text-muted mb-1.5">
                     Date Started <span className="text-red-400">*</span>
                   </label>
                   <input
@@ -646,8 +646,8 @@ export default function NewInteractionForm({ isOpen, onClose, onSubmit, onUpdate
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-zinc-300 mb-1.5">
-                    Date Finished <span className="text-zinc-500 font-normal text-xs">(Optional)</span>
+                  <label className="block text-sm font-medium text-muted mb-1.5">
+                    Date Finished <span className="text-muted font-normal text-xs">(Optional)</span>
                   </label>
                   <input
                     type="date"
@@ -672,8 +672,8 @@ export default function NewInteractionForm({ isOpen, onClose, onSubmit, onUpdate
               {/* Row 5: NNA + Client Portfolio */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-zinc-300 mb-1.5">
-                    Net New Assets <span className="text-zinc-500 font-normal text-xs">(Optional)</span>
+                  <label className="block text-sm font-medium text-muted mb-1.5">
+                    Net New Assets <span className="text-muted font-normal text-xs">(Optional)</span>
                   </label>
                   <button
                     type="button"
@@ -681,7 +681,7 @@ export default function NewInteractionForm({ isOpen, onClose, onSubmit, onUpdate
                     className={`w-full h-[38px] px-3 bg-zinc-800/50 border rounded-lg text-sm text-left transition-colors flex items-center gap-2 ${
                       formData.nna
                         ? 'border-emerald-500/50 text-emerald-400 hover:border-emerald-500/70'
-                        : 'border-zinc-700 text-zinc-400 hover:border-cyan-500/50'
+                        : 'border-zinc-700 text-muted hover:border-cyan-500/50'
                     }`}
                   >
                     <DollarSign className="w-4 h-4" />
@@ -690,8 +690,8 @@ export default function NewInteractionForm({ isOpen, onClose, onSubmit, onUpdate
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-zinc-300 mb-1.5">
-                    Client Portfolio <span className="text-zinc-500 font-normal text-xs">(Optional)</span>
+                  <label className="block text-sm font-medium text-muted mb-1.5">
+                    Client Portfolio <span className="text-muted font-normal text-xs">(Optional)</span>
                   </label>
                   <button
                     type="button"
@@ -699,7 +699,7 @@ export default function NewInteractionForm({ isOpen, onClose, onSubmit, onUpdate
                     className={`w-full h-[38px] px-3 bg-zinc-800/50 border rounded-lg text-sm text-left transition-colors flex items-center gap-2 ${
                       formData.portfolio && formData.portfolio.length > 0
                         ? 'border-cyan-500/50 text-cyan-400 hover:border-cyan-500/70'
-                        : 'border-zinc-700 text-zinc-400 hover:border-cyan-500/50'
+                        : 'border-zinc-700 text-muted hover:border-cyan-500/50'
                     }`}
                   >
                     <Briefcase className="w-4 h-4" />
@@ -712,11 +712,11 @@ export default function NewInteractionForm({ isOpen, onClose, onSubmit, onUpdate
 
               {/* Row 6: Notes */}
               <div>
-                <label className="block text-sm font-medium text-zinc-300 mb-1.5">
-                  Notes <span className="text-zinc-500 font-normal text-xs">(Optional)</span>
+                <label className="block text-sm font-medium text-muted mb-1.5">
+                  Notes <span className="text-muted font-normal text-xs">(Optional)</span>
                 </label>
                 {!editingEngagement?.id ? (
-                  <div className="w-full h-[38px] px-3 bg-zinc-800/50 border border-zinc-700 rounded-lg text-sm text-zinc-500 flex items-center gap-2 cursor-not-allowed select-none">
+                  <div className="w-full h-[38px] px-3 bg-zinc-800/50 border border-zinc-700 rounded-lg text-sm text-muted flex items-center gap-2 cursor-not-allowed select-none">
                     <FileText className="w-4 h-4" />
                     Notes available after saving
                   </div>
@@ -727,7 +727,7 @@ export default function NewInteractionForm({ isOpen, onClose, onSubmit, onUpdate
                     className={`w-full h-[38px] px-3 bg-zinc-800/50 border rounded-lg text-sm text-left transition-colors flex items-center gap-2 ${
                       localNoteCount > 0
                         ? 'border-cyan-500/50 text-cyan-400 hover:border-cyan-500/70'
-                        : 'border-zinc-700 text-zinc-400 hover:border-cyan-500/50'
+                        : 'border-zinc-700 text-muted hover:border-cyan-500/50'
                     }`}
                   >
                     <FileText className="w-4 h-4" />
@@ -765,7 +765,7 @@ export default function NewInteractionForm({ isOpen, onClose, onSubmit, onUpdate
               <button
                 type="button"
                 onClick={onClose}
-                className="px-4 py-2 text-sm font-medium text-zinc-400 hover:text-white transition-colors"
+                className="px-4 py-2 text-sm font-medium text-muted hover:text-white transition-colors"
               >
                 Cancel
               </button>

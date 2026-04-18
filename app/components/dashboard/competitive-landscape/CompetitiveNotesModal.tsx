@@ -132,11 +132,11 @@ const CompetitiveNotesModal: React.FC<CompetitiveNotesModalProps> = ({
         <div className="relative z-10 px-5 py-4 border-b border-zinc-800/50 flex items-center justify-between flex-shrink-0">
           <div>
             <h2 className="text-base font-medium text-white">{title}</h2>
-            <p className="text-xs text-zinc-400 mt-0.5">{subtitle}</p>
+            <p className="text-xs text-muted mt-0.5">{subtitle}</p>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors"
+            className="p-1.5 text-muted hover:text-white hover:bg-zinc-800 transition-colors"
           >
             <X className="w-4 h-4" />
           </button>
@@ -145,10 +145,10 @@ const CompetitiveNotesModal: React.FC<CompetitiveNotesModalProps> = ({
         <div ref={notesListRef} className="relative z-10 flex-1 overflow-y-auto min-h-0 p-5 space-y-3">
           {loading ? (
             <div className="flex items-center justify-center py-8">
-              <Loader2 className="w-5 h-5 text-zinc-500 animate-spin" />
+              <Loader2 className="w-5 h-5 text-muted animate-spin" />
             </div>
           ) : notes.length === 0 ? (
-            <p className="text-sm text-zinc-500 text-center py-8">No notes yet. Add the first one below.</p>
+            <p className="text-sm text-muted text-center py-8">No notes yet. Add the first one below.</p>
           ) : (
             notes.map(entry => {
               const isOwner = user?.id === entry.authorId;
@@ -160,14 +160,14 @@ const CompetitiveNotesModal: React.FC<CompetitiveNotesModalProps> = ({
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
                       <span className="text-xs font-medium text-cyan-400">{entry.authorName}</span>
-                      <span className="text-zinc-600 text-xs">&middot;</span>
-                      <span className="text-xs text-zinc-500">{formatNoteDate(entry.createdAt)}</span>
+                      <span className="text-muted text-xs">&middot;</span>
+                      <span className="text-xs text-muted">{formatNoteDate(entry.createdAt)}</span>
                     </div>
                     {isOwner && !isEditing && (
                       <div className="flex items-center gap-1">
                         <button
                           onClick={() => startEdit(entry)}
-                          className="p-1 text-zinc-500 hover:text-zinc-300 transition-colors"
+                          className="p-1 text-muted hover:text-muted transition-colors"
                           title="Edit note"
                         >
                           <Pencil className="w-3.5 h-3.5" />
@@ -175,7 +175,7 @@ const CompetitiveNotesModal: React.FC<CompetitiveNotesModalProps> = ({
                         <button
                           onClick={() => handleDeleteNote(entry.id)}
                           disabled={isDeleting}
-                          className="p-1 text-zinc-500 hover:text-red-400 transition-colors disabled:opacity-50"
+                          className="p-1 text-muted hover:text-red-400 transition-colors disabled:opacity-50"
                           title="Delete note"
                         >
                           {isDeleting
@@ -199,7 +199,7 @@ const CompetitiveNotesModal: React.FC<CompetitiveNotesModalProps> = ({
                       <div className="flex items-center gap-2 justify-end">
                         <button
                           onClick={cancelEdit}
-                          className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-zinc-400 hover:text-white transition-colors"
+                          className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-muted hover:text-white transition-colors"
                         >
                           <XCircle className="w-3.5 h-3.5" />
                           Cancel
@@ -235,7 +235,7 @@ const CompetitiveNotesModal: React.FC<CompetitiveNotesModalProps> = ({
           <div className="flex items-center justify-end gap-3">
             <button
               onClick={onClose}
-              className="px-4 py-2 text-sm text-zinc-400 hover:text-white transition-colors"
+              className="px-4 py-2 text-sm text-muted hover:text-white transition-colors"
             >
               Close
             </button>
@@ -245,7 +245,7 @@ const CompetitiveNotesModal: React.FC<CompetitiveNotesModalProps> = ({
               className={`flex items-center gap-2 px-4 py-2 text-sm font-medium transition-all ${
                 newText && !saving
                   ? 'bg-gradient-to-r from-blue-600 to-cyan-500 text-white hover:from-blue-500 hover:to-cyan-400'
-                  : 'bg-zinc-800 text-zinc-500 cursor-not-allowed'
+                  : 'bg-zinc-800 text-muted cursor-not-allowed'
               }`}
             >
               {saving ? (

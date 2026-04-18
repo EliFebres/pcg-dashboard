@@ -54,13 +54,13 @@ function CustomTooltip({
               className="inline-block w-2.5 h-2.5"
               style={{ backgroundColor: entry.color }}
             />
-            <span className="text-zinc-400">{entry.name}</span>
+            <span className="text-muted">{entry.name}</span>
           </div>
           <span className="text-zinc-200 font-medium">{entry.value}</span>
         </div>
       ))}
       <div className="border-t border-zinc-700 mt-1.5 pt-1.5 flex items-center justify-between text-xs">
-        <span className="text-zinc-400">Total</span>
+        <span className="text-muted">Total</span>
         <span className="text-white font-semibold">{total}</span>
       </div>
     </div>
@@ -85,7 +85,7 @@ function RequestBreakdownChart({ tickers }: RequestBreakdownChartProps) {
   if (chartData.length === 0) {
     return (
       <div className="flex items-center justify-center h-full">
-        <span className="text-sm text-zinc-500">No breakdown data available</span>
+        <span className="text-sm text-muted">No breakdown data available</span>
       </div>
     );
   }
@@ -140,7 +140,7 @@ function RequestBreakdownChart({ tickers }: RequestBreakdownChartProps) {
               className="inline-block w-2.5 h-2.5"
               style={{ backgroundColor: cat.color }}
             />
-            <span className="text-xs text-zinc-400">{cat.label}</span>
+            <span className="text-xs text-muted">{cat.label}</span>
           </div>
         ))}
       </div>

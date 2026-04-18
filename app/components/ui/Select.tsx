@@ -49,7 +49,7 @@ export function Select({
     hasError
       ? 'border-red-500/50 focus:border-red-500/50 focus:ring-red-500/20'
       : 'border-zinc-700/50 focus:border-cyan-500/50 focus:ring-cyan-500/30'
-  } ${value ? 'text-zinc-100' : 'text-zinc-500'}`;
+  } ${value ? 'text-zinc-100' : 'text-muted'}`;
 
   return (
     <RadixSelect.Root value={value || undefined} onValueChange={onValueChange} disabled={disabled}>
@@ -62,7 +62,7 @@ export function Select({
           {triggerLabel}
         </RadixSelect.Value>
         <RadixSelect.Icon asChild>
-          <ChevronDown className="w-4 h-4 flex-shrink-0 text-zinc-500" />
+          <ChevronDown className="w-4 h-4 flex-shrink-0 text-muted" />
         </RadixSelect.Icon>
       </RadixSelect.Trigger>
 

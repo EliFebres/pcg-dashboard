@@ -38,7 +38,7 @@ const RichTextDisplay: React.FC<RichTextDisplayProps> = ({ html, className = '' 
         [&_strong]:font-semibold [&_strong]:text-white
         [&_em]:italic
         [&_code]:font-mono [&_code]:text-xs [&_code]:bg-zinc-800 [&_code]:px-1 [&_code]:rounded
-        [&_blockquote]:border-l-2 [&_blockquote]:border-zinc-600 [&_blockquote]:pl-3 [&_blockquote]:text-zinc-400
+        [&_blockquote]:border-l-2 [&_blockquote]:border-zinc-600 [&_blockquote]:pl-3 [&_blockquote]:text-muted
         ${className}`}
       dangerouslySetInnerHTML={{ __html: clean }}
     />

@@ -73,7 +73,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
       onClick={() => editor?.commands.focus()}
     >
       {isEmpty && (
-        <span className="absolute top-2.5 left-3 text-zinc-500 pointer-events-none select-none">
+        <span className="absolute top-2.5 left-3 text-muted pointer-events-none select-none">
           {placeholder}
         </span>
       )}

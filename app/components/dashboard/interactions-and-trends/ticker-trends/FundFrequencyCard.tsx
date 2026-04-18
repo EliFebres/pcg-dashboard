@@ -131,13 +131,13 @@ function FundDetailCard({ tickers, isLoading }: FundDetailCardProps) {
         <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
         <div className="relative z-10 p-5">
           <div className="flex items-center gap-1.5">
-            <Activity className="w-4 h-4 text-zinc-500" />
-            <h4 className="text-sm font-medium text-zinc-500">Request Frequency</h4>
+            <Activity className="w-4 h-4 text-muted" />
+            <h4 className="text-sm font-medium text-muted">Request Frequency</h4>
           </div>
         </div>
         <div className="relative z-10 flex items-center justify-center" style={{ height: 310 }}>
           <Loader2 className="w-6 h-6 text-cyan-400 animate-spin" />
-          <span className="ml-2 text-sm text-zinc-400">Loading...</span>
+          <span className="ml-2 text-sm text-muted">Loading...</span>
         </div>
       </div>
     );
@@ -150,12 +150,12 @@ function FundDetailCard({ tickers, isLoading }: FundDetailCardProps) {
         <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
         <div className="relative z-10 p-5">
           <div className="flex items-center gap-1.5">
-            <Activity className="w-4 h-4 text-zinc-500" />
-            <h4 className="text-sm font-medium text-zinc-500">Request Frequency</h4>
+            <Activity className="w-4 h-4 text-muted" />
+            <h4 className="text-sm font-medium text-muted">Request Frequency</h4>
           </div>
         </div>
         <div className="relative z-10 flex items-center justify-center" style={{ height: 310 }}>
-          <span className="text-sm text-zinc-500">No tickers available</span>
+          <span className="text-sm text-muted">No tickers available</span>
         </div>
       </div>
     );
@@ -200,7 +200,7 @@ function FundDetailCard({ tickers, isLoading }: FundDetailCardProps) {
                       }}
                       className={`w-full px-3 py-2 text-left text-xs flex items-center justify-between transition-colors ${t.ticker === selectedTicker
                         ? 'bg-cyan-500/20 text-cyan-400'
-                        : 'text-zinc-300 hover:bg-zinc-700/50'
+                        : 'text-muted hover:bg-zinc-700/50'
                         }`}
                     >
                       <span>{t.ticker}</span>
@@ -216,8 +216,8 @@ function FundDetailCard({ tickers, isLoading }: FundDetailCardProps) {
           <div className="w-4/5 flex flex-col">
             {/* Top — title */}
             <div className="flex items-center gap-1.5">
-              <Activity className="w-4.5 h-4.5 text-zinc-500" />
-              <h4 className="text-base font-medium text-zinc-500">Request Frequency</h4>
+              <Activity className="w-4.5 h-4.5 text-muted" />
+              <h4 className="text-base font-medium text-muted">Request Frequency</h4>
             </div>
 
             {/* Middle — hero metric */}
@@ -231,12 +231,12 @@ function FundDetailCard({ tickers, isLoading }: FundDetailCardProps) {
                   ? 'bg-emerald-500/20 text-emerald-400'
                   : deviation < 0
                     ? 'bg-red-500/20 text-red-400'
-                    : 'bg-zinc-500/20 text-zinc-400'
+                    : 'bg-zinc-500/20 text-muted'
                   }`}>
                   {deviation > 0 ? '+' : ''}{deviation}% vs avg
                 </span>
               </div>
-              <span className="text-xl text-zinc-500 mb-2">QoQ</span>
+              <span className="text-xl text-muted mb-2">QoQ</span>
             </div>
 
             {/* Bottom — narrative */}
@@ -250,24 +250,24 @@ function FundDetailCard({ tickers, isLoading }: FundDetailCardProps) {
           <div className="py-2 flex items-center">
             <div className="w-3/4 grid grid-cols-3">
               <div>
-                <span className="text-sm text-zinc-500">Current Req</span>
+                <span className="text-sm text-muted">Current Req</span>
                 <div className="flex items-baseline gap-1.5">
                   <span className="text-xl font-bold text-white">{currentQ}</span>
-                  <span className="text-sm text-zinc-500">requests</span>
+                  <span className="text-sm text-muted">requests</span>
                 </div>
               </div>
               <div>
-                <span className="text-sm text-zinc-500">Peak</span>
+                <span className="text-sm text-muted">Peak</span>
                 <div className="flex items-baseline gap-1.5">
                   <span className="text-xl font-bold text-white">{peakQ}</span>
-                  <span className="text-sm text-zinc-500">requests</span>
+                  <span className="text-sm text-muted">requests</span>
                 </div>
               </div>
               <div>
-                <span className="text-sm text-zinc-500">Lowest</span>
+                <span className="text-sm text-muted">Lowest</span>
                 <div className="flex items-baseline gap-1.5">
                   <span className="text-xl font-bold text-white">{lowestQ}</span>
-                  <span className="text-sm text-zinc-500">requests</span>
+                  <span className="text-sm text-muted">requests</span>
                 </div>
               </div>
             </div>

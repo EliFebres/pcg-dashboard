@@ -145,7 +145,7 @@ export default function PortfolioTrendsDashboard() {
             <div className="flex items-center gap-2 mb-4">
               <PieChart className="w-5 h-5 text-cyan-400" />
               <h3 className="text-lg font-semibold text-white">Portfolio Construction Trends</h3>
-              <span className="text-xs text-zinc-500 ml-2">How clients are building portfolios (1YR)</span>
+              <span className="text-xs text-muted ml-2">How clients are building portfolios (1YR)</span>
             </div>
 
             {/* Charts Row: Style Map + Asset Class + Benchmark Delta */}
@@ -159,22 +159,22 @@ export default function PortfolioTrendsDashboard() {
                   <div className="flex items-center justify-between mb-4">
                     <div>
                       <h4 className="text-sm font-medium text-white">Style Map</h4>
-                      <p className="text-xs text-zinc-500">Avg client vs MSCI ACWI IMI (1YR)</p>
+                      <p className="text-xs text-muted">Avg client vs MSCI ACWI IMI (1YR)</p>
                     </div>
-                    <Target className="w-4 h-4 text-zinc-500" />
+                    <Target className="w-4 h-4 text-muted" />
                   </div>
 
                   <div className="flex">
                     <div className="flex items-center justify-center" style={{ width: '20px' }}>
-                      <span className="-rotate-90 text-xs text-zinc-500 whitespace-nowrap">Wtd Avg Mkt Cap ($B)</span>
+                      <span className="-rotate-90 text-xs text-muted whitespace-nowrap">Wtd Avg Mkt Cap ($B)</span>
                     </div>
 
                     <div className="flex-1">
                       <div className="flex">
                         <div className="flex flex-col justify-between text-right pr-2" style={{ width: '28px', height: '140px' }}>
-                          <span className="text-xs text-zinc-600">600</span>
-                          <span className="text-xs text-zinc-600">400</span>
-                          <span className="text-xs text-zinc-600">200</span>
+                          <span className="text-xs text-muted">600</span>
+                          <span className="text-xs text-muted">400</span>
+                          <span className="text-xs text-muted">200</span>
                         </div>
 
                         <div className="flex-1 relative border-l border-b border-zinc-700/50 overflow-hidden" style={{ height: '140px' }}>
@@ -194,13 +194,13 @@ export default function PortfolioTrendsDashboard() {
                       </div>
 
                       <div className="flex justify-between pl-7 pr-0 mt-1">
-                        <span className="text-xs text-zinc-600">2.0</span>
-                        <span className="text-xs text-zinc-600">3.0</span>
-                        <span className="text-xs text-zinc-600">4.0</span>
+                        <span className="text-xs text-muted">2.0</span>
+                        <span className="text-xs text-muted">3.0</span>
+                        <span className="text-xs text-muted">4.0</span>
                       </div>
 
                       <div className="text-center mt-1">
-                        <span className="text-xs text-zinc-500">Wtd Avg P/B</span>
+                        <span className="text-xs text-muted">Wtd Avg P/B</span>
                       </div>
                     </div>
                   </div>
@@ -208,11 +208,11 @@ export default function PortfolioTrendsDashboard() {
                   <div className="flex items-center justify-center gap-6 mt-3">
                     <div className="flex items-center gap-2">
                       <div className="w-3 h-3 rounded-full bg-zinc-500 border border-zinc-400" />
-                      <span className="text-xs text-zinc-400">MSCI ACWI IMI</span>
+                      <span className="text-xs text-muted">MSCI ACWI IMI</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <div className="w-3 h-3 rounded-full bg-cyan-500 border border-cyan-400" />
-                      <span className="text-xs text-zinc-400">Avg Client</span>
+                      <span className="text-xs text-muted">Avg Client</span>
                     </div>
                   </div>
                 </div>
@@ -227,22 +227,22 @@ export default function PortfolioTrendsDashboard() {
                   <div className="flex items-center justify-between mb-4">
                     <div>
                       <h4 className="text-sm font-medium text-white">Profitability Map</h4>
-                      <p className="text-xs text-zinc-500">Avg client vs MSCI ACWI IMI (1YR)</p>
+                      <p className="text-xs text-muted">Avg client vs MSCI ACWI IMI (1YR)</p>
                     </div>
-                    <Target className="w-4 h-4 text-zinc-500" />
+                    <Target className="w-4 h-4 text-muted" />
                   </div>
 
                   <div className="flex">
                     <div className="flex items-center justify-center" style={{ width: '20px' }}>
-                      <span className="-rotate-90 text-xs text-zinc-500 whitespace-nowrap">Wtd Avg Profitability</span>
+                      <span className="-rotate-90 text-xs text-muted whitespace-nowrap">Wtd Avg Profitability</span>
                     </div>
 
                     <div className="flex-1">
                       <div className="flex">
                         <div className="flex flex-col justify-between text-right pr-2" style={{ width: '28px', height: '140px' }}>
-                          <span className="text-xs text-zinc-600">.60</span>
-                          <span className="text-xs text-zinc-600">.45</span>
-                          <span className="text-xs text-zinc-600">.30</span>
+                          <span className="text-xs text-muted">.60</span>
+                          <span className="text-xs text-muted">.45</span>
+                          <span className="text-xs text-muted">.30</span>
                         </div>
 
                         <div className="flex-1 relative border-l border-b border-zinc-700/50 overflow-hidden" style={{ height: '140px' }}>
@@ -262,13 +262,13 @@ export default function PortfolioTrendsDashboard() {
                       </div>
 
                       <div className="flex justify-between pl-7 pr-0 mt-1">
-                        <span className="text-xs text-zinc-600">2.0</span>
-                        <span className="text-xs text-zinc-600">3.0</span>
-                        <span className="text-xs text-zinc-600">4.0</span>
+                        <span className="text-xs text-muted">2.0</span>
+                        <span className="text-xs text-muted">3.0</span>
+                        <span className="text-xs text-muted">4.0</span>
                       </div>
 
                       <div className="text-center mt-1">
-                        <span className="text-xs text-zinc-500">Wtd Avg P/B</span>
+                        <span className="text-xs text-muted">Wtd Avg P/B</span>
                       </div>
                     </div>
                   </div>
@@ -276,11 +276,11 @@ export default function PortfolioTrendsDashboard() {
                   <div className="flex items-center justify-center gap-6 mt-3">
                     <div className="flex items-center gap-2">
                       <div className="w-3 h-3 rounded-full bg-zinc-500 border border-zinc-400" />
-                      <span className="text-xs text-zinc-400">MSCI ACWI IMI</span>
+                      <span className="text-xs text-muted">MSCI ACWI IMI</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <div className="w-3 h-3 rounded-full bg-cyan-500 border border-cyan-400" />
-                      <span className="text-xs text-zinc-400">Avg Client</span>
+                      <span className="text-xs text-muted">Avg Client</span>
                     </div>
                   </div>
                 </div>
@@ -295,15 +295,15 @@ export default function PortfolioTrendsDashboard() {
                   <div className="flex items-center justify-between mb-4">
                     <div>
                       <h4 className="text-sm font-medium text-white">vs MSCI ACWI IMI</h4>
-                      <p className="text-xs text-zinc-500">Regional delta to benchmark (1YR)</p>
+                      <p className="text-xs text-muted">Regional delta to benchmark (1YR)</p>
                     </div>
-                    <Target className="w-4 h-4 text-zinc-500" />
+                    <Target className="w-4 h-4 text-muted" />
                   </div>
                   <div className="space-y-3">
                     {benchmarkComparison.map((item) => (
                       <div key={item.metric} className="space-y-1">
                         <div className="flex items-center justify-between text-xs">
-                          <span className="text-zinc-400">{item.metric}</span>
+                          <span className="text-muted">{item.metric}</span>
                           <span className={`font-medium font-mono ${item.delta >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
                             {item.delta >= 0 ? '+' : ''}{item.delta}%
                           </span>
@@ -320,7 +320,7 @@ export default function PortfolioTrendsDashboard() {
                             title={`ACWI: ${item.acwi}%`}
                           />
                         </div>
-                        <div className="flex items-center justify-between text-xs text-zinc-500">
+                        <div className="flex items-center justify-between text-xs text-muted">
                           <span>Client: {item.client}%</span>
                           <span>ACWI: {item.acwi}%</span>
                         </div>
@@ -344,7 +344,7 @@ export default function PortfolioTrendsDashboard() {
                   <div className="relative z-10">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-zinc-400 text-xs mb-1">{metric.label}</p>
+                        <p className="text-muted text-xs mb-1">{metric.label}</p>
                         <p className="text-xl font-bold text-white">{metric.value}</p>
                       </div>
                       <div className="text-right">
@@ -353,7 +353,7 @@ export default function PortfolioTrendsDashboard() {
                           {metric.change}
                         </span>
                         {metric.benchmark && (
-                          <span className="text-xs text-zinc-500">{metric.benchmark}</span>
+                          <span className="text-xs text-muted">{metric.benchmark}</span>
                         )}
                       </div>
                     </div>
@@ -375,7 +375,7 @@ export default function PortfolioTrendsDashboard() {
                   <div className="relative z-10">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-zinc-400 text-xs mb-1">{metric.label}</p>
+                        <p className="text-muted text-xs mb-1">{metric.label}</p>
                         <p className="text-xl font-bold text-white">{metric.value}</p>
                       </div>
                       <div className="text-right">
@@ -383,7 +383,7 @@ export default function PortfolioTrendsDashboard() {
                           {metric.change !== '—' && (metric.isPositive ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />)}
                           {metric.change}
                         </span>
-                        <span className="text-xs text-zinc-500">{metric.benchmark}</span>
+                        <span className="text-xs text-muted">{metric.benchmark}</span>
                       </div>
                     </div>
                   </div>
@@ -397,7 +397,7 @@ export default function PortfolioTrendsDashboard() {
             <div className="flex items-center gap-2 mb-4 mt-8">
               <Briefcase className="w-5 h-5 text-cyan-400" />
               <h3 className="text-lg font-semibold text-white">Logged Portfolios</h3>
-              <span className="text-xs text-zinc-500 ml-2">Client portfolios that have been analyzed ({filteredPortfolios.length} total)</span>
+              <span className="text-xs text-muted ml-2">Client portfolios that have been analyzed ({filteredPortfolios.length} total)</span>
             </div>
 
             {/* Portfolios Table */}
@@ -410,7 +410,7 @@ export default function PortfolioTrendsDashboard() {
                 <h4 className="text-sm font-medium text-white">Portfolios</h4>
                 <button
                   onClick={() => setIsTableFullscreen(true)}
-                  className="p-1.5 text-zinc-400 hover:text-cyan-400 hover:bg-white/[0.05] transition-colors"
+                  className="p-1.5 text-muted hover:text-cyan-400 hover:bg-white/[0.05] transition-colors"
                   title="Expand table"
                 >
                   <Maximize2 className="w-4 h-4" />
@@ -422,7 +422,7 @@ export default function PortfolioTrendsDashboard() {
                   <thead>
                     <tr className="bg-zinc-800/30">
                       <th
-                        className="text-left text-xs font-medium text-zinc-400 uppercase tracking-wider px-4 py-3 cursor-pointer hover:text-zinc-200"
+                        className="text-left text-xs font-medium text-muted uppercase tracking-wider px-4 py-3 cursor-pointer hover:text-zinc-200"
                         onClick={() => handlePortfolioSort('externalClient')}
                       >
                         <div className="flex items-center gap-1">
@@ -431,7 +431,7 @@ export default function PortfolioTrendsDashboard() {
                         </div>
                       </th>
                       <th
-                        className="text-left text-xs font-medium text-zinc-400 uppercase tracking-wider px-4 py-3 cursor-pointer hover:text-zinc-200"
+                        className="text-left text-xs font-medium text-muted uppercase tracking-wider px-4 py-3 cursor-pointer hover:text-zinc-200"
                         onClick={() => handlePortfolioSort('internalClientName')}
                       >
                         <div className="flex items-center gap-1">
@@ -440,7 +440,7 @@ export default function PortfolioTrendsDashboard() {
                         </div>
                       </th>
                       <th
-                        className="text-left text-xs font-medium text-zinc-400 uppercase tracking-wider px-4 py-3 cursor-pointer hover:text-zinc-200"
+                        className="text-left text-xs font-medium text-muted uppercase tracking-wider px-4 py-3 cursor-pointer hover:text-zinc-200"
                         onClick={() => handlePortfolioSort('department')}
                       >
                         <div className="flex items-center gap-1">
@@ -449,7 +449,7 @@ export default function PortfolioTrendsDashboard() {
                         </div>
                       </th>
                       <th
-                        className="text-left text-xs font-medium text-zinc-400 uppercase tracking-wider px-4 py-3 cursor-pointer hover:text-zinc-200"
+                        className="text-left text-xs font-medium text-muted uppercase tracking-wider px-4 py-3 cursor-pointer hover:text-zinc-200"
                         onClick={() => handlePortfolioSort('loggedBy')}
                       >
                         <div className="flex items-center gap-1">
@@ -458,7 +458,7 @@ export default function PortfolioTrendsDashboard() {
                         </div>
                       </th>
                       <th
-                        className="text-left text-xs font-medium text-zinc-400 uppercase tracking-wider px-4 py-3 cursor-pointer hover:text-zinc-200"
+                        className="text-left text-xs font-medium text-muted uppercase tracking-wider px-4 py-3 cursor-pointer hover:text-zinc-200"
                         onClick={() => handlePortfolioSort('loggedAt')}
                       >
                         <div className="flex items-center gap-1">
@@ -467,7 +467,7 @@ export default function PortfolioTrendsDashboard() {
                         </div>
                       </th>
                       <th
-                        className="text-left text-xs font-medium text-zinc-400 uppercase tracking-wider px-4 py-3 cursor-pointer hover:text-zinc-200"
+                        className="text-left text-xs font-medium text-muted uppercase tracking-wider px-4 py-3 cursor-pointer hover:text-zinc-200"
                         onClick={() => handlePortfolioSort('dataAsOf')}
                       >
                         <div className="flex items-center gap-1">
@@ -476,7 +476,7 @@ export default function PortfolioTrendsDashboard() {
                         </div>
                       </th>
                       <th
-                        className="text-left text-xs font-medium text-zinc-400 uppercase tracking-wider px-4 py-3 cursor-pointer hover:text-zinc-200"
+                        className="text-left text-xs font-medium text-muted uppercase tracking-wider px-4 py-3 cursor-pointer hover:text-zinc-200"
                         onClick={() => handlePortfolioSort('positionCount')}
                       >
                         <div className="flex items-center gap-1">
@@ -484,7 +484,7 @@ export default function PortfolioTrendsDashboard() {
                           <SortIcon column="positionCount" sortColumn={portfoliosSortColumn} sortDirection={portfoliosSortDirection} />
                         </div>
                       </th>
-                      <th className="text-left text-xs font-medium text-zinc-400 uppercase tracking-wider px-4 py-3">
+                      <th className="text-left text-xs font-medium text-muted uppercase tracking-wider px-4 py-3">
                         Top Holdings
                       </th>
                       <th className="px-4 py-3"></th>
@@ -498,7 +498,7 @@ export default function PortfolioTrendsDashboard() {
                             <span className="text-sm font-medium text-white">{portfolio.externalClient}</span>
                           </td>
                           <td className="px-4 py-3">
-                            <span className="text-sm text-zinc-300">{portfolio.internalClient.name}</span>
+                            <span className="text-sm text-muted">{portfolio.internalClient.name}</span>
                           </td>
                           <td className="px-4 py-3">
                             <span className={`text-xs font-medium px-2 py-1 ${
@@ -512,33 +512,33 @@ export default function PortfolioTrendsDashboard() {
                             </span>
                           </td>
                           <td className="px-4 py-3">
-                            <span className="text-sm text-zinc-400">{portfolio.loggedBy}</span>
+                            <span className="text-sm text-muted">{portfolio.loggedBy}</span>
                           </td>
                           <td className="px-4 py-3">
-                            <span className="text-sm text-zinc-400">{portfolio.loggedAt}</span>
+                            <span className="text-sm text-muted">{portfolio.loggedAt}</span>
                           </td>
                           <td className="px-4 py-3">
-                            <span className="text-sm text-zinc-400">{portfolio.dataAsOf}</span>
+                            <span className="text-sm text-muted">{portfolio.dataAsOf}</span>
                           </td>
                           <td className="px-4 py-3">
-                            <span className="text-sm font-mono text-zinc-300">{portfolio.positions.length}</span>
+                            <span className="text-sm font-mono text-muted">{portfolio.positions.length}</span>
                           </td>
                           <td className="px-4 py-3">
                             <div className="flex gap-1.5">
                               {portfolio.positions.slice(0, 3).map((pos, i) => (
-                                <span key={i} className="text-xs px-1.5 py-0.5 bg-zinc-800 text-zinc-300 rounded">
+                                <span key={i} className="text-xs px-1.5 py-0.5 bg-zinc-800 text-muted rounded">
                                   {pos.ticker}
                                 </span>
                               ))}
                               {portfolio.positions.length > 3 && (
-                                <span className="text-xs text-zinc-500">+{portfolio.positions.length - 3}</span>
+                                <span className="text-xs text-muted">+{portfolio.positions.length - 3}</span>
                               )}
                             </div>
                           </td>
                           <td className="px-4 py-3">
                             <button
                               onClick={() => setExpandedPortfolioId(expandedPortfolioId === portfolio.id ? null : portfolio.id)}
-                              className="p-1.5 hover:bg-white/[0.05] text-zinc-500 hover:text-zinc-300 transition-colors"
+                              className="p-1.5 hover:bg-white/[0.05] text-muted hover:text-muted transition-colors"
                             >
                               {expandedPortfolioId === portfolio.id ? (
                                 <ChevronUp className="w-4 h-4" />
@@ -555,15 +555,15 @@ export default function PortfolioTrendsDashboard() {
                               <div className="grid grid-cols-3 gap-6">
                                 {/* Positions List */}
                                 <div>
-                                  <h5 className="text-xs font-medium text-zinc-400 uppercase tracking-wider mb-2">All Positions</h5>
+                                  <h5 className="text-xs font-medium text-muted uppercase tracking-wider mb-2">All Positions</h5>
                                   <div className="space-y-1 max-h-48 overflow-y-auto">
                                     {portfolio.positions.map((pos, i) => (
                                       <div key={i} className="flex items-center justify-between text-sm">
                                         <div className="flex items-center gap-2">
                                           <span className="font-medium text-cyan-400">{pos.ticker}</span>
-                                          <span className="text-zinc-500 text-xs truncate max-w-[120px]">{pos.name}</span>
+                                          <span className="text-muted text-xs truncate max-w-[120px]">{pos.name}</span>
                                         </div>
-                                        <span className="text-zinc-300 font-mono">{(pos.weight * 100).toFixed(1)}%</span>
+                                        <span className="text-muted font-mono">{(pos.weight * 100).toFixed(1)}%</span>
                                       </div>
                                     ))}
                                   </div>
@@ -571,68 +571,68 @@ export default function PortfolioTrendsDashboard() {
 
                                 {/* Characteristics */}
                                 <div>
-                                  <h5 className="text-xs font-medium text-zinc-400 uppercase tracking-wider mb-2">Characteristics</h5>
+                                  <h5 className="text-xs font-medium text-muted uppercase tracking-wider mb-2">Characteristics</h5>
                                   <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
                                     <div className="flex justify-between">
-                                      <span className="text-zinc-500">Mkt Cap</span>
-                                      <span className="text-zinc-300">${portfolio.characteristics.weightedAvgMarketCap.toFixed(0)}B</span>
+                                      <span className="text-muted">Mkt Cap</span>
+                                      <span className="text-muted">${portfolio.characteristics.weightedAvgMarketCap.toFixed(0)}B</span>
                                     </div>
                                     <div className="flex justify-between">
-                                      <span className="text-zinc-500">P/B</span>
-                                      <span className="text-zinc-300">{portfolio.characteristics.weightedAvgPB.toFixed(1)}</span>
+                                      <span className="text-muted">P/B</span>
+                                      <span className="text-muted">{portfolio.characteristics.weightedAvgPB.toFixed(1)}</span>
                                     </div>
                                     <div className="flex justify-between">
-                                      <span className="text-zinc-500">Value</span>
-                                      <span className="text-zinc-300">{portfolio.characteristics.valueAllocation}%</span>
+                                      <span className="text-muted">Value</span>
+                                      <span className="text-muted">{portfolio.characteristics.valueAllocation}%</span>
                                     </div>
                                     <div className="flex justify-between">
-                                      <span className="text-zinc-500">Growth</span>
-                                      <span className="text-zinc-300">{portfolio.characteristics.growthAllocation}%</span>
+                                      <span className="text-muted">Growth</span>
+                                      <span className="text-muted">{portfolio.characteristics.growthAllocation}%</span>
                                     </div>
                                     <div className="flex justify-between">
-                                      <span className="text-zinc-500">US</span>
-                                      <span className="text-zinc-300">{portfolio.characteristics.usEquityAllocation}%</span>
+                                      <span className="text-muted">US</span>
+                                      <span className="text-muted">{portfolio.characteristics.usEquityAllocation}%</span>
                                     </div>
                                     <div className="flex justify-between">
-                                      <span className="text-zinc-500">Dev ex-US</span>
-                                      <span className="text-zinc-300">{portfolio.characteristics.devExUsAllocation}%</span>
+                                      <span className="text-muted">Dev ex-US</span>
+                                      <span className="text-muted">{portfolio.characteristics.devExUsAllocation}%</span>
                                     </div>
                                     <div className="flex justify-between">
-                                      <span className="text-zinc-500">EM</span>
-                                      <span className="text-zinc-300">{portfolio.characteristics.emAllocation}%</span>
+                                      <span className="text-muted">EM</span>
+                                      <span className="text-muted">{portfolio.characteristics.emAllocation}%</span>
                                     </div>
                                     <div className="flex justify-between">
-                                      <span className="text-zinc-500">Duration</span>
-                                      <span className="text-zinc-300">{portfolio.characteristics.duration.toFixed(1)} yrs</span>
+                                      <span className="text-muted">Duration</span>
+                                      <span className="text-muted">{portfolio.characteristics.duration.toFixed(1)} yrs</span>
                                     </div>
                                   </div>
                                 </div>
 
                                 {/* Returns */}
                                 <div>
-                                  <h5 className="text-xs font-medium text-zinc-400 uppercase tracking-wider mb-2">Returns</h5>
+                                  <h5 className="text-xs font-medium text-muted uppercase tracking-wider mb-2">Returns</h5>
                                   <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
                                     <div className="flex justify-between">
-                                      <span className="text-zinc-500">1 Year</span>
-                                      <span className={portfolio.returns.oneYear !== null ? (portfolio.returns.oneYear >= 0 ? 'text-emerald-400' : 'text-red-400') : 'text-zinc-600'}>
+                                      <span className="text-muted">1 Year</span>
+                                      <span className={portfolio.returns.oneYear !== null ? (portfolio.returns.oneYear >= 0 ? 'text-emerald-400' : 'text-red-400') : 'text-muted'}>
                                         {portfolio.returns.oneYear !== null ? `${portfolio.returns.oneYear.toFixed(1)}%` : '—'}
                                       </span>
                                     </div>
                                     <div className="flex justify-between">
-                                      <span className="text-zinc-500">3 Year</span>
-                                      <span className={portfolio.returns.threeYear !== null ? (portfolio.returns.threeYear >= 0 ? 'text-emerald-400' : 'text-red-400') : 'text-zinc-600'}>
+                                      <span className="text-muted">3 Year</span>
+                                      <span className={portfolio.returns.threeYear !== null ? (portfolio.returns.threeYear >= 0 ? 'text-emerald-400' : 'text-red-400') : 'text-muted'}>
                                         {portfolio.returns.threeYear !== null ? `${portfolio.returns.threeYear.toFixed(1)}%` : '—'}
                                       </span>
                                     </div>
                                     <div className="flex justify-between">
-                                      <span className="text-zinc-500">5 Year</span>
-                                      <span className={portfolio.returns.fiveYear !== null ? (portfolio.returns.fiveYear >= 0 ? 'text-emerald-400' : 'text-red-400') : 'text-zinc-600'}>
+                                      <span className="text-muted">5 Year</span>
+                                      <span className={portfolio.returns.fiveYear !== null ? (portfolio.returns.fiveYear >= 0 ? 'text-emerald-400' : 'text-red-400') : 'text-muted'}>
                                         {portfolio.returns.fiveYear !== null ? `${portfolio.returns.fiveYear.toFixed(1)}%` : '—'}
                                       </span>
                                     </div>
                                     <div className="flex justify-between">
-                                      <span className="text-zinc-500">10 Year</span>
-                                      <span className={portfolio.returns.tenYear !== null ? (portfolio.returns.tenYear >= 0 ? 'text-emerald-400' : 'text-red-400') : 'text-zinc-600'}>
+                                      <span className="text-muted">10 Year</span>
+                                      <span className={portfolio.returns.tenYear !== null ? (portfolio.returns.tenYear >= 0 ? 'text-emerald-400' : 'text-red-400') : 'text-muted'}>
                                         {portfolio.returns.tenYear !== null ? `${portfolio.returns.tenYear.toFixed(1)}%` : '—'}
                                       </span>
                                     </div>
@@ -651,24 +651,24 @@ export default function PortfolioTrendsDashboard() {
               {/* Pagination */}
               {totalPortfolioPages > 1 && (
                 <div className="relative z-10 flex items-center justify-between px-4 py-3 border-t border-zinc-800/50">
-                  <div className="text-xs text-zinc-500">
+                  <div className="text-xs text-muted">
                     Showing {((portfoliosPage - 1) * portfoliosPerPage) + 1} to {Math.min(portfoliosPage * portfoliosPerPage, sortedPortfolios.length)} of {sortedPortfolios.length} portfolios
                   </div>
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => setPortfoliosPage(prev => Math.max(1, prev - 1))}
                       disabled={portfoliosPage === 1}
-                      className="p-1.5 text-zinc-400 hover:text-white disabled:text-zinc-600 disabled:cursor-not-allowed transition-colors"
+                      className="p-1.5 text-muted hover:text-white disabled:text-muted disabled:cursor-not-allowed transition-colors"
                     >
                       <ChevronLeft className="w-4 h-4" />
                     </button>
-                    <span className="text-xs text-zinc-400">
+                    <span className="text-xs text-muted">
                       Page {portfoliosPage} of {totalPortfolioPages}
                     </span>
                     <button
                       onClick={() => setPortfoliosPage(prev => Math.min(totalPortfolioPages, prev + 1))}
                       disabled={portfoliosPage === totalPortfolioPages}
-                      className="p-1.5 text-zinc-400 hover:text-white disabled:text-zinc-600 disabled:cursor-not-allowed transition-colors"
+                      className="p-1.5 text-muted hover:text-white disabled:text-muted disabled:cursor-not-allowed transition-colors"
                     >
                       <ChevronRight className="w-4 h-4" />
                     </button>
@@ -698,7 +698,7 @@ export default function PortfolioTrendsDashboard() {
                 <h3 className="text-sm font-medium text-white">Logged Portfolios</h3>
                 <button
                   onClick={() => setIsTableFullscreen(false)}
-                  className="p-1.5 text-zinc-400 hover:text-cyan-400 hover:bg-white/[0.05] transition-colors"
+                  className="p-1.5 text-muted hover:text-cyan-400 hover:bg-white/[0.05] transition-colors"
                   title="Exit fullscreen"
                 >
                   <Minimize2 className="w-4 h-4" />
@@ -711,7 +711,7 @@ export default function PortfolioTrendsDashboard() {
                   <thead className="sticky top-0 bg-zinc-800 z-10">
                     <tr>
                       <th
-                        className="text-left text-xs font-medium text-zinc-400 uppercase tracking-wider px-4 py-3 cursor-pointer hover:text-zinc-200"
+                        className="text-left text-xs font-medium text-muted uppercase tracking-wider px-4 py-3 cursor-pointer hover:text-zinc-200"
                         onClick={() => handlePortfolioSort('externalClient')}
                       >
                         <div className="flex items-center gap-1">
@@ -720,7 +720,7 @@ export default function PortfolioTrendsDashboard() {
                         </div>
                       </th>
                       <th
-                        className="text-left text-xs font-medium text-zinc-400 uppercase tracking-wider px-4 py-3 cursor-pointer hover:text-zinc-200"
+                        className="text-left text-xs font-medium text-muted uppercase tracking-wider px-4 py-3 cursor-pointer hover:text-zinc-200"
                         onClick={() => handlePortfolioSort('internalClientName')}
                       >
                         <div className="flex items-center gap-1">
@@ -729,7 +729,7 @@ export default function PortfolioTrendsDashboard() {
                         </div>
                       </th>
                       <th
-                        className="text-left text-xs font-medium text-zinc-400 uppercase tracking-wider px-4 py-3 cursor-pointer hover:text-zinc-200"
+                        className="text-left text-xs font-medium text-muted uppercase tracking-wider px-4 py-3 cursor-pointer hover:text-zinc-200"
                         onClick={() => handlePortfolioSort('department')}
                       >
                         <div className="flex items-center gap-1">
@@ -738,7 +738,7 @@ export default function PortfolioTrendsDashboard() {
                         </div>
                       </th>
                       <th
-                        className="text-left text-xs font-medium text-zinc-400 uppercase tracking-wider px-4 py-3 cursor-pointer hover:text-zinc-200"
+                        className="text-left text-xs font-medium text-muted uppercase tracking-wider px-4 py-3 cursor-pointer hover:text-zinc-200"
                         onClick={() => handlePortfolioSort('loggedBy')}
                       >
                         <div className="flex items-center gap-1">
@@ -747,7 +747,7 @@ export default function PortfolioTrendsDashboard() {
                         </div>
                       </th>
                       <th
-                        className="text-left text-xs font-medium text-zinc-400 uppercase tracking-wider px-4 py-3 cursor-pointer hover:text-zinc-200"
+                        className="text-left text-xs font-medium text-muted uppercase tracking-wider px-4 py-3 cursor-pointer hover:text-zinc-200"
                         onClick={() => handlePortfolioSort('loggedAt')}
                       >
                         <div className="flex items-center gap-1">
@@ -756,7 +756,7 @@ export default function PortfolioTrendsDashboard() {
                         </div>
                       </th>
                       <th
-                        className="text-left text-xs font-medium text-zinc-400 uppercase tracking-wider px-4 py-3 cursor-pointer hover:text-zinc-200"
+                        className="text-left text-xs font-medium text-muted uppercase tracking-wider px-4 py-3 cursor-pointer hover:text-zinc-200"
                         onClick={() => handlePortfolioSort('dataAsOf')}
                       >
                         <div className="flex items-center gap-1">
@@ -765,7 +765,7 @@ export default function PortfolioTrendsDashboard() {
                         </div>
                       </th>
                       <th
-                        className="text-left text-xs font-medium text-zinc-400 uppercase tracking-wider px-4 py-3 cursor-pointer hover:text-zinc-200"
+                        className="text-left text-xs font-medium text-muted uppercase tracking-wider px-4 py-3 cursor-pointer hover:text-zinc-200"
                         onClick={() => handlePortfolioSort('positionCount')}
                       >
                         <div className="flex items-center gap-1">
@@ -773,7 +773,7 @@ export default function PortfolioTrendsDashboard() {
                           <SortIcon column="positionCount" sortColumn={portfoliosSortColumn} sortDirection={portfoliosSortDirection} />
                         </div>
                       </th>
-                      <th className="text-left text-xs font-medium text-zinc-400 uppercase tracking-wider px-4 py-3">
+                      <th className="text-left text-xs font-medium text-muted uppercase tracking-wider px-4 py-3">
                         Top Holdings
                       </th>
                       <th className="px-4 py-3"></th>
@@ -787,7 +787,7 @@ export default function PortfolioTrendsDashboard() {
                             <span className="text-sm font-medium text-white">{portfolio.externalClient}</span>
                           </td>
                           <td className="px-4 py-3">
-                            <span className="text-sm text-zinc-300">{portfolio.internalClient.name}</span>
+                            <span className="text-sm text-muted">{portfolio.internalClient.name}</span>
                           </td>
                           <td className="px-4 py-3">
                             <span className={`text-xs font-medium px-2 py-1 ${
@@ -801,33 +801,33 @@ export default function PortfolioTrendsDashboard() {
                             </span>
                           </td>
                           <td className="px-4 py-3">
-                            <span className="text-sm text-zinc-400">{portfolio.loggedBy}</span>
+                            <span className="text-sm text-muted">{portfolio.loggedBy}</span>
                           </td>
                           <td className="px-4 py-3">
-                            <span className="text-sm text-zinc-400">{portfolio.loggedAt}</span>
+                            <span className="text-sm text-muted">{portfolio.loggedAt}</span>
                           </td>
                           <td className="px-4 py-3">
-                            <span className="text-sm text-zinc-400">{portfolio.dataAsOf}</span>
+                            <span className="text-sm text-muted">{portfolio.dataAsOf}</span>
                           </td>
                           <td className="px-4 py-3">
-                            <span className="text-sm font-mono text-zinc-300">{portfolio.positions.length}</span>
+                            <span className="text-sm font-mono text-muted">{portfolio.positions.length}</span>
                           </td>
                           <td className="px-4 py-3">
                             <div className="flex gap-1.5">
                               {portfolio.positions.slice(0, 3).map((pos, i) => (
-                                <span key={i} className="text-xs px-1.5 py-0.5 bg-zinc-800 text-zinc-300 rounded">
+                                <span key={i} className="text-xs px-1.5 py-0.5 bg-zinc-800 text-muted rounded">
                                   {pos.ticker}
                                 </span>
                               ))}
                               {portfolio.positions.length > 3 && (
-                                <span className="text-xs text-zinc-500">+{portfolio.positions.length - 3}</span>
+                                <span className="text-xs text-muted">+{portfolio.positions.length - 3}</span>
                               )}
                             </div>
                           </td>
                           <td className="px-4 py-3">
                             <button
                               onClick={() => setExpandedPortfolioId(expandedPortfolioId === portfolio.id ? null : portfolio.id)}
-                              className="p-1.5 hover:bg-white/[0.05] text-zinc-500 hover:text-zinc-300 transition-colors"
+                              className="p-1.5 hover:bg-white/[0.05] text-muted hover:text-muted transition-colors"
                             >
                               {expandedPortfolioId === portfolio.id ? (
                                 <ChevronUp className="w-4 h-4" />
@@ -844,15 +844,15 @@ export default function PortfolioTrendsDashboard() {
                               <div className="grid grid-cols-3 gap-6">
                                 {/* Positions List */}
                                 <div>
-                                  <h5 className="text-xs font-medium text-zinc-400 uppercase tracking-wider mb-2">All Positions</h5>
+                                  <h5 className="text-xs font-medium text-muted uppercase tracking-wider mb-2">All Positions</h5>
                                   <div className="space-y-1 max-h-48 overflow-y-auto">
                                     {portfolio.positions.map((pos, i) => (
                                       <div key={i} className="flex items-center justify-between text-sm">
                                         <div className="flex items-center gap-2">
                                           <span className="font-medium text-cyan-400">{pos.ticker}</span>
-                                          <span className="text-zinc-500 text-xs truncate max-w-[120px]">{pos.name}</span>
+                                          <span className="text-muted text-xs truncate max-w-[120px]">{pos.name}</span>
                                         </div>
-                                        <span className="text-zinc-300 font-mono">{(pos.weight * 100).toFixed(1)}%</span>
+                                        <span className="text-muted font-mono">{(pos.weight * 100).toFixed(1)}%</span>
                                       </div>
                                     ))}
                                   </div>
@@ -860,68 +860,68 @@ export default function PortfolioTrendsDashboard() {
 
                                 {/* Characteristics */}
                                 <div>
-                                  <h5 className="text-xs font-medium text-zinc-400 uppercase tracking-wider mb-2">Characteristics</h5>
+                                  <h5 className="text-xs font-medium text-muted uppercase tracking-wider mb-2">Characteristics</h5>
                                   <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
                                     <div className="flex justify-between">
-                                      <span className="text-zinc-500">Mkt Cap</span>
-                                      <span className="text-zinc-300">${portfolio.characteristics.weightedAvgMarketCap.toFixed(0)}B</span>
+                                      <span className="text-muted">Mkt Cap</span>
+                                      <span className="text-muted">${portfolio.characteristics.weightedAvgMarketCap.toFixed(0)}B</span>
                                     </div>
                                     <div className="flex justify-between">
-                                      <span className="text-zinc-500">P/B</span>
-                                      <span className="text-zinc-300">{portfolio.characteristics.weightedAvgPB.toFixed(1)}</span>
+                                      <span className="text-muted">P/B</span>
+                                      <span className="text-muted">{portfolio.characteristics.weightedAvgPB.toFixed(1)}</span>
                                     </div>
                                     <div className="flex justify-between">
-                                      <span className="text-zinc-500">Value</span>
-                                      <span className="text-zinc-300">{portfolio.characteristics.valueAllocation}%</span>
+                                      <span className="text-muted">Value</span>
+                                      <span className="text-muted">{portfolio.characteristics.valueAllocation}%</span>
                                     </div>
                                     <div className="flex justify-between">
-                                      <span className="text-zinc-500">Growth</span>
-                                      <span className="text-zinc-300">{portfolio.characteristics.growthAllocation}%</span>
+                                      <span className="text-muted">Growth</span>
+                                      <span className="text-muted">{portfolio.characteristics.growthAllocation}%</span>
                                     </div>
                                     <div className="flex justify-between">
-                                      <span className="text-zinc-500">US</span>
-                                      <span className="text-zinc-300">{portfolio.characteristics.usEquityAllocation}%</span>
+                                      <span className="text-muted">US</span>
+                                      <span className="text-muted">{portfolio.characteristics.usEquityAllocation}%</span>
                                     </div>
                                     <div className="flex justify-between">
-                                      <span className="text-zinc-500">Dev ex-US</span>
-                                      <span className="text-zinc-300">{portfolio.characteristics.devExUsAllocation}%</span>
+                                      <span className="text-muted">Dev ex-US</span>
+                                      <span className="text-muted">{portfolio.characteristics.devExUsAllocation}%</span>
                                     </div>
                                     <div className="flex justify-between">
-                                      <span className="text-zinc-500">EM</span>
-                                      <span className="text-zinc-300">{portfolio.characteristics.emAllocation}%</span>
+                                      <span className="text-muted">EM</span>
+                                      <span className="text-muted">{portfolio.characteristics.emAllocation}%</span>
                                     </div>
                                     <div className="flex justify-between">
-                                      <span className="text-zinc-500">Duration</span>
-                                      <span className="text-zinc-300">{portfolio.characteristics.duration.toFixed(1)} yrs</span>
+                                      <span className="text-muted">Duration</span>
+                                      <span className="text-muted">{portfolio.characteristics.duration.toFixed(1)} yrs</span>
                                     </div>
                                   </div>
                                 </div>
 
                                 {/* Returns */}
                                 <div>
-                                  <h5 className="text-xs font-medium text-zinc-400 uppercase tracking-wider mb-2">Returns</h5>
+                                  <h5 className="text-xs font-medium text-muted uppercase tracking-wider mb-2">Returns</h5>
                                   <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
                                     <div className="flex justify-between">
-                                      <span className="text-zinc-500">1 Year</span>
-                                      <span className={portfolio.returns.oneYear !== null ? (portfolio.returns.oneYear >= 0 ? 'text-emerald-400' : 'text-red-400') : 'text-zinc-600'}>
+                                      <span className="text-muted">1 Year</span>
+                                      <span className={portfolio.returns.oneYear !== null ? (portfolio.returns.oneYear >= 0 ? 'text-emerald-400' : 'text-red-400') : 'text-muted'}>
                                         {portfolio.returns.oneYear !== null ? `${portfolio.returns.oneYear.toFixed(1)}%` : '—'}
                                       </span>
                                     </div>
                                     <div className="flex justify-between">
-                                      <span className="text-zinc-500">3 Year</span>
-                                      <span className={portfolio.returns.threeYear !== null ? (portfolio.returns.threeYear >= 0 ? 'text-emerald-400' : 'text-red-400') : 'text-zinc-600'}>
+                                      <span className="text-muted">3 Year</span>
+                                      <span className={portfolio.returns.threeYear !== null ? (portfolio.returns.threeYear >= 0 ? 'text-emerald-400' : 'text-red-400') : 'text-muted'}>
                                         {portfolio.returns.threeYear !== null ? `${portfolio.returns.threeYear.toFixed(1)}%` : '—'}
                                       </span>
                                     </div>
                                     <div className="flex justify-between">
-                                      <span className="text-zinc-500">5 Year</span>
-                                      <span className={portfolio.returns.fiveYear !== null ? (portfolio.returns.fiveYear >= 0 ? 'text-emerald-400' : 'text-red-400') : 'text-zinc-600'}>
+                                      <span className="text-muted">5 Year</span>
+                                      <span className={portfolio.returns.fiveYear !== null ? (portfolio.returns.fiveYear >= 0 ? 'text-emerald-400' : 'text-red-400') : 'text-muted'}>
                                         {portfolio.returns.fiveYear !== null ? `${portfolio.returns.fiveYear.toFixed(1)}%` : '—'}
                                       </span>
                                     </div>
                                     <div className="flex justify-between">
-                                      <span className="text-zinc-500">10 Year</span>
-                                      <span className={portfolio.returns.tenYear !== null ? (portfolio.returns.tenYear >= 0 ? 'text-emerald-400' : 'text-red-400') : 'text-zinc-600'}>
+                                      <span className="text-muted">10 Year</span>
+                                      <span className={portfolio.returns.tenYear !== null ? (portfolio.returns.tenYear >= 0 ? 'text-emerald-400' : 'text-red-400') : 'text-muted'}>
                                         {portfolio.returns.tenYear !== null ? `${portfolio.returns.tenYear.toFixed(1)}%` : '—'}
                                       </span>
                                     </div>
@@ -940,24 +940,24 @@ export default function PortfolioTrendsDashboard() {
               {/* Pagination - Fixed at bottom */}
               {totalPortfolioPages > 1 && (
                 <div className="relative z-10 flex items-center justify-between px-4 py-3 border-t border-zinc-800/50 flex-shrink-0 bg-zinc-900">
-                  <div className="text-xs text-zinc-500">
+                  <div className="text-xs text-muted">
                     Showing {((portfoliosPage - 1) * portfoliosPerPage) + 1} to {Math.min(portfoliosPage * portfoliosPerPage, sortedPortfolios.length)} of {sortedPortfolios.length} portfolios
                   </div>
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => setPortfoliosPage(prev => Math.max(1, prev - 1))}
                       disabled={portfoliosPage === 1}
-                      className="p-1.5 text-zinc-400 hover:text-white disabled:text-zinc-600 disabled:cursor-not-allowed transition-colors"
+                      className="p-1.5 text-muted hover:text-white disabled:text-muted disabled:cursor-not-allowed transition-colors"
                     >
                       <ChevronLeft className="w-4 h-4" />
                     </button>
-                    <span className="text-xs text-zinc-400">
+                    <span className="text-xs text-muted">
                       Page {portfoliosPage} of {totalPortfolioPages}
                     </span>
                     <button
                       onClick={() => setPortfoliosPage(prev => Math.min(totalPortfolioPages, prev + 1))}
                       disabled={portfoliosPage === totalPortfolioPages}
-                      className="p-1.5 text-zinc-400 hover:text-white disabled:text-zinc-600 disabled:cursor-not-allowed transition-colors"
+                      className="p-1.5 text-muted hover:text-white disabled:text-muted disabled:cursor-not-allowed transition-colors"
                     >
                       <ChevronRight className="w-4 h-4" />
                     </button>

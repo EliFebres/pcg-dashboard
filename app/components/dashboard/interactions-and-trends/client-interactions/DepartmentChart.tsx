@@ -39,7 +39,7 @@ const DepartmentChart = React.memo<DepartmentChartProps>(({ data, departmentChan
             <div key={dept.name} className="flex items-center justify-between text-xs">
               <div className="flex items-center gap-2">
                 <div className="w-2.5 h-2.5" style={{ backgroundColor: dept.color }} />
-                <span className="text-zinc-400">{dept.name}</span>
+                <span className="text-muted">{dept.name}</span>
               </div>
               <span className={`text-zinc-200 font-medium font-mono ${flashClass}`.trim()}>{dept.count}</span>
             </div>

@@ -111,10 +111,10 @@ export default function FixedIncomeCompetitorsPage() {
           notesFund ? (
             <>
               <span className="text-cyan-400 font-medium">{notesFund.competitorTicker}</span>
-              <span className="text-zinc-500 mx-1">vs</span>
+              <span className="text-muted mx-1">vs</span>
               <span className="text-amber-400 font-medium">{notesFund.firmTicker}</span>
-              <span className="text-zinc-500 mx-1">&middot;</span>
-              <span className="text-zinc-500">{notesFund.category}</span>
+              <span className="text-muted mx-1">&middot;</span>
+              <span className="text-muted">{notesFund.category}</span>
             </>
           ) : <></>
         }

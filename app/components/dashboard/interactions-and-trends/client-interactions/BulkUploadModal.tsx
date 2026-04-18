@@ -179,12 +179,12 @@ const BulkUploadModal: React.FC<BulkUploadModalProps> = ({ isOpen, onClose, onIm
         <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-800/50 flex-shrink-0">
           <div>
             <h2 className="text-lg font-semibold text-white">Bulk Upload Interactions</h2>
-            <p className="text-sm text-zinc-400 mt-0.5">Import historical projects from an Excel or CSV file</p>
+            <p className="text-sm text-muted mt-0.5">Import historical projects from an Excel or CSV file</p>
           </div>
           {!isBusy && (
             <button
               onClick={uploadState.stage === 'success' ? handleDone : onClose}
-              className="p-1.5 text-zinc-400 hover:text-white transition-colors"
+              className="p-1.5 text-muted hover:text-white transition-colors"
             >
               <X className="w-5 h-5" />
             </button>
@@ -197,13 +197,13 @@ const BulkUploadModal: React.FC<BulkUploadModalProps> = ({ isOpen, onClose, onIm
           {uploadState.stage === 'idle' && (
             <div className="flex flex-col gap-4">
               <div className="flex items-center justify-between">
-                <p className="text-sm text-zinc-400">
+                <p className="text-sm text-muted">
                   Download the template, fill it in with your historical data, then upload it here.
                 </p>
                 <a
                   href="/api/client-interactions/engagements/template"
                   download
-                  className="flex-shrink-0 flex items-center gap-1.5 px-3 py-2 bg-zinc-800 border border-zinc-700/50 text-sm text-zinc-300 hover:text-white hover:border-zinc-500 transition-colors ml-4"
+                  className="flex-shrink-0 flex items-center gap-1.5 px-3 py-2 bg-zinc-800 border border-zinc-700/50 text-sm text-muted hover:text-white hover:border-zinc-500 transition-colors ml-4"
                 >
                   <Download className="w-4 h-4" />
                   Download Template
@@ -221,12 +221,12 @@ const BulkUploadModal: React.FC<BulkUploadModalProps> = ({ isOpen, onClose, onIm
                     : 'border-zinc-700 hover:border-zinc-500 bg-zinc-800/30'
                 }`}
               >
-                <FileSpreadsheet className="w-10 h-10 text-zinc-500" />
+                <FileSpreadsheet className="w-10 h-10 text-muted" />
                 <div className="text-center">
-                  <p className="text-sm text-zinc-300">
+                  <p className="text-sm text-muted">
                     Drop your file here or <span className="text-cyan-400">click to browse</span>
                   </p>
-                  <p className="text-xs text-zinc-500 mt-1">Supports .xlsx and .csv</p>
+                  <p className="text-xs text-muted mt-1">Supports .xlsx and .csv</p>
                 </div>
                 <input
                   ref={fileInputRef}
@@ -247,7 +247,7 @@ const BulkUploadModal: React.FC<BulkUploadModalProps> = ({ isOpen, onClose, onIm
           {(uploadState.stage === 'uploading' || uploadState.stage === 'committing') && (
             <div className="flex flex-col items-center justify-center py-16 gap-4">
               <Loader2 className="w-8 h-8 text-cyan-400 animate-spin" />
-              <p className="text-zinc-400 text-sm">
+              <p className="text-muted text-sm">
                 {uploadState.stage === 'uploading'
                   ? 'Parsing and validating your file...'
                   : 'Importing rows into the database...'}
@@ -265,7 +265,7 @@ const BulkUploadModal: React.FC<BulkUploadModalProps> = ({ isOpen, onClose, onIm
                     {uploadState.invalidCount} row{uploadState.invalidCount !== 1 ? 's have' : ' has'} errors
                     {uploadState.validCount > 0 && ` — ${uploadState.validCount} other row${uploadState.validCount !== 1 ? 's are' : ' is'} valid`}
                   </p>
-                  <p className="text-xs text-zinc-400 mt-1">Fix the issues below in your Excel file and re-upload.</p>
+                  <p className="text-xs text-muted mt-1">Fix the issues below in your Excel file and re-upload.</p>
                 </div>
               </div>
 
@@ -273,16 +273,16 @@ const BulkUploadModal: React.FC<BulkUploadModalProps> = ({ isOpen, onClose, onIm
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="bg-zinc-800/60">
-                      <th className="text-left text-xs font-medium text-zinc-400 uppercase tracking-wider px-4 py-2.5 w-16">Row</th>
-                      <th className="text-left text-xs font-medium text-zinc-400 uppercase tracking-wider px-4 py-2.5 w-40">Field</th>
-                      <th className="text-left text-xs font-medium text-zinc-400 uppercase tracking-wider px-4 py-2.5">Issue</th>
+                      <th className="text-left text-xs font-medium text-muted uppercase tracking-wider px-4 py-2.5 w-16">Row</th>
+                      <th className="text-left text-xs font-medium text-muted uppercase tracking-wider px-4 py-2.5 w-40">Field</th>
+                      <th className="text-left text-xs font-medium text-muted uppercase tracking-wider px-4 py-2.5">Issue</th>
                     </tr>
                   </thead>
                   <tbody>
                     {uploadState.errors.map((err, i) => (
                       <tr key={i} className="border-t border-zinc-800/50">
-                        <td className="px-4 py-2.5 text-zinc-300 font-mono text-xs">{err.rowNumber}</td>
-                        <td className="px-4 py-2.5 text-zinc-400 text-xs">{err.field}</td>
+                        <td className="px-4 py-2.5 text-muted font-mono text-xs">{err.rowNumber}</td>
+                        <td className="px-4 py-2.5 text-muted text-xs">{err.field}</td>
                         <td className="px-4 py-2.5 text-red-300 text-xs">{err.message}</td>
                       </tr>
                     ))}
@@ -301,7 +301,7 @@ const BulkUploadModal: React.FC<BulkUploadModalProps> = ({ isOpen, onClose, onIm
                   <p className="text-sm font-medium text-emerald-300">
                     {uploadState.validCount} row{uploadState.validCount !== 1 ? 's' : ''} ready to import
                   </p>
-                  <p className="text-xs text-zinc-400 mt-1">Review below, then click Confirm Import to save to the database.</p>
+                  <p className="text-xs text-muted mt-1">Review below, then click Confirm Import to save to the database.</p>
                 </div>
               </div>
 
@@ -312,7 +312,7 @@ const BulkUploadModal: React.FC<BulkUploadModalProps> = ({ isOpen, onClose, onIm
                     <p className="text-xs font-medium text-yellow-300 mb-1">Warnings (rows will still be imported)</p>
                     <ul className="space-y-0.5">
                       {uploadState.warnings.map((w, i) => (
-                        <li key={i} className="text-xs text-zinc-400">Row {w.rowNumber} · {w.field}: {w.message}</li>
+                        <li key={i} className="text-xs text-muted">Row {w.rowNumber} · {w.field}: {w.message}</li>
                       ))}
                     </ul>
                   </div>
@@ -324,23 +324,23 @@ const BulkUploadModal: React.FC<BulkUploadModalProps> = ({ isOpen, onClose, onIm
                   <thead className="sticky top-0">
                     <tr className="bg-zinc-800">
                       {['#', 'External Client', 'Internal Client', 'Dept', 'Intake', 'Type', 'Date Started', 'Date Finished', 'Status', 'NNA'].map(h => (
-                        <th key={h} className="text-left font-medium text-zinc-400 uppercase tracking-wider px-3 py-2.5">{h}</th>
+                        <th key={h} className="text-left font-medium text-muted uppercase tracking-wider px-3 py-2.5">{h}</th>
                       ))}
                     </tr>
                   </thead>
                   <tbody>
                     {uploadState.preview.map((row, i) => (
                       <tr key={i} className={`border-t border-zinc-800/50 ${i % 2 !== 0 ? 'bg-zinc-800/20' : ''}`}>
-                        <td className="px-3 py-2 text-zinc-500 font-mono">{row.rowNumber}</td>
-                        <td className="px-3 py-2 text-zinc-300">{row.externalClient ?? <span className="text-zinc-600">—</span>}</td>
-                        <td className="px-3 py-2 text-zinc-300">{row.internalClientName}</td>
-                        <td className="px-3 py-2 text-zinc-400">{row.internalClientDept}</td>
-                        <td className="px-3 py-2 text-zinc-300">
+                        <td className="px-3 py-2 text-muted font-mono">{row.rowNumber}</td>
+                        <td className="px-3 py-2 text-muted">{row.externalClient ?? <span className="text-muted">—</span>}</td>
+                        <td className="px-3 py-2 text-muted">{row.internalClientName}</td>
+                        <td className="px-3 py-2 text-muted">{row.internalClientDept}</td>
+                        <td className="px-3 py-2 text-muted">
                           {row.intakeType}{row.adHocChannel ? ` · ${row.adHocChannel}` : ''}
                         </td>
-                        <td className="px-3 py-2 text-zinc-300">{row.type}</td>
-                        <td className="px-3 py-2 text-zinc-400 font-mono">{row.dateStarted}</td>
-                        <td className="px-3 py-2 text-zinc-400 font-mono">{row.dateFinished ?? <span className="text-zinc-600">—</span>}</td>
+                        <td className="px-3 py-2 text-muted">{row.type}</td>
+                        <td className="px-3 py-2 text-muted font-mono">{row.dateStarted}</td>
+                        <td className="px-3 py-2 text-muted font-mono">{row.dateFinished ?? <span className="text-muted">—</span>}</td>
                         <td className="px-3 py-2">
                           <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${
                             row.status === 'Completed' ? 'bg-emerald-500/15 text-emerald-400' :
@@ -348,12 +348,12 @@ const BulkUploadModal: React.FC<BulkUploadModalProps> = ({ isOpen, onClose, onIm
 
                             row.status === 'Awaiting Meeting' ? 'bg-amber-500/15 text-amber-400' :
                             row.status === 'Follow Up' ? 'bg-orange-500/15 text-orange-400' :
-                            'bg-zinc-700/50 text-zinc-400'
+                            'bg-zinc-700/50 text-muted'
                           }`}>
                             {row.status}
                           </span>
                         </td>
-                        <td className="px-3 py-2 text-zinc-400">{formatNNA(row.nna)}</td>
+                        <td className="px-3 py-2 text-muted">{formatNNA(row.nna)}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -372,14 +372,14 @@ const BulkUploadModal: React.FC<BulkUploadModalProps> = ({ isOpen, onClose, onIm
                 <p className="text-lg font-semibold text-white">
                   {uploadState.inserted} row{uploadState.inserted !== 1 ? 's' : ''} imported
                 </p>
-                <p className="text-sm text-zinc-400 mt-1">The interactions table has been updated.</p>
+                <p className="text-sm text-muted mt-1">The interactions table has been updated.</p>
               </div>
               {uploadState.warnings.length > 0 && (
                 <div className="w-full max-w-md p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
                   <p className="text-xs font-medium text-yellow-300 mb-1">Notes from import</p>
                   <ul className="space-y-0.5">
                     {uploadState.warnings.map((w, i) => (
-                      <li key={i} className="text-xs text-zinc-400">Row {w.rowNumber}: {w.message}</li>
+                      <li key={i} className="text-xs text-muted">Row {w.rowNumber}: {w.message}</li>
                     ))}
                   </ul>
                 </div>
@@ -395,7 +395,7 @@ const BulkUploadModal: React.FC<BulkUploadModalProps> = ({ isOpen, onClose, onIm
               <>
                 <button
                   onClick={handleReset}
-                  className="px-4 py-2 text-sm text-zinc-400 hover:text-white transition-colors"
+                  className="px-4 py-2 text-sm text-muted hover:text-white transition-colors"
                 >
                   Upload a different file
                 </button>
@@ -424,7 +424,7 @@ const BulkUploadModal: React.FC<BulkUploadModalProps> = ({ isOpen, onClose, onIm
                 <div />
                 <button
                   onClick={handleReset}
-                  className="flex items-center gap-1.5 px-4 py-2 bg-zinc-800 border border-zinc-700/50 text-sm text-zinc-300 hover:text-white transition-colors rounded-[4px]"
+                  className="flex items-center gap-1.5 px-4 py-2 bg-zinc-800 border border-zinc-700/50 text-sm text-muted hover:text-white transition-colors rounded-[4px]"
                 >
                   <Upload className="w-4 h-4" />
                   Try again

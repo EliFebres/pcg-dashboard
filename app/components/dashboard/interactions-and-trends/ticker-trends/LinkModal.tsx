@@ -88,15 +88,15 @@ const LinkModal: React.FC<LinkModalProps> = ({
         <div className="relative z-10 px-5 py-4 border-b border-zinc-800/50 flex items-center justify-between">
           <div>
             <h2 className="text-base font-medium text-white">{title}</h2>
-            <p className="text-xs text-zinc-400 mt-0.5">
+            <p className="text-xs text-muted mt-0.5">
               <span className="text-cyan-400 font-medium">{ticker}</span>
-              <span className="text-zinc-500 mx-1">·</span>
+              <span className="text-muted mx-1">·</span>
               {tickerName}
             </p>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors"
+            className="p-1.5 text-muted hover:text-white hover:bg-zinc-800 transition-colors"
           >
             <X className="w-4 h-4" />
           </button>
@@ -106,11 +106,11 @@ const LinkModal: React.FC<LinkModalProps> = ({
         <div className="relative z-10 p-5">
           <div className="space-y-4">
             <div>
-              <label className="block text-xs font-medium text-zinc-400 mb-2">
+              <label className="block text-xs font-medium text-muted mb-2">
                 {label}
               </label>
               <div className="relative">
-                <Link className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
+                <Link className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
                 <input
                   ref={inputRef}
                   type="text"
@@ -130,7 +130,7 @@ const LinkModal: React.FC<LinkModalProps> = ({
             {/* Preview */}
             {url.trim() && isValidUrl && (
               <div className="p-3 bg-zinc-800/30 border border-zinc-700/30">
-                <p className="text-xs text-zinc-400 mb-2">Preview:</p>
+                <p className="text-xs text-muted mb-2">Preview:</p>
                 <a
                   href={url.trim()}
                   target="_blank"
@@ -161,7 +161,7 @@ const LinkModal: React.FC<LinkModalProps> = ({
           <div className="flex items-center gap-3">
             <button
               onClick={onClose}
-              className="px-4 py-2 text-sm text-zinc-400 hover:text-white transition-colors"
+              className="px-4 py-2 text-sm text-muted hover:text-white transition-colors"
             >
               Cancel
             </button>
@@ -171,7 +171,7 @@ const LinkModal: React.FC<LinkModalProps> = ({
               className={`flex items-center gap-2 px-4 py-2 text-sm font-medium transition-all ${
                 hasChanges && isValidUrl
                   ? 'bg-gradient-to-r from-blue-600 to-cyan-500 text-white hover:from-blue-500 hover:to-cyan-400'
-                  : 'bg-zinc-800 text-zinc-500 cursor-not-allowed'
+                  : 'bg-zinc-800 text-muted cursor-not-allowed'
               }`}
             >
               <Link className="w-4 h-4" />

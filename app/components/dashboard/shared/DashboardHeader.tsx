@@ -116,12 +116,12 @@ function FilterDropdownButton({ filter }: { filter: FilterDropdown }) {
           className={`flex items-center gap-1.5 px-3 py-2 backdrop-blur-sm border text-sm transition-colors ${
             isFiltered
               ? 'bg-cyan-500/10 border-cyan-500/30 text-cyan-400'
-              : 'bg-zinc-900/50 border-zinc-700/50 text-zinc-300 hover:bg-zinc-800/50 hover:border-zinc-600/50'
+              : 'bg-zinc-900/50 border-zinc-700/50 text-muted hover:bg-zinc-800/50 hover:border-zinc-600/50'
           }`}
         >
-          <IconComponent className={`w-4 h-4 ${isFiltered ? 'text-cyan-400' : 'text-zinc-500'}`} />
+          <IconComponent className={`w-4 h-4 ${isFiltered ? 'text-cyan-400' : 'text-muted'}`} />
           {getDisplayText()}
-          <ChevronDown className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''} ${isFiltered ? 'text-cyan-400' : 'text-zinc-500'}`} />
+          <ChevronDown className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''} ${isFiltered ? 'text-cyan-400' : 'text-muted'}`} />
         </button>
       </PopoverTrigger>
       <PopoverContent className="min-w-[var(--radix-popover-trigger-width)] w-max">
@@ -134,7 +134,7 @@ function FilterDropdownButton({ filter }: { filter: FilterDropdown }) {
               className={`w-full flex items-center justify-between px-3 py-2 text-sm text-left transition-colors ${
                 filter.value === filter.options[0]
                   ? 'bg-cyan-500/10 text-cyan-400'
-                  : 'text-zinc-300 hover:bg-white/[0.05]'
+                  : 'text-muted hover:bg-white/[0.05]'
               }`}
             >
               {filter.options[0]}
@@ -142,7 +142,7 @@ function FilterDropdownButton({ filter }: { filter: FilterDropdown }) {
             </button>
             {filter.optionGroups.map((group) => (
               <div key={group.label}>
-                <div className="px-3 py-1.5 text-[10px] font-semibold text-zinc-500 uppercase tracking-wider">
+                <div className="px-3 py-1.5 text-[10px] font-semibold text-muted uppercase tracking-wider">
                   {group.label}
                 </div>
                 {group.options.map((option) => (
@@ -152,7 +152,7 @@ function FilterDropdownButton({ filter }: { filter: FilterDropdown }) {
                     className={`w-full flex items-center justify-between pl-5 pr-3 py-2 text-sm text-left transition-colors ${
                       filter.value === option
                         ? 'bg-cyan-500/10 text-cyan-400'
-                        : 'text-zinc-300 hover:bg-white/[0.05]'
+                        : 'text-muted hover:bg-white/[0.05]'
                     }`}
                   >
                     {option}
@@ -171,7 +171,7 @@ function FilterDropdownButton({ filter }: { filter: FilterDropdown }) {
               className={`w-full flex items-center gap-2 px-3 py-2 text-sm text-left transition-colors ${
                 isOptionSelected(option)
                   ? 'bg-cyan-500/10 text-cyan-400'
-                  : 'text-zinc-300 hover:bg-white/[0.05]'
+                  : 'text-muted hover:bg-white/[0.05]'
               }`}
             >
               <div className={`w-4 h-4 border flex items-center justify-center transition-colors ${
@@ -193,7 +193,7 @@ function FilterDropdownButton({ filter }: { filter: FilterDropdown }) {
               className={`w-full flex items-center justify-between px-3 py-2 text-sm text-left transition-colors ${
                 filter.value === option
                   ? 'bg-cyan-500/10 text-cyan-400'
-                  : 'text-zinc-300 hover:bg-white/[0.05]'
+                  : 'text-muted hover:bg-white/[0.05]'
               }`}
             >
               {option}
@@ -319,7 +319,7 @@ export default function DashboardHeader({
       <div className="px-6 py-4">
         <div className="mb-4">
           <h2 className="text-xl font-semibold text-white">{title}</h2>
-          <p className="text-zinc-500 text-sm">{subtitle}</p>
+          <p className="text-muted text-sm">{subtitle}</p>
         </div>
         {/* Global Filters + Tabs */}
         <div className="flex items-center gap-2 h-9">
@@ -329,7 +329,7 @@ export default function DashboardHeader({
             }`}
           >
             <div className="relative w-[360px]">
-              <Search className="w-4 h-4 text-zinc-500 absolute left-3 top-1/2 -translate-y-1/2" />
+              <Search className="w-4 h-4 text-muted absolute left-3 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
                 placeholder={searchPlaceholder}
@@ -399,7 +399,7 @@ export default function DashboardHeader({
                       className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all ${
                         tab.active
                           ? 'bg-gradient-to-r from-blue-600 to-cyan-500 text-white shadow-sm'
-                          : 'text-zinc-400 hover:text-white hover:bg-zinc-700/50'
+                          : 'text-muted hover:text-white hover:bg-zinc-700/50'
                       }`}
                     >
                       {tab.label}

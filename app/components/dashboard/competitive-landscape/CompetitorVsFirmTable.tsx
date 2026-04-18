@@ -23,9 +23,9 @@ const formatReturn = (val: number | null): string => {
 
 // Returns [competitorColor, firmColor] — only the winner gets colored
 const getWinnerColors = (firmWins: boolean | null): [string, string] => {
-  if (firmWins === true) return ['text-zinc-400', 'text-emerald-400'];
-  if (firmWins === false) return ['text-red-400', 'text-zinc-400'];
-  return ['text-zinc-500', 'text-zinc-500'];
+  if (firmWins === true) return ['text-muted', 'text-emerald-400'];
+  if (firmWins === false) return ['text-red-400', 'text-muted'];
+  return ['text-muted', 'text-muted'];
 };
 
 const getCellBg = (firmWins: boolean | null, enabled: boolean): string => {
@@ -66,17 +66,17 @@ export default function CompetitorVsFirmTable({
 
       <div className="relative z-10 px-4 py-3 border-b border-zinc-800/50 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <h3 className="text-sm font-medium text-zinc-300">{title}</h3>
-          <span className="text-xs text-zinc-500">({funds.length} fund pairs)</span>
+          <h3 className="text-sm font-medium text-muted">{title}</h3>
+          <span className="text-xs text-muted">({funds.length} fund pairs)</span>
         </div>
-        {asOfDate && <span className="text-xs text-zinc-500">{asOfDate}</span>}
+        {asOfDate && <span className="text-xs text-muted">{asOfDate}</span>}
       </div>
 
       <div className="relative z-10 overflow-x-auto">
         {isLoading ? (
           <div className="flex items-center justify-center py-16">
-            <Loader2 className="w-5 h-5 text-zinc-500 animate-spin mr-2" />
-            <span className="text-sm text-zinc-500">Loading comparisons...</span>
+            <Loader2 className="w-5 h-5 text-muted animate-spin mr-2" />
+            <span className="text-sm text-muted">Loading comparisons...</span>
           </div>
         ) : error ? (
           <div className="flex items-center justify-center py-16">
@@ -84,37 +84,37 @@ export default function CompetitorVsFirmTable({
           </div>
         ) : funds.length === 0 ? (
           <div className="flex items-center justify-center py-16">
-            <span className="text-sm text-zinc-500">No comparisons found</span>
+            <span className="text-sm text-muted">No comparisons found</span>
           </div>
         ) : (
           <table className="w-full text-sm whitespace-nowrap">
             <thead>
               <tr className="bg-zinc-800/95 backdrop-blur-sm border-b border-zinc-700/50">
-                <th className="px-3 py-2.5 text-left text-xs font-medium text-zinc-500 uppercase tracking-wider w-[140px] min-w-[140px] max-w-[140px]">Competitor Fund</th>
-                <th className="px-3 py-2.5 text-left text-xs font-medium text-zinc-500 uppercase tracking-wider w-[140px] min-w-[140px] max-w-[140px]">Firm Fund</th>
-                <th className="px-3 py-2.5 text-center text-xs font-medium text-zinc-500 uppercase tracking-wider whitespace-normal leading-tight">Net<br />Expense</th>
+                <th className="px-3 py-2.5 text-left text-xs font-medium text-muted uppercase tracking-wider w-[140px] min-w-[140px] max-w-[140px]">Competitor Fund</th>
+                <th className="px-3 py-2.5 text-left text-xs font-medium text-muted uppercase tracking-wider w-[140px] min-w-[140px] max-w-[140px]">Firm Fund</th>
+                <th className="px-3 py-2.5 text-center text-xs font-medium text-muted uppercase tracking-wider whitespace-normal leading-tight">Net<br />Expense</th>
                 {showCharacteristics && (
                   <>
-                    <th className="px-3 py-2.5 text-center text-xs font-medium text-zinc-500 uppercase tracking-wider">Holdings</th>
-                    <th className="px-3 py-2.5 text-center text-xs font-medium text-zinc-500 uppercase tracking-wider whitespace-normal leading-tight">Mkt<br />Cap</th>
-                    <th className="px-3 py-2.5 text-center text-xs font-medium text-zinc-500 uppercase tracking-wider">P/B</th>
-                    <th className="px-3 py-2.5 text-center text-xs font-medium text-zinc-500 uppercase tracking-wider">Prof</th>
+                    <th className="px-3 py-2.5 text-center text-xs font-medium text-muted uppercase tracking-wider">Holdings</th>
+                    <th className="px-3 py-2.5 text-center text-xs font-medium text-muted uppercase tracking-wider whitespace-normal leading-tight">Mkt<br />Cap</th>
+                    <th className="px-3 py-2.5 text-center text-xs font-medium text-muted uppercase tracking-wider">P/B</th>
+                    <th className="px-3 py-2.5 text-center text-xs font-medium text-muted uppercase tracking-wider">Prof</th>
                   </>
                 )}
                 {showFICharacteristics && (
                   <>
-                    <th className="px-3 py-2.5 text-center text-xs font-medium text-zinc-500 uppercase tracking-wider">Duration</th>
-                    <th className="px-3 py-2.5 text-center text-xs font-medium text-zinc-500 uppercase tracking-wider whitespace-normal leading-tight">Sec<br />Yield</th>
-                    <th className="px-3 py-2.5 text-center text-xs font-medium text-zinc-500 uppercase tracking-wider">QTD</th>
-                    <th className="px-3 py-2.5 text-center text-xs font-medium text-zinc-500 uppercase tracking-wider">YTD</th>
+                    <th className="px-3 py-2.5 text-center text-xs font-medium text-muted uppercase tracking-wider">Duration</th>
+                    <th className="px-3 py-2.5 text-center text-xs font-medium text-muted uppercase tracking-wider whitespace-normal leading-tight">Sec<br />Yield</th>
+                    <th className="px-3 py-2.5 text-center text-xs font-medium text-muted uppercase tracking-wider">QTD</th>
+                    <th className="px-3 py-2.5 text-center text-xs font-medium text-muted uppercase tracking-wider">YTD</th>
                   </>
                 )}
-                <th className="px-3 py-2.5 text-center text-xs font-medium text-zinc-500 uppercase tracking-wider">1 Yr</th>
-                <th className="px-3 py-2.5 text-center text-xs font-medium text-zinc-500 uppercase tracking-wider">3 Yr</th>
-                <th className="px-3 py-2.5 text-center text-xs font-medium text-zinc-500 uppercase tracking-wider">5 Yr</th>
+                <th className="px-3 py-2.5 text-center text-xs font-medium text-muted uppercase tracking-wider">1 Yr</th>
+                <th className="px-3 py-2.5 text-center text-xs font-medium text-muted uppercase tracking-wider">3 Yr</th>
+                <th className="px-3 py-2.5 text-center text-xs font-medium text-muted uppercase tracking-wider">5 Yr</th>
 
-                <th className="px-3 py-2.5 text-center text-xs font-medium text-zinc-500 uppercase tracking-wider whitespace-normal leading-tight">Since<br />Common</th>
-                <th className="px-3 py-2.5 text-center text-xs font-medium text-zinc-500 uppercase tracking-wider w-14">Notes</th>
+                <th className="px-3 py-2.5 text-center text-xs font-medium text-muted uppercase tracking-wider whitespace-normal leading-tight">Since<br />Common</th>
+                <th className="px-3 py-2.5 text-center text-xs font-medium text-muted uppercase tracking-wider w-14">Notes</th>
               </tr>
             </thead>
             <tbody>
@@ -123,7 +123,7 @@ export default function CompetitorVsFirmTable({
                   {/* Category group header row */}
                   <tr className="bg-zinc-700/20 border-b border-zinc-700/30">
                     <td colSpan={BASE_COL_COUNT + (showCharacteristics ? CHAR_COL_COUNT : 0) + (showFICharacteristics ? FI_COL_COUNT : 0)} className="px-4 py-2">
-                      <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">{category}</span>
+                      <span className="text-xs font-semibold text-muted uppercase tracking-wider">{category}</span>
                     </td>
                   </tr>
 
@@ -132,13 +132,13 @@ export default function CompetitorVsFirmTable({
                       {/* Competitor Fund */}
                       <td className="px-3 py-3" title={fund.competitorName}>
                         <div className="text-sm font-medium text-red-400">{fund.competitorTicker}</div>
-                        <div className="text-xs text-zinc-500 truncate max-w-[120px]">{fund.competitorName}</div>
+                        <div className="text-xs text-muted truncate max-w-[120px]">{fund.competitorName}</div>
                       </td>
 
                       {/* Firm Fund */}
                       <td className="px-3 py-3" title={fund.firmName}>
                         <div className="text-sm font-medium text-emerald-400">{fund.firmTicker}</div>
-                        <div className="text-xs text-zinc-500 truncate max-w-[120px]">{fund.firmName}</div>
+                        <div className="text-xs text-muted truncate max-w-[120px]">{fund.firmName}</div>
                       </td>
 
                       {/* Expense Ratio */}
@@ -163,7 +163,7 @@ export default function CompetitorVsFirmTable({
                               const avH = av?.holdings;
                               const dfH = df?.holdings;
                               const dfWins = avH != null && dfH != null ? dfH > avH : null;
-                              const [avClr, dfClr] = dfWins === true ? ['text-zinc-400', 'text-emerald-400'] : dfWins === false ? ['text-red-400', 'text-zinc-400'] : ['text-zinc-400', 'text-zinc-400'];
+                              const [avClr, dfClr] = dfWins === true ? ['text-muted', 'text-emerald-400'] : dfWins === false ? ['text-red-400', 'text-muted'] : ['text-muted', 'text-muted'];
                               const bg = getCellBg(dfWins, colorWinningCells);
                               return (
                                 <td className={`px-3 py-3 text-center ${bg}`}>
@@ -181,7 +181,7 @@ export default function CompetitorVsFirmTable({
                               const avVal = parse(av?.marketCap);
                               const dfVal = parse(df?.marketCap);
                               const dfSmaller = avVal != null && dfVal != null ? dfVal < avVal : null;
-                              const [avClr, dfClr] = dfSmaller === true ? ['text-zinc-400', 'text-emerald-400'] : dfSmaller === false ? ['text-red-400', 'text-zinc-400'] : ['text-zinc-400', 'text-zinc-400'];
+                              const [avClr, dfClr] = dfSmaller === true ? ['text-muted', 'text-emerald-400'] : dfSmaller === false ? ['text-red-400', 'text-muted'] : ['text-muted', 'text-muted'];
                               const bg = getCellBg(dfSmaller, colorWinningCells);
                               return (
                                 <td className={`px-3 py-3 text-center ${bg}`}>
@@ -194,7 +194,7 @@ export default function CompetitorVsFirmTable({
                               const avPB = av?.priceToBook;
                               const dfPB = df?.priceToBook;
                               const dfLower = avPB != null && dfPB != null ? dfPB < avPB : null;
-                              const [avClr, dfClr] = dfLower === true ? ['text-zinc-400', 'text-emerald-400'] : dfLower === false ? ['text-red-400', 'text-zinc-400'] : ['text-zinc-400', 'text-zinc-400'];
+                              const [avClr, dfClr] = dfLower === true ? ['text-muted', 'text-emerald-400'] : dfLower === false ? ['text-red-400', 'text-muted'] : ['text-muted', 'text-muted'];
                               const bg = getCellBg(dfLower, colorWinningCells);
                               return (
                                 <td className={`px-3 py-3 text-center ${bg}`}>
@@ -207,7 +207,7 @@ export default function CompetitorVsFirmTable({
                               const avP = av?.profitability;
                               const dfP = df?.profitability;
                               const dfHigher = avP != null && dfP != null ? dfP > avP : null;
-                              const [avClr, dfClr] = dfHigher === true ? ['text-zinc-400', 'text-emerald-400'] : dfHigher === false ? ['text-red-400', 'text-zinc-400'] : ['text-zinc-400', 'text-zinc-400'];
+                              const [avClr, dfClr] = dfHigher === true ? ['text-muted', 'text-emerald-400'] : dfHigher === false ? ['text-red-400', 'text-muted'] : ['text-muted', 'text-muted'];
                               const bg = getCellBg(dfHigher, colorWinningCells);
                               return (
                                 <td className={`px-3 py-3 text-center ${bg}`}>
@@ -326,7 +326,7 @@ export default function CompetitorVsFirmTable({
                           <td className={`px-3 py-3 text-center ${bg}`}>
                             <div className={`text-xs font-medium ${avClr}`}>{formatReturn(fund.competitorReturns.sinceCommonInception ?? null)}</div>
                             <div className={`text-xs font-medium ${dfClr}`}>{formatReturn(fund.firmReturns.sinceCommonInception ?? null)}</div>
-                            <div className="text-[10px] text-zinc-600 mt-0.5">{fund.commonInceptionDate}</div>
+                            <div className="text-[10px] text-muted mt-0.5">{fund.commonInceptionDate}</div>
                           </td>
                         );
                       })()}
@@ -338,7 +338,7 @@ export default function CompetitorVsFirmTable({
                           className={`relative p-1.5 rounded transition-colors ${
                             fund.noteCount > 0
                               ? 'bg-cyan-500/10 text-cyan-400 hover:bg-cyan-500/20'
-                              : 'bg-zinc-800/50 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800'
+                              : 'bg-zinc-800/50 text-muted hover:text-muted hover:bg-zinc-800'
                           }`}
                           title={fund.noteCount > 0 ? `${fund.noteCount} note${fund.noteCount > 1 ? 's' : ''}` : 'Add notes'}
                         >

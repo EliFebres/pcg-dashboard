@@ -20,7 +20,7 @@ const getCategoryStyle = (category: FundCategory): string => {
     case 'Global Equity': return 'bg-cyan-500/15 text-cyan-400 border border-cyan-500/30';
     case 'Real Estate': return 'bg-orange-500/15 text-orange-400 border border-orange-500/30';
     case 'Fixed Income': return 'bg-teal-500/15 text-teal-400 border border-teal-500/30';
-    default: return 'bg-zinc-500/15 text-zinc-400 border border-zinc-500/30';
+    default: return 'bg-zinc-500/15 text-muted border border-zinc-500/30';
   }
 };
 
@@ -40,9 +40,9 @@ const formatDelta = (firm: number | null, competitor: number | null): { text: st
 
 const RankBadge = ({ rank }: { rank: number }) => {
   if (rank === 1) return <Trophy className="w-4 h-4 text-amber-400" />;
-  if (rank === 2) return <Medal className="w-4 h-4 text-zinc-300" />;
+  if (rank === 2) return <Medal className="w-4 h-4 text-muted" />;
   if (rank === 3) return <Medal className="w-4 h-4 text-amber-600" />;
-  return <span className="text-sm text-zinc-500 font-mono">{rank}</span>;
+  return <span className="text-sm text-muted font-mono">{rank}</span>;
 };
 
 const ScoreBar = ({ total, outOf }: { total: number; outOf: number }) => {
@@ -50,7 +50,7 @@ const ScoreBar = ({ total, outOf }: { total: number; outOf: number }) => {
   const color = pct >= 75 ? 'bg-emerald-500' : pct >= 50 ? 'bg-amber-500' : 'bg-red-500';
   return (
     <div className="flex items-center gap-2">
-      <span className="text-xs font-mono text-zinc-300 w-7 text-right">{total}/{outOf}</span>
+      <span className="text-xs font-mono text-muted w-7 text-right">{total}/{outOf}</span>
       <div className="w-16 h-1.5 bg-zinc-700/50 rounded-full overflow-hidden">
         <div className={`h-full rounded-full ${color}`} style={{ width: `${pct}%` }} />
       </div>
@@ -73,8 +73,8 @@ export default function CompetitorTable({
       {/* Header */}
       <div className="relative z-10 px-4 py-3 border-b border-zinc-800/50 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <h3 className="text-sm font-medium text-zinc-300">Fund Comparisons</h3>
-          <span className="text-xs text-zinc-500">({funds.length} comparisons)</span>
+          <h3 className="text-sm font-medium text-muted">Fund Comparisons</h3>
+          <span className="text-xs text-muted">({funds.length} comparisons)</span>
         </div>
       </div>
 
@@ -82,8 +82,8 @@ export default function CompetitorTable({
       <div className="relative z-10 overflow-x-auto">
         {isLoading ? (
           <div className="flex items-center justify-center py-16">
-            <Loader2 className="w-5 h-5 text-zinc-500 animate-spin mr-2" />
-            <span className="text-sm text-zinc-500">Loading fund comparisons...</span>
+            <Loader2 className="w-5 h-5 text-muted animate-spin mr-2" />
+            <span className="text-sm text-muted">Loading fund comparisons...</span>
           </div>
         ) : error ? (
           <div className="flex items-center justify-center py-16">
@@ -91,28 +91,28 @@ export default function CompetitorTable({
           </div>
         ) : funds.length === 0 ? (
           <div className="flex items-center justify-center py-16">
-            <span className="text-sm text-zinc-500">No comparisons found</span>
+            <span className="text-sm text-muted">No comparisons found</span>
           </div>
         ) : (
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-zinc-800/95 backdrop-blur-sm border-b border-zinc-700/50">
-                <th className="px-3 py-2.5 text-left text-xs font-medium text-zinc-500 uppercase tracking-wider w-10">#</th>
-                <th className="px-3 py-2.5 text-left text-xs font-medium text-zinc-500 uppercase tracking-wider">Category</th>
-                <th className="px-3 py-2.5 text-left text-xs font-medium text-zinc-500 uppercase tracking-wider">Competitor</th>
-                <th className="px-3 py-2.5 text-left text-xs font-medium text-zinc-500 uppercase tracking-wider">Firm Alternative</th>
-                <th className="px-3 py-2.5 text-center text-xs font-medium text-zinc-500 uppercase tracking-wider">Expense</th>
-                <th className="px-3 py-2.5 text-center text-xs font-medium text-zinc-500 uppercase tracking-wider">1 Yr</th>
-                <th className="px-3 py-2.5 text-center text-xs font-medium text-zinc-500 uppercase tracking-wider">3 Yr</th>
-                <th className="px-3 py-2.5 text-center text-xs font-medium text-zinc-500 uppercase tracking-wider">5 Yr</th>
-                <th className="px-3 py-2.5 text-center text-xs font-medium text-zinc-500 uppercase tracking-wider">10 Yr</th>
-                <th className="px-3 py-2.5 text-center text-xs font-medium text-zinc-500 uppercase tracking-wider">Holdings</th>
+                <th className="px-3 py-2.5 text-left text-xs font-medium text-muted uppercase tracking-wider w-10">#</th>
+                <th className="px-3 py-2.5 text-left text-xs font-medium text-muted uppercase tracking-wider">Category</th>
+                <th className="px-3 py-2.5 text-left text-xs font-medium text-muted uppercase tracking-wider">Competitor</th>
+                <th className="px-3 py-2.5 text-left text-xs font-medium text-muted uppercase tracking-wider">Firm Alternative</th>
+                <th className="px-3 py-2.5 text-center text-xs font-medium text-muted uppercase tracking-wider">Expense</th>
+                <th className="px-3 py-2.5 text-center text-xs font-medium text-muted uppercase tracking-wider">1 Yr</th>
+                <th className="px-3 py-2.5 text-center text-xs font-medium text-muted uppercase tracking-wider">3 Yr</th>
+                <th className="px-3 py-2.5 text-center text-xs font-medium text-muted uppercase tracking-wider">5 Yr</th>
+                <th className="px-3 py-2.5 text-center text-xs font-medium text-muted uppercase tracking-wider">10 Yr</th>
+                <th className="px-3 py-2.5 text-center text-xs font-medium text-muted uppercase tracking-wider">Holdings</th>
                 {showPriceToBook && (
-                  <th className="px-3 py-2.5 text-center text-xs font-medium text-zinc-500 uppercase tracking-wider">P/B</th>
+                  <th className="px-3 py-2.5 text-center text-xs font-medium text-muted uppercase tracking-wider">P/B</th>
                 )}
-                <th className="px-3 py-2.5 text-center text-xs font-medium text-zinc-500 uppercase tracking-wider">Yield</th>
-                <th className="px-3 py-2.5 text-center text-xs font-medium text-zinc-500 uppercase tracking-wider">Firm Score</th>
-                <th className="px-3 py-2.5 text-center text-xs font-medium text-zinc-500 uppercase tracking-wider w-14">Notes</th>
+                <th className="px-3 py-2.5 text-center text-xs font-medium text-muted uppercase tracking-wider">Yield</th>
+                <th className="px-3 py-2.5 text-center text-xs font-medium text-muted uppercase tracking-wider">Firm Score</th>
+                <th className="px-3 py-2.5 text-center text-xs font-medium text-muted uppercase tracking-wider w-14">Notes</th>
               </tr>
             </thead>
             <tbody>
@@ -143,13 +143,13 @@ export default function CompetitorTable({
                     {/* Competitor */}
                     <td className="px-3 py-3">
                       <div className="text-sm font-medium text-cyan-400">{fund.competitorTicker}</div>
-                      <div className="text-xs text-zinc-500 truncate max-w-[180px]">{fund.competitorName}</div>
+                      <div className="text-xs text-muted truncate max-w-[180px]">{fund.competitorName}</div>
                     </td>
 
                     {/* Firm Alternative */}
                     <td className="px-3 py-3">
                       <div className="text-sm font-medium text-amber-400">{fund.firmTicker}</div>
-                      <div className="text-xs text-zinc-500 truncate max-w-[180px]">{fund.firmName}</div>
+                      <div className="text-xs text-muted truncate max-w-[180px]">{fund.firmName}</div>
                     </td>
 
                     {/* Expense Ratio */}
@@ -157,45 +157,45 @@ export default function CompetitorTable({
                       <div className={`text-xs font-medium ${expWin ? 'text-emerald-400' : 'text-red-400'}`}>
                         {fund.firmExpenseRatio.toFixed(2)}%
                       </div>
-                      <div className="text-xs text-zinc-600">vs {fund.competitorExpenseRatio.toFixed(2)}%</div>
+                      <div className="text-xs text-muted">vs {fund.competitorExpenseRatio.toFixed(2)}%</div>
                     </td>
 
                     {/* 1 Yr Return */}
                     <td className={`px-3 py-3 text-center ${r1.positive === true ? 'bg-emerald-500/[0.06]' : r1.positive === false ? 'bg-red-500/[0.06]' : ''}`}>
-                      <div className={`text-xs font-medium ${r1.positive === true ? 'text-emerald-400' : r1.positive === false ? 'text-red-400' : 'text-zinc-500'}`}>
+                      <div className={`text-xs font-medium ${r1.positive === true ? 'text-emerald-400' : r1.positive === false ? 'text-red-400' : 'text-muted'}`}>
                         {r1.text}
                       </div>
-                      <div className="text-xs text-zinc-600">
+                      <div className="text-xs text-muted">
                         {formatReturn(fund.firmReturns.oneYear)} vs {formatReturn(fund.competitorReturns.oneYear)}
                       </div>
                     </td>
 
                     {/* 3 Yr Return */}
                     <td className={`px-3 py-3 text-center ${r3.positive === true ? 'bg-emerald-500/[0.06]' : r3.positive === false ? 'bg-red-500/[0.06]' : ''}`}>
-                      <div className={`text-xs font-medium ${r3.positive === true ? 'text-emerald-400' : r3.positive === false ? 'text-red-400' : 'text-zinc-500'}`}>
+                      <div className={`text-xs font-medium ${r3.positive === true ? 'text-emerald-400' : r3.positive === false ? 'text-red-400' : 'text-muted'}`}>
                         {r3.text}
                       </div>
-                      <div className="text-xs text-zinc-600">
+                      <div className="text-xs text-muted">
                         {formatReturn(fund.firmReturns.threeYear)} vs {formatReturn(fund.competitorReturns.threeYear)}
                       </div>
                     </td>
 
                     {/* 5 Yr Return */}
                     <td className={`px-3 py-3 text-center ${r5.positive === true ? 'bg-emerald-500/[0.06]' : r5.positive === false ? 'bg-red-500/[0.06]' : ''}`}>
-                      <div className={`text-xs font-medium ${r5.positive === true ? 'text-emerald-400' : r5.positive === false ? 'text-red-400' : 'text-zinc-500'}`}>
+                      <div className={`text-xs font-medium ${r5.positive === true ? 'text-emerald-400' : r5.positive === false ? 'text-red-400' : 'text-muted'}`}>
                         {r5.text}
                       </div>
-                      <div className="text-xs text-zinc-600">
+                      <div className="text-xs text-muted">
                         {formatReturn(fund.firmReturns.fiveYear)} vs {formatReturn(fund.competitorReturns.fiveYear)}
                       </div>
                     </td>
 
                     {/* 10 Yr Return */}
                     <td className={`px-3 py-3 text-center ${r10.positive === true ? 'bg-emerald-500/[0.06]' : r10.positive === false ? 'bg-red-500/[0.06]' : ''}`}>
-                      <div className={`text-xs font-medium ${r10.positive === true ? 'text-emerald-400' : r10.positive === false ? 'text-red-400' : 'text-zinc-500'}`}>
+                      <div className={`text-xs font-medium ${r10.positive === true ? 'text-emerald-400' : r10.positive === false ? 'text-red-400' : 'text-muted'}`}>
                         {r10.text}
                       </div>
-                      <div className="text-xs text-zinc-600">
+                      <div className="text-xs text-muted">
                         {formatReturn(fund.firmReturns.tenYear)} vs {formatReturn(fund.competitorReturns.tenYear)}
                       </div>
                     </td>
@@ -205,7 +205,7 @@ export default function CompetitorTable({
                       <div className={`text-xs font-medium ${holdingsWin ? 'text-emerald-400' : 'text-red-400'}`}>
                         {fund.firmHoldings.toLocaleString()}
                       </div>
-                      <div className="text-xs text-zinc-600">vs {fund.competitorHoldings.toLocaleString()}</div>
+                      <div className="text-xs text-muted">vs {fund.competitorHoldings.toLocaleString()}</div>
                     </td>
 
                     {/* P/B Ratio (conditional) */}
@@ -216,10 +216,10 @@ export default function CompetitorTable({
                             <div className={`text-xs font-medium ${pbWin ? 'text-emerald-400' : 'text-red-400'}`}>
                               {fund.firmPriceToBook.toFixed(1)}x
                             </div>
-                            <div className="text-xs text-zinc-600">vs {fund.competitorPriceToBook?.toFixed(1)}x</div>
+                            <div className="text-xs text-muted">vs {fund.competitorPriceToBook?.toFixed(1)}x</div>
                           </>
                         ) : (
-                          <span className="text-xs text-zinc-600">—</span>
+                          <span className="text-xs text-muted">—</span>
                         )}
                       </td>
                     )}
@@ -231,10 +231,10 @@ export default function CompetitorTable({
                           <div className={`text-xs font-medium ${yieldWin ? 'text-emerald-400' : 'text-red-400'}`}>
                             {fund.firmDividendYield.toFixed(2)}%
                           </div>
-                          <div className="text-xs text-zinc-600">vs {fund.competitorDividendYield?.toFixed(2)}%</div>
+                          <div className="text-xs text-muted">vs {fund.competitorDividendYield?.toFixed(2)}%</div>
                         </>
                       ) : (
-                        <span className="text-xs text-zinc-600">—</span>
+                        <span className="text-xs text-muted">—</span>
                       )}
                     </td>
 
@@ -250,7 +250,7 @@ export default function CompetitorTable({
                         className={`relative p-1.5 rounded transition-colors ${
                           fund.noteCount > 0
                             ? 'bg-cyan-500/10 text-cyan-400 hover:bg-cyan-500/20'
-                            : 'bg-zinc-800/50 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800'
+                            : 'bg-zinc-800/50 text-muted hover:text-muted hover:bg-zinc-800'
                         }`}
                         title={fund.noteCount > 0 ? `${fund.noteCount} note${fund.noteCount > 1 ? 's' : ''}` : 'Add notes'}
                       >

@@ -44,7 +44,7 @@ const SortableHeader: React.FC<SortableHeaderProps> = ({ label, column, currentS
   return (
     <th
       onClick={() => onSort(column)}
-      className={`${centered ? 'text-center' : 'text-left'} text-xs font-medium text-zinc-400 uppercase tracking-wider px-4 py-3 cursor-pointer hover:text-zinc-200 transition-colors select-none group`}
+      className={`${centered ? 'text-center' : 'text-left'} text-xs font-medium text-muted uppercase tracking-wider px-4 py-3 cursor-pointer hover:text-zinc-200 transition-colors select-none group`}
     >
       <div className={`flex items-center gap-1 ${centered ? 'justify-center' : ''}`}>
         {label}
@@ -56,7 +56,7 @@ const SortableHeader: React.FC<SortableHeaderProps> = ({ label, column, currentS
               <ChevronDown className="w-3.5 h-3.5 text-cyan-400" />
             )
           ) : (
-            <ChevronsUpDown className="w-3.5 h-3.5 text-zinc-600 group-hover:text-zinc-400 transition-colors" />
+            <ChevronsUpDown className="w-3.5 h-3.5 text-muted group-hover:text-muted transition-colors" />
           )}
         </span>
       </div>
@@ -185,7 +185,7 @@ const InteractionsTable: React.FC<InteractionsTableProps> = ({ engagements, sort
 
       case 'Awaiting Meeting': return 'bg-amber-500/10 text-amber-400 border border-amber-500/20';
       case 'Follow Up': return 'bg-orange-500/10 text-orange-400 border border-orange-500/20';
-      default: return 'bg-zinc-500/10 text-zinc-400 border border-zinc-500/20';
+      default: return 'bg-zinc-500/10 text-muted border border-zinc-500/20';
     }
   };
 
@@ -195,8 +195,8 @@ const InteractionsTable: React.FC<InteractionsTableProps> = ({ engagements, sort
       case 'Meeting': return 'bg-violet-500/15 text-violet-400';
       case 'Discovery Meeting': return 'bg-blue-500/15 text-blue-400';
 case 'PCR': return 'bg-rose-500/15 text-rose-400';
-      case 'Other': return 'bg-zinc-500/15 text-zinc-400';
-      default: return 'bg-zinc-500/10 text-zinc-400';
+      case 'Other': return 'bg-zinc-500/15 text-muted';
+      default: return 'bg-zinc-500/10 text-muted';
     }
   };
 
@@ -205,7 +205,7 @@ case 'PCR': return 'bg-rose-500/15 text-rose-400';
       case 'IRQ': return 'bg-blue-500/15 text-blue-400 border border-blue-500/30';
       case 'SRRF': return 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30';
       case 'GCG Ad-Hoc': return 'bg-pink-500/15 text-pink-400 border border-pink-500/30';
-      default: return 'bg-zinc-500/10 text-zinc-400 border border-zinc-500/30';
+      default: return 'bg-zinc-500/10 text-muted border border-zinc-500/30';
     }
   };
 
@@ -247,14 +247,14 @@ case 'PCR': return 'bg-rose-500/15 text-rose-400';
       onClick={isGhost || readOnly ? undefined : () => onRowClick(engagement)}
     >
       <td className="px-4 py-3">
-        <span className={`text-sm font-medium ${engagement.externalClient ? 'text-zinc-200' : 'text-zinc-600'}`}>
+        <span className={`text-sm font-medium ${engagement.externalClient ? 'text-zinc-200' : 'text-muted'}`}>
           {engagement.externalClient ?? '—'}
         </span>
       </td>
       <td className="px-4 py-3">
         <div>
           <span className="text-sm font-medium text-zinc-200">{engagement.internalClient.name}</span>
-          <p className="text-xs text-zinc-500">{engagement.internalClient.gcgDepartment}</p>
+          <p className="text-xs text-muted">{engagement.internalClient.gcgDepartment}</p>
         </div>
       </td>
       <td className="px-4 py-3">
@@ -272,7 +272,7 @@ case 'PCR': return 'bg-rose-500/15 text-rose-400';
           {engagement.teamMembers.slice(0, 4).map((member, idx) => (
             <div
               key={idx}
-              className="w-7 h-7 bg-zinc-700/80 backdrop-blur-sm border-2 border-zinc-900/50 flex items-center justify-center text-zinc-300 text-xs font-medium"
+              className="w-7 h-7 bg-zinc-700/80 backdrop-blur-sm border-2 border-zinc-900/50 flex items-center justify-center text-muted text-xs font-medium"
               title={member}
             >
               {getInitials(member)}
@@ -280,7 +280,7 @@ case 'PCR': return 'bg-rose-500/15 text-rose-400';
           ))}
           {engagement.teamMembers.length > 4 && (
             <div
-              className="w-7 h-7 bg-zinc-600/80 backdrop-blur-sm border-2 border-zinc-900/50 flex items-center justify-center text-zinc-300 text-xs font-medium"
+              className="w-7 h-7 bg-zinc-600/80 backdrop-blur-sm border-2 border-zinc-900/50 flex items-center justify-center text-muted text-xs font-medium"
               title={engagement.teamMembers.slice(4).join(', ')}
             >
               +{engagement.teamMembers.length - 4}
@@ -289,10 +289,10 @@ case 'PCR': return 'bg-rose-500/15 text-rose-400';
         </div>
       </td>
       <td className="px-4 py-3">
-        <span className="text-sm text-zinc-400 font-mono">{engagement.dateStarted}</span>
+        <span className="text-sm text-muted font-mono">{engagement.dateStarted}</span>
       </td>
       <td className="px-4 py-3">
-        <span className={`text-sm font-mono ${engagement.dateFinished === '—' ? 'text-zinc-600' : 'text-zinc-400'} ${flashTextFor(engagement.id, 'dateFinished')}`}>
+        <span className={`text-sm font-mono ${engagement.dateFinished === '—' ? 'text-muted' : 'text-muted'} ${flashTextFor(engagement.id, 'dateFinished')}`}>
           {engagement.dateFinished}
         </span>
       </td>
@@ -303,7 +303,7 @@ case 'PCR': return 'bg-rose-500/15 text-rose-400';
             <span className="text-xs font-medium">Yes</span>
           </div>
         ) : (
-          <div className={`flex items-center gap-1.5 text-zinc-500 ${flashTextFor(engagement.id, 'portfolioLogged')}`}>
+          <div className={`flex items-center gap-1.5 text-muted ${flashTextFor(engagement.id, 'portfolioLogged')}`}>
             <X className="w-4 h-4" />
             <span className="text-xs font-medium">No</span>
           </div>
@@ -313,7 +313,7 @@ case 'PCR': return 'bg-rose-500/15 text-rose-400';
         {readOnly ? (
           <span
             className={`inline-flex items-center gap-1.5 px-2 py-1 text-sm font-mono ${
-              engagement.nna ? 'text-emerald-400' : 'text-zinc-600'
+              engagement.nna ? 'text-emerald-400' : 'text-muted'
             } ${flashTextFor(engagement.id, 'nna')}`}
           >
             {engagement.nna ? formatTableNNA(engagement.nna) : '—'}
@@ -324,7 +324,7 @@ case 'PCR': return 'bg-rose-500/15 text-rose-400';
             className={`inline-flex items-center gap-1.5 px-2 py-1 text-sm font-mono transition-colors ${
               engagement.nna
                 ? 'text-emerald-400 hover:bg-emerald-500/10'
-                : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-700/30'
+                : 'text-muted hover:text-muted hover:bg-zinc-700/30'
             } ${flashTextFor(engagement.id, 'nna')}`}
             title={engagement.nna ? 'Edit NNA' : 'Add NNA'}
           >
@@ -362,7 +362,7 @@ case 'PCR': return 'bg-rose-500/15 text-rose-400';
           className={`relative inline-flex items-center justify-center p-1.5 transition-colors ${
             (engagement.noteCount ?? 0) > 0 || engagement.notes
               ? 'bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400'
-              : 'bg-zinc-800/50 hover:bg-zinc-700/50 text-zinc-500 hover:text-zinc-300'
+              : 'bg-zinc-800/50 hover:bg-zinc-700/50 text-muted hover:text-muted'
           } ${flashTextFor(engagement.id, 'noteCount')}`}
           title={(engagement.noteCount ?? 0) > 0 || engagement.notes ? 'View notes' : 'Add notes'}
         >
@@ -392,7 +392,7 @@ case 'PCR': return 'bg-rose-500/15 text-rose-400';
         <SortableHeader label="Portfolio Logged" column="portfolioLogged" currentSort={sortConfig} onSort={handleSort} />
         <SortableHeader label="NNA" column="nna" currentSort={sortConfig} onSort={handleSort} centered />
         <SortableHeader label="Status" column="status" currentSort={sortConfig} onSort={handleSort} />
-        <th className="text-center text-xs font-medium text-zinc-400 uppercase tracking-wider px-4 py-3">Notes</th>
+        <th className="text-center text-xs font-medium text-muted uppercase tracking-wider px-4 py-3">Notes</th>
       </tr>
     </thead>
   );
@@ -405,15 +405,15 @@ case 'PCR': return 'bg-rose-500/15 text-rose-400';
           onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
           disabled={currentPage === 1}
           className={`px-3 py-1.5 text-xs border border-zinc-700/50 transition-colors ${isFullscreenMode ? '' : 'backdrop-blur-sm'} ${currentPage === 1
-              ? 'text-zinc-600 cursor-not-allowed'
-              : 'text-zinc-400 hover:bg-white/[0.03] hover:text-zinc-200'
+              ? 'text-muted cursor-not-allowed'
+              : 'text-muted hover:bg-white/[0.03] hover:text-zinc-200'
             }`}
         >
           Previous
         </button>
         {getPageNumbers().map((page, idx) =>
           page === 'ellipsis' ? (
-            <span key={`ellipsis-${isFullscreenMode ? 'fs-' : ''}${idx}`} className="px-2 py-1.5 text-xs text-zinc-500">
+            <span key={`ellipsis-${isFullscreenMode ? 'fs-' : ''}${idx}`} className="px-2 py-1.5 text-xs text-muted">
               ...
             </span>
           ) : (
@@ -422,7 +422,7 @@ case 'PCR': return 'bg-rose-500/15 text-rose-400';
               onClick={() => setCurrentPage(page)}
               className={`px-3 py-1.5 text-xs transition-colors ${currentPage === page
                   ? 'bg-gradient-to-r from-blue-600 to-cyan-500 text-white'
-                  : `border border-zinc-700/50 hover:bg-white/[0.03] text-zinc-400 hover:text-zinc-200 ${isFullscreenMode ? '' : 'backdrop-blur-sm'}`
+                  : `border border-zinc-700/50 hover:bg-white/[0.03] text-muted hover:text-zinc-200 ${isFullscreenMode ? '' : 'backdrop-blur-sm'}`
                 }`}
             >
               {page}
@@ -433,8 +433,8 @@ case 'PCR': return 'bg-rose-500/15 text-rose-400';
           onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
           disabled={currentPage === totalPages}
           className={`px-3 py-1.5 text-xs border border-zinc-700/50 transition-colors ${isFullscreenMode ? '' : 'backdrop-blur-sm'} ${currentPage === totalPages
-              ? 'text-zinc-600 cursor-not-allowed'
-              : 'text-zinc-400 hover:bg-white/[0.03] hover:text-zinc-200'
+              ? 'text-muted cursor-not-allowed'
+              : 'text-muted hover:bg-white/[0.03] hover:text-zinc-200'
             }`}
         >
           Next
@@ -485,16 +485,16 @@ case 'PCR': return 'bg-rose-500/15 text-rose-400';
         <div className="relative z-10 px-4 py-2 flex items-center justify-between border-b border-zinc-800/50 flex-shrink-0">
           <h3 className="text-sm font-medium text-white">Interactions</h3>
           <div className="flex items-center gap-4">
-            <p className="text-xs text-zinc-500">
-              Showing <span className="text-zinc-300 font-medium">{((currentPage - 1) * pageSize) + 1}–{Math.min(currentPage * pageSize, engagements.length)}</span> of <span className="text-zinc-300 font-medium">{engagements.length}</span>
+            <p className="text-xs text-muted">
+              Showing <span className="text-muted font-medium">{((currentPage - 1) * pageSize) + 1}–{Math.min(currentPage * pageSize, engagements.length)}</span> of <span className="text-muted font-medium">{engagements.length}</span>
             </p>
-            <button onClick={onExport} disabled={isExporting} className="flex items-center gap-1.5 px-2 py-1 text-xs text-zinc-400 hover:text-cyan-400 disabled:opacity-50 disabled:cursor-not-allowed transition-colors" title="Download table data">
+            <button onClick={onExport} disabled={isExporting} className="flex items-center gap-1.5 px-2 py-1 text-xs text-muted hover:text-cyan-400 disabled:opacity-50 disabled:cursor-not-allowed transition-colors" title="Download table data">
               {isExporting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
               Export
             </button>
             <button
               onClick={() => setIsFullscreen(true)}
-              className="p-1.5 text-zinc-400 hover:text-cyan-400 hover:bg-white/[0.05] transition-colors"
+              className="p-1.5 text-muted hover:text-cyan-400 hover:bg-white/[0.05] transition-colors"
               title="Expand table"
             >
               <Maximize2 className="w-4 h-4" />
@@ -533,16 +533,16 @@ case 'PCR': return 'bg-rose-500/15 text-rose-400';
             <div className="relative z-10 px-4 py-3 flex items-center justify-between border-b border-zinc-800/50 flex-shrink-0">
               <h3 className="text-sm font-medium text-white">Interactions</h3>
               <div className="flex items-center gap-4">
-                <p className="text-xs text-zinc-500">
-                  Showing <span className="text-zinc-300 font-medium">{((currentPage - 1) * pageSize) + 1}–{Math.min(currentPage * pageSize, engagements.length)}</span> of <span className="text-zinc-300 font-medium">{engagements.length}</span>
+                <p className="text-xs text-muted">
+                  Showing <span className="text-muted font-medium">{((currentPage - 1) * pageSize) + 1}–{Math.min(currentPage * pageSize, engagements.length)}</span> of <span className="text-muted font-medium">{engagements.length}</span>
                 </p>
-                <button onClick={onExport} disabled={isExporting} className="flex items-center gap-1.5 px-2 py-1 text-xs text-zinc-400 hover:text-cyan-400 disabled:opacity-50 disabled:cursor-not-allowed transition-colors" title="Download table data">
+                <button onClick={onExport} disabled={isExporting} className="flex items-center gap-1.5 px-2 py-1 text-xs text-muted hover:text-cyan-400 disabled:opacity-50 disabled:cursor-not-allowed transition-colors" title="Download table data">
                   {isExporting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
                   Export
                 </button>
                 <button
                   onClick={() => setIsFullscreen(false)}
-                  className="p-1.5 text-zinc-400 hover:text-cyan-400 hover:bg-white/[0.05] transition-colors"
+                  className="p-1.5 text-muted hover:text-cyan-400 hover:bg-white/[0.05] transition-colors"
                   title="Exit fullscreen"
                 >
                   <Minimize2 className="w-4 h-4" />
@@ -565,7 +565,7 @@ case 'PCR': return 'bg-rose-500/15 text-rose-400';
                     <SortableHeader label="Portfolio Logged" column="portfolioLogged" currentSort={sortConfig} onSort={handleSort} />
                     <SortableHeader label="NNA" column="nna" currentSort={sortConfig} onSort={handleSort} centered />
                     <SortableHeader label="Status" column="status" currentSort={sortConfig} onSort={handleSort} />
-                    <th className="text-center text-xs font-medium text-zinc-400 uppercase tracking-wider px-4 py-3">Notes</th>
+                    <th className="text-center text-xs font-medium text-muted uppercase tracking-wider px-4 py-3">Notes</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-zinc-800/50">
