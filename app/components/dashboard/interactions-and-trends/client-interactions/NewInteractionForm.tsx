@@ -463,7 +463,7 @@ export default function NewInteractionForm({ isOpen, onClose, onSubmit, onUpdate
               {/* Linked From Previous Interaction */}
               <div>
                 <label className="block text-sm font-medium text-muted mb-1.5">
-                  Linked From Previous Interaction <span className="text-muted font-normal text-xs">(Optional — is this a follow-up or result of a prior engagement?)</span>
+                  Link to Previous Interaction <span className="text-muted font-normal text-xs">(Optional: Is this a follow-up or result of a prior interaction?)</span>
                 </label>
                 {formData.linkedFromId ? (
                   <div className="flex items-center justify-between gap-2 px-3 h-[38px] bg-cyan-500/10 border border-cyan-500/40 rounded-lg">
