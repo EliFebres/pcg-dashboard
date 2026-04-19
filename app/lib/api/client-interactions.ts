@@ -13,6 +13,7 @@
 
 import type {
   Engagement,
+  EngagementLinkSummary,
   NoteEntry,
   DayData,
   DepartmentData,
@@ -239,6 +240,31 @@ export async function getContributionData(filters: EngagementFilters = {}): Prom
   });
   if (!response.ok) throw new Error('Failed to fetch contribution data');
   return response.json();
+}
+
+/**
+ * Slim engagement search for the "link previous interaction" picker.
+ * Endpoint: GET /api/client-interactions/engagements/search
+ */
+export async function searchEngagementsForLink(opts: {
+  q?: string;
+  client?: string;
+  excludeId?: number;
+  id?: number;
+  limit?: number;
+}): Promise<EngagementLinkSummary[]> {
+  const params = new URLSearchParams();
+  if (opts.q) params.set('q', opts.q);
+  if (opts.client) params.set('client', opts.client);
+  if (opts.excludeId != null) params.set('excludeId', String(opts.excludeId));
+  if (opts.id != null) params.set('id', String(opts.id));
+  if (opts.limit != null) params.set('limit', String(opts.limit));
+  const response = await fetch(
+    `${API_BASE_URL}/client-interactions/engagements/search?${params.toString()}`
+  );
+  if (!response.ok) throw new Error('Failed to search engagements');
+  const data = await response.json();
+  return data.results as EngagementLinkSummary[];
 }
 
 /**

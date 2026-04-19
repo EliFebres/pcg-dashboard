@@ -313,6 +313,7 @@ export default function EngagementsDashboard() {
         nna: data.nna || undefined,
         notes: data.notes?.trim() || undefined,
         tickersMentioned: data.tickersMentioned?.length ? data.tickersMentioned : undefined,
+        linkedFromId: data.linkedFromId ?? null,
       });
       if (data.notes?.trim()) {
         await addEngagementNote(newEngagement.id, data.notes.trim());
@@ -380,6 +381,8 @@ export default function EngagementsDashboard() {
         portfolio: engagement.portfolio,
         nna: engagement.nna || null,
         tickersMentioned: engagement.tickersMentioned || [],
+        linkedFromId: engagement.linkedFromId ?? null,
+        linkedFromPreview: null,
       },
       originalDateStarted: engagement.dateStarted,
       originalDateFinished: engagement.dateFinished,
@@ -417,6 +420,7 @@ export default function EngagementsDashboard() {
         portfolio: data.portfolio,
         nna: data.nna ?? undefined,
         tickersMentioned: data.tickersMentioned?.length ? data.tickersMentioned : undefined,
+        linkedFromId: data.linkedFromId ?? null,
         version,
       });
       await reloadData();

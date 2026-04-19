@@ -1,7 +1,7 @@
 export const runtime = 'nodejs';
 
 import { NextRequest, NextResponse } from 'next/server';
-import { query, queryWrite } from '@/app/lib/db';
+import { query, queryWrite, executeTransaction } from '@/app/lib/db';
 import { rowToEngagement } from '@/app/lib/db/queries';
 import { requireAuth, teamConstraint, canModify, readOnlyError } from '@/app/lib/auth/require-auth';
 import { toISODate } from '@/app/lib/db/dateUtils';
@@ -113,6 +113,34 @@ export async function PATCH(
       setClauses.push('tickers_mentioned = ?');
       values.push(body.tickersMentioned ? JSON.stringify(body.tickersMentioned) : null);
     }
+    if (body.linkedFromId !== undefined) {
+      // null explicitly clears the link; a number sets/changes it
+      if (body.linkedFromId === null) {
+        setClauses.push('linked_from_id = ?');
+        values.push(null);
+      } else {
+        const n = Number(body.linkedFromId);
+        if (!Number.isFinite(n) || n <= 0) {
+          return NextResponse.json({ error: 'Invalid linkedFromId' }, { status: 400 });
+        }
+        if (n === engagementId) {
+          return NextResponse.json({ error: 'Cannot link an engagement to itself' }, { status: 400 });
+        }
+        // Parent must exist in the same team
+        const parentTeamClause = sc.team ? 'AND team = ?' : '';
+        const parentParams: unknown[] = [n];
+        if (sc.team) parentParams.push(sc.team);
+        const parent = await query<{ id: number }>(
+          `SELECT id FROM engagements WHERE id = ? ${parentTeamClause}`,
+          parentParams
+        );
+        if (parent.length === 0) {
+          return NextResponse.json({ error: 'Linked engagement not found' }, { status: 400 });
+        }
+        setClauses.push('linked_from_id = ?');
+        values.push(n);
+      }
+    }
 
     if (setClauses.length === 0) {
       return NextResponse.json({ error: 'No fields to update' }, { status: 400 });
@@ -206,7 +234,15 @@ export async function DELETE(
       [engagementId]
     );
     const internalClient = preDelete[0]?.internal_client_name ?? null;
-    await queryWrite(`DELETE FROM engagements WHERE id = ? ${teamClause}`, [engagementId, ...teamParams]);
+
+    // Null out any children's link, then delete — in one transaction so we don't leave orphans.
+    await executeTransaction(async (conn) => {
+      await conn.run(`UPDATE engagements SET linked_from_id = NULL WHERE linked_from_id = ?`, [engagementId]);
+      await conn.run(
+        `DELETE FROM engagements WHERE id = ? ${teamClause}`,
+        [engagementId, ...teamParams]
+      );
+    });
     emitEngagementChange('deleted');
     void logActivity(req, {
       action: 'engagement.delete',

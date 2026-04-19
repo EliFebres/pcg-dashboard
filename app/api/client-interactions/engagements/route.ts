@@ -63,13 +63,34 @@ export async function POST(req: NextRequest) {
 
     const department = body.internalClient?.gcgDepartment ?? body.department ?? '';
 
+    // Validate linkedFromId (if provided): must be a number and point to an engagement in the same team
+    let linkedFromId: number | null = null;
+    if (body.linkedFromId != null) {
+      const n = Number(body.linkedFromId);
+      if (!Number.isFinite(n) || n <= 0) {
+        return NextResponse.json({ error: 'Invalid linkedFromId' }, { status: 400 });
+      }
+      if (n === id) {
+        return NextResponse.json({ error: 'Cannot link an engagement to itself' }, { status: 400 });
+      }
+      const parent = await query<{ id: number }>(
+        `SELECT id FROM engagements WHERE id = ? AND team = ?`,
+        [n, auth.payload.team]
+      );
+      if (parent.length === 0) {
+        return NextResponse.json({ error: 'Linked engagement not found' }, { status: 400 });
+      }
+      linkedFromId = n;
+    }
+
     await execute(
       `INSERT INTO engagements (
         id, external_client, internal_client_name, internal_client_dept,
         intake_type, ad_hoc_channel, type, team_members, department,
         date_started, date_finished, status, portfolio_logged, portfolio,
-        nna, notes, tickers_mentioned, team, created_by_id, created_by_name
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        nna, notes, tickers_mentioned, team, created_by_id, created_by_name,
+        linked_from_id
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         id,
         body.externalClient ?? null,
@@ -91,6 +112,7 @@ export async function POST(req: NextRequest) {
         auth.payload.team,
         auth.payload.sub,
         `${auth.payload.firstName} ${auth.payload.lastName}`,
+        linkedFromId,
       ]
     );
 

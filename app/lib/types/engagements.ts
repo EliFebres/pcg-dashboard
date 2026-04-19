@@ -101,6 +101,18 @@ export interface Engagement {
   tickersMentioned?: string[]; // Tickers discussed during GCG Ad-Hoc interactions (used for Ticker Trends)
   createdById?: string; // User ID of the person who created this engagement
   createdByName?: string; // Display name of the creator
+  linkedFromId?: number | null; // Parent engagement this one was the result of (for funnel KPIs)
+}
+
+// Slim shape for the link picker — avoids fetching full engagement payloads
+export interface EngagementLinkSummary {
+  id: number;
+  dateStarted: string;
+  type: string;
+  intakeType: string;
+  internalClientName: string;
+  internalClientDept: string;
+  externalClient: string | null;
 }
 
 export interface ContributionData {

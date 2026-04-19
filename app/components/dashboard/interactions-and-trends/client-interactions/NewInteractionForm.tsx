@@ -1,13 +1,14 @@
 'use client';
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { X, ChevronDown, Check, DollarSign, Briefcase, FileText } from 'lucide-react';
+import { X, ChevronDown, Check, DollarSign, Briefcase, FileText, Link2 } from 'lucide-react';
 import NNAModal from '@/app/components/dashboard/interactions-and-trends/client-interactions/NNAModal';
 import PortfolioModal from '@/app/components/dashboard/interactions-and-trends/client-interactions/PortfolioModal';
 import NotesModal from '@/app/components/dashboard/interactions-and-trends/client-interactions/NotesModal';
+import LinkInteractionModal from '@/app/components/dashboard/interactions-and-trends/client-interactions/LinkInteractionModal';
 import { Select } from '@/app/components/ui/Select';
-import { PortfolioHolding } from '@/app/lib/types/engagements';
-import { getGcgClients, GcgClient } from '@/app/lib/api/client-interactions';
+import { PortfolioHolding, EngagementLinkSummary } from '@/app/lib/types/engagements';
+import { getGcgClients, GcgClient, searchEngagementsForLink } from '@/app/lib/api/client-interactions';
 import { useCurrentUser } from '@/app/lib/auth/context';
 import type { TeamMember } from '@/app/lib/auth/types';
 
@@ -27,6 +28,8 @@ export interface InteractionFormData {
   portfolio?: PortfolioHolding[];
   nna: number | null;
   tickersMentioned?: string[]; // Only for GCG Ad-Hoc - tickers discussed during interaction
+  linkedFromId?: number | null; // Parent engagement this one is the result of (funnel KPIs)
+  linkedFromPreview?: EngagementLinkSummary | null; // Cached preview so we can render the chip without re-fetching
 }
 
 export interface EditingEngagement {
@@ -122,6 +125,8 @@ export default function NewInteractionForm({ isOpen, onClose, onSubmit, onUpdate
     portfolio: undefined,
     nna: null,
     tickersMentioned: [],
+    linkedFromId: null,
+    linkedFromPreview: null,
   });
 
   const [formData, setFormData] = useState<InteractionFormData>(getDefaultFormData());
@@ -134,6 +139,7 @@ export default function NewInteractionForm({ isOpen, onClose, onSubmit, onUpdate
   const [isNNAModalOpen, setIsNNAModalOpen] = useState(false);
   const [isPortfolioModalOpen, setIsPortfolioModalOpen] = useState(false);
   const [isNotesModalOpen, setIsNotesModalOpen] = useState(false);
+  const [isLinkModalOpen, setIsLinkModalOpen] = useState(false);
   const [localNoteCount, setLocalNoteCount] = useState(initialNoteCount ?? 0);
   const [tickerInput, setTickerInput] = useState('');
   const [deleteConfirm, setDeleteConfirm] = useState(false);
@@ -195,6 +201,23 @@ export default function NewInteractionForm({ isOpen, onClose, onSubmit, onUpdate
       setDeleteConfirm(false);
     }
   }, [isOpen, editingEngagement, initialNoteCount]);
+
+  // If we have a linkedFromId but no preview (e.g. opened an existing engagement that had a link),
+  // fetch the slim summary so we can render the chip.
+  useEffect(() => {
+    if (!isOpen) return;
+    const { linkedFromId, linkedFromPreview } = formData;
+    if (!linkedFromId || linkedFromPreview) return;
+    let cancelled = false;
+    searchEngagementsForLink({ id: linkedFromId, limit: 1 })
+      .then(rows => {
+        if (cancelled) return;
+        const hit = rows[0];
+        if (hit) setFormData(prev => ({ ...prev, linkedFromPreview: hit }));
+      })
+      .catch(() => { /* non-fatal — chip will show minimal info */ });
+    return () => { cancelled = true; };
+  }, [isOpen, formData.linkedFromId, formData.linkedFromPreview]);
 
   // Clients matching the current search, grouped by department
   const trimmedSearch = internalClientSearch.trim();
@@ -434,6 +457,58 @@ export default function NewInteractionForm({ isOpen, onClose, onSubmit, onUpdate
                     </div>
                     {errors.adHocChannel && <p className="mt-1 text-xs text-red-400">{errors.adHocChannel}</p>}
                   </div>
+                )}
+              </div>
+
+              {/* Linked From Previous Interaction */}
+              <div>
+                <label className="block text-sm font-medium text-muted mb-1.5">
+                  Linked From Previous Interaction <span className="text-muted font-normal text-xs">(Optional — is this a follow-up or result of a prior engagement?)</span>
+                </label>
+                {formData.linkedFromId ? (
+                  <div className="flex items-center justify-between gap-2 px-3 h-[38px] bg-cyan-500/10 border border-cyan-500/40 rounded-lg">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <Link2 className="w-4 h-4 text-cyan-400 flex-shrink-0" />
+                      <div className="text-sm text-cyan-300 truncate">
+                        {formData.linkedFromPreview ? (
+                          <>
+                            <span className="font-medium">{formData.linkedFromPreview.type}</span>
+                            <span className="text-cyan-500/70"> · {formData.linkedFromPreview.intakeType}</span>
+                            <span className="text-cyan-500/70"> · {formData.linkedFromPreview.internalClientName}</span>
+                            <span className="text-cyan-500/50"> · {formData.linkedFromPreview.dateStarted}</span>
+                          </>
+                        ) : (
+                          <>Interaction #{formData.linkedFromId}</>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1 flex-shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => setIsLinkModalOpen(true)}
+                        className="text-xs text-cyan-400 hover:text-cyan-200 transition-colors px-2 py-1"
+                      >
+                        Change
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setFormData(prev => ({ ...prev, linkedFromId: null, linkedFromPreview: null }))}
+                        className="p-1 text-cyan-400 hover:text-cyan-200 transition-colors"
+                        aria-label="Clear link"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setIsLinkModalOpen(true)}
+                    className="w-full h-[38px] px-3 bg-zinc-800/50 border border-zinc-700 rounded-lg text-sm text-left text-muted hover:border-cyan-500/50 transition-colors flex items-center gap-2"
+                  >
+                    <Link2 className="w-4 h-4" />
+                    + Link a previous interaction
+                  </button>
                 )}
               </div>
 
@@ -808,6 +883,17 @@ export default function NewInteractionForm({ isOpen, onClose, onSubmit, onUpdate
             portfolioLogged: portfolio !== undefined && portfolio.length > 0,
           }));
         }}
+      />
+
+      {/* Link Previous Interaction Modal */}
+      <LinkInteractionModal
+        isOpen={isLinkModalOpen}
+        onClose={() => setIsLinkModalOpen(false)}
+        onSelect={(summary) => {
+          setFormData(prev => ({ ...prev, linkedFromId: summary.id, linkedFromPreview: summary }));
+        }}
+        defaultClient={formData.internalClient || undefined}
+        excludeId={editingEngagement?.id}
       />
 
       {/* Notes Modal */}

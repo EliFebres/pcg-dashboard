@@ -72,7 +72,8 @@ export async function getConnection(): Promise<DuckDBConnection> {
           portfolio            VARCHAR,
           nna                  BIGINT,
           notes                VARCHAR,
-          tickers_mentioned    VARCHAR
+          tickers_mentioned    VARCHAR,
+          linked_from_id       INTEGER
         )
       `);
       await conn.run(`CREATE SEQUENCE IF NOT EXISTS engagements_id_seq START 1`);
@@ -143,6 +144,15 @@ export async function getConnection(): Promise<DuckDBConnection> {
         await conn.run(`ALTER TABLE engagements ADD COLUMN created_by_id VARCHAR`);
         await conn.run(`ALTER TABLE engagements ADD COLUMN created_by_name VARCHAR`);
       }
+
+      // One-time migration: add linked_from_id for parent/child engagement tracking
+      const linkedFromCheck = await conn.runAndReadAll(
+        `SELECT column_name FROM information_schema.columns WHERE table_name = 'engagements' AND column_name = 'linked_from_id'`
+      );
+      if (linkedFromCheck.getRowObjects().length === 0) {
+        await conn.run(`ALTER TABLE engagements ADD COLUMN linked_from_id INTEGER`);
+      }
+      await conn.run(`CREATE INDEX IF NOT EXISTS idx_linked_from_id ON engagements (linked_from_id)`);
 
       return conn;
     })();

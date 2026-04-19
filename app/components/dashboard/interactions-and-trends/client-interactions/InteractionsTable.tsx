@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { FileText, Download, Check, X, ChevronUp, ChevronDown, ChevronsUpDown, Maximize2, Minimize2, Plus, Loader2 } from 'lucide-react';
+import { FileText, Download, Check, X, ChevronUp, ChevronDown, ChevronsUpDown, Maximize2, Minimize2, Plus, Loader2, Link2 } from 'lucide-react';
 import NotesModal from '@/app/components/dashboard/interactions-and-trends/client-interactions/NotesModal';
 import NNAModal from '@/app/components/dashboard/interactions-and-trends/client-interactions/NNAModal';
 import { Select } from '@/app/components/ui/Select';
@@ -263,9 +263,20 @@ case 'PCR': return 'bg-rose-500/15 text-rose-400';
         </span>
       </td>
       <td className="px-4 py-3">
-        <span className={`inline-flex px-2 py-0.5 text-xs font-medium backdrop-blur-sm ${getTypeStyle(engagement.type)} ${flashTextFor(engagement.id, 'type')}`}>
-          {engagement.type}
-        </span>
+        <div className="inline-flex items-center gap-1.5">
+          <span className={`inline-flex px-2 py-0.5 text-xs font-medium backdrop-blur-sm ${getTypeStyle(engagement.type)} ${flashTextFor(engagement.id, 'type')}`}>
+            {engagement.type}
+          </span>
+          {engagement.linkedFromId ? (
+            <span
+              title={`Linked from interaction #${engagement.linkedFromId}`}
+              className="inline-flex"
+              aria-label={`Linked from interaction #${engagement.linkedFromId}`}
+            >
+              <Link2 className="w-3 h-3 text-cyan-400/80" />
+            </span>
+          ) : null}
+        </div>
       </td>
       <td className={`px-4 py-3 ${flashFor(engagement.id, 'teamMembers')}`}>
         <div className="flex -space-x-1.5">
