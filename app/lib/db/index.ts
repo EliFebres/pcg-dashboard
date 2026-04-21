@@ -3,6 +3,7 @@ import path from 'path';
 import fs from 'fs';
 import { serializeWrite } from './writeQueue';
 import { openDuckDbWithWalRecovery, registerCheckpointOnExit } from './shutdown';
+import { maybeRunDailyAutoBackup } from './autoBackup';
 
 // Store on `global` so the connection survives Next.js hot reloads in dev mode.
 // Module-level variables get reset on each reload, leaving the old connection
@@ -168,6 +169,11 @@ export async function getConnection(): Promise<DuckDBConnection> {
       try { await conn.run(`CHECKPOINT`); } catch { /* best-effort */ }
 
       registerCheckpointOnExit('engagements', conn);
+
+      // Fire-and-forget: take a daily safety backup if >20h have passed since
+      // the last one. Errors are logged inside and never bubble up — a backup
+      // failure must not keep the app from serving requests.
+      maybeRunDailyAutoBackup().catch(() => {});
 
       return conn;
     })();
