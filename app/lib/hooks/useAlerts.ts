@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useCurrentUser } from '@/app/lib/auth/context';
 import { toDisplayName } from '@/app/lib/auth/types';
 import { getEngagements, getEngagementNotes } from '@/app/lib/api/client-interactions';
+import { useToastPublisher } from '@/app/lib/hooks/useToasts';
 import type { Alert } from '@/app/lib/types/alerts';
 
 interface AlertState {
@@ -73,6 +74,8 @@ export function useAlerts() {
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const stateRef = useRef<AlertState | null>(null);
+  const prevAlertIdsRef = useRef<Set<string> | null>(null);
+  const pushToast = useToastPublisher();
 
   const compute = useCallback(async () => {
     if (!user) return;
@@ -204,13 +207,25 @@ export function useAlerts() {
       saveState(user.id, state);
 
       result.sort((a, b) => b.timestamp - a.timestamp);
+
+      // Fire toasts for alerts that are new since the last compute() of this
+      // session. The first compute seeds the ref without firing — so existing
+      // alerts on page load never appear as toasts.
+      const prev = prevAlertIdsRef.current;
+      if (prev !== null) {
+        for (const alert of result) {
+          if (!prev.has(alert.id)) pushToast(alert);
+        }
+      }
+      prevAlertIdsRef.current = new Set(result.map((a) => a.id));
+
       setAlerts(result);
     } catch (err) {
       console.error('[useAlerts] failed to compute alerts', err);
     } finally {
       setIsLoading(false);
     }
-  }, [user]);
+  }, [user, pushToast]);
 
   useEffect(() => {
     if (user) compute();
