@@ -191,14 +191,14 @@ const InteractionsTable: React.FC<InteractionsTableProps> = ({ engagements, sort
 
   const getTypeStyle = (type: string): string => {
     switch (type) {
-      case 'Data Request': return 'bg-cyan-500/15 text-cyan-400';
-      case 'Meeting': return 'bg-violet-500/15 text-violet-400';
-      case 'Discovery Meeting': return 'bg-blue-500/15 text-blue-400';
-      case 'PCR': return 'bg-rose-500/15 text-rose-400';
-      case 'Follow-up Material': return 'bg-amber-500/15 text-amber-400';
-      case 'Follow-up Meeting': return 'bg-emerald-500/15 text-emerald-400';
-      case 'Other': return 'bg-zinc-500/15 text-muted';
-      default: return 'bg-zinc-500/10 text-muted';
+      case 'Data Request': return 'bg-cyan-500/15 text-cyan-400 border border-cyan-500/30';
+      case 'Meeting': return 'bg-violet-500/15 text-violet-400 border border-violet-500/30';
+      case 'Discovery Meeting': return 'bg-blue-500/15 text-blue-400 border border-blue-500/30';
+      case 'PCR': return 'bg-rose-500/15 text-rose-400 border border-rose-500/30';
+      case 'Follow-up Material': return 'bg-amber-500/15 text-amber-400 border border-amber-500/30';
+      case 'Follow-up Meeting': return 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30';
+      case 'Other': return 'bg-zinc-500/15 text-muted border border-zinc-500/30';
+      default: return 'bg-zinc-500/10 text-muted border border-zinc-500/30';
     }
   };
 
