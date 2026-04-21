@@ -89,6 +89,7 @@ export default function NewInteractionForm({ isOpen, onClose, onSubmit, onUpdate
     projectType: '',
     teamMembers: [],
     dateStarted: new Date().toISOString().split('T')[0],
+    status: 'In Progress',
     notes: '',
     portfolioLogged: false,
     portfolio: undefined,
