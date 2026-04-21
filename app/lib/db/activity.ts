@@ -1,53 +1,14 @@
-import { DuckDBInstance } from '@duckdb/node-api';
 import type { DuckDBConnection } from '@duckdb/node-api';
 import path from 'path';
 import fs from 'fs';
 import { serializeWrite } from './writeQueue';
+import { openDuckDbWithWalRecovery, registerCheckpointOnExit } from './shutdown';
 
 const g = global as typeof globalThis & {
   _activityConnectionPromise?: Promise<DuckDBConnection>;
-  _activityShutdownHooked?: boolean;
 };
 
 const QUEUE_KEY = 'activity';
-
-// True when the error message indicates DuckDB could not replay the WAL journal.
-function isWalReplayError(err: unknown): boolean {
-  const msg = String((err as Error | undefined)?.message ?? err);
-  return msg.includes('replaying WAL') || msg.includes('WAL file');
-}
-
-// Open the activity DB with self-healing for corrupted WAL/DB files.
-// Activity logs are telemetry with 30-day retention, so recreating the DB on
-// unrecoverable corruption is an acceptable trade-off.
-async function openActivityDb(filePath: string): Promise<DuckDBConnection> {
-  try {
-    const instance = await DuckDBInstance.create(filePath);
-    return await instance.connect();
-  } catch (err) {
-    if (!isWalReplayError(err)) throw err;
-
-    // First attempt: discard the WAL journal and retry. The main file may be fine.
-    const walPath = `${filePath}.wal`;
-    try { if (fs.existsSync(walPath)) fs.unlinkSync(walPath); } catch { /* ignore */ }
-    try {
-      const instance = await DuckDBInstance.create(filePath);
-      const conn = await instance.connect();
-      console.warn('[activity] recovered from corrupted WAL by discarding activity.duckdb.wal');
-      return conn;
-    } catch (err2) {
-      if (!isWalReplayError(err2)) throw err2;
-    }
-
-    // Last resort: recreate the DB from scratch. Loses historical telemetry only.
-    try { if (fs.existsSync(filePath)) fs.unlinkSync(filePath); } catch { /* ignore */ }
-    try { if (fs.existsSync(walPath)) fs.unlinkSync(walPath); } catch { /* ignore */ }
-    const instance = await DuckDBInstance.create(filePath);
-    const conn = await instance.connect();
-    console.warn('[activity] recovered from unrecoverable corruption by recreating activity.duckdb');
-    return conn;
-  }
-}
 
 async function columnExists(
   conn: DuckDBConnection,
@@ -74,7 +35,12 @@ export async function getActivityConnection(): Promise<DuckDBConnection> {
       }
       const resolved = path.join(resolvedDir, 'activity.duckdb');
 
-      const conn = await openActivityDb(resolved);
+      // Activity is telemetry with 30-day retention — allow recreate as a last
+      // resort if both WAL and main file are unrecoverable.
+      const conn = await openDuckDbWithWalRecovery(resolved, {
+        logTag: 'activity',
+        allowRecreate: true,
+      });
 
       await conn.run(`
         CREATE TABLE IF NOT EXISTS activity_logs (
@@ -126,22 +92,7 @@ export async function getActivityConnection(): Promise<DuckDBConnection> {
       // follows an unclean shutdown.
       try { await conn.run(`CHECKPOINT`); } catch { /* best-effort */ }
 
-      // Best-effort graceful shutdown: checkpoint on Ctrl+C / SIGTERM / process exit.
-      // Guarded with a global flag so HMR in dev doesn't stack handlers.
-      if (!g._activityShutdownHooked) {
-        g._activityShutdownHooked = true;
-        const checkpointAndExit = (signal: NodeJS.Signals | 'beforeExit') => {
-          conn.run(`CHECKPOINT`)
-            .catch(() => {})
-            .finally(() => {
-              if (signal === 'beforeExit') return;
-              process.exit(0);
-            });
-        };
-        process.once('SIGINT', () => checkpointAndExit('SIGINT'));
-        process.once('SIGTERM', () => checkpointAndExit('SIGTERM'));
-        process.once('beforeExit', () => checkpointAndExit('beforeExit'));
-      }
+      registerCheckpointOnExit('activity', conn);
 
       return conn;
     })();

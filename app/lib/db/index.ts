@@ -1,8 +1,8 @@
-import { DuckDBInstance } from '@duckdb/node-api';
 import type { DuckDBConnection } from '@duckdb/node-api';
 import path from 'path';
 import fs from 'fs';
 import { serializeWrite } from './writeQueue';
+import { openDuckDbWithWalRecovery, registerCheckpointOnExit } from './shutdown';
 
 // Store on `global` so the connection survives Next.js hot reloads in dev mode.
 // Module-level variables get reset on each reload, leaving the old connection
@@ -50,8 +50,13 @@ export async function getConnection(): Promise<DuckDBConnection> {
       }
       const resolved = path.join(resolvedDir, 'engagements.duckdb');
 
-      const instance = await DuckDBInstance.create(resolved);
-      const conn = await instance.connect();
+      // Never auto-recreate — engagements holds the real user data. If the WAL
+      // is unrecoverable and the main file is also damaged, fail loudly so we
+      // go to backup restore rather than silently dropping data.
+      const conn = await openDuckDbWithWalRecovery(resolved, {
+        logTag: 'engagements',
+        allowRecreate: false,
+      });
 
       // Bootstrap schema on first connection — all statements are idempotent (IF NOT EXISTS)
       await conn.run(`
@@ -156,6 +161,13 @@ export async function getConnection(): Promise<DuckDBConnection> {
         await conn.run(`ALTER TABLE engagements ADD COLUMN linked_from_id INTEGER`);
       }
       await conn.run(`CREATE INDEX IF NOT EXISTS idx_linked_from_id ON engagements (linked_from_id)`);
+
+      // Fold any WAL content produced by bootstrap/migrations into the main
+      // file now, so an unclean shutdown later doesn't leave a migration to
+      // replay.
+      try { await conn.run(`CHECKPOINT`); } catch { /* best-effort */ }
+
+      registerCheckpointOnExit('engagements', conn);
 
       return conn;
     })();

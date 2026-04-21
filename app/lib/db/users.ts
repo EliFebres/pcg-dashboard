@@ -1,8 +1,8 @@
-import { DuckDBInstance } from '@duckdb/node-api';
 import type { DuckDBConnection } from '@duckdb/node-api';
 import path from 'path';
 import fs from 'fs';
 import { serializeWrite } from './writeQueue';
+import { openDuckDbWithWalRecovery, registerCheckpointOnExit } from './shutdown';
 
 const QUEUE_KEY = 'users';
 
@@ -23,8 +23,12 @@ export async function getUsersConnection(): Promise<DuckDBConnection> {
       }
       const resolved = path.join(resolvedDir, 'users.duckdb');
 
-      const instance = await DuckDBInstance.create(resolved);
-      const conn = await instance.connect();
+      // Never auto-recreate — users holds account records. If unrecoverable,
+      // fail loudly so we restore from backup instead of silently losing users.
+      const conn = await openDuckDbWithWalRecovery(resolved, {
+        logTag: 'users',
+        allowRecreate: false,
+      });
 
       // Bootstrap schema on first connection — all statements are idempotent (IF NOT EXISTS)
       await conn.run(`
@@ -63,6 +67,10 @@ export async function getUsersConnection(): Promise<DuckDBConnection> {
       `);
       await conn.run(`CREATE INDEX IF NOT EXISTS idx_tm_team   ON team_members (team)`);
       await conn.run(`CREATE INDEX IF NOT EXISTS idx_tm_status ON team_members (status)`);
+
+      try { await conn.run(`CHECKPOINT`); } catch { /* best-effort */ }
+
+      registerCheckpointOnExit('users', conn);
 
       return conn;
     })();
