@@ -121,6 +121,8 @@ export default function EngagementsDashboard() {
     'Discovery Meeting',
     'Data Request',
     'Other',
+    'Follow-up Material',
+    'Follow-up Meeting',
   ]);
   const [statusFilter, setStatusFilter] = useState('All Statuses');
   const [period, setPeriod] = useState('1Y');

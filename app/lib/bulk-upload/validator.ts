@@ -20,7 +20,7 @@ export interface ValidationResult {
 
 const VALID_INTAKE_TYPES = ['IRQ', 'SERF', 'GCG Ad-Hoc'];
 const VALID_AD_HOC_CHANNELS = ['In-Person', 'Email', 'Teams'];
-const VALID_PROJECT_TYPES = ['Meeting', 'Discovery Meeting', 'Data Request', 'PCR', 'Other'];
+const VALID_PROJECT_TYPES = ['Meeting', 'Discovery Meeting', 'Data Request', 'PCR', 'Other', 'Follow-up Material', 'Follow-up Meeting'];
 const VALID_DEPARTMENTS = ['IAG', 'Broker-Dealer', 'Institutional', 'Retirement Group'];
 const VALID_STATUSES = ['In Progress', 'Awaiting Meeting', 'Follow Up', 'Completed'];
 const VALID_INTERNAL_CLIENT_DEPTS = ['IAG', 'Broker-Dealer', 'Institutional', 'Retirement Group'];
@@ -127,6 +127,13 @@ function normalizeProjectType(value: string): string | null {
     'data': 'Data Request',
     'pcr': 'PCR',
     'other': 'Other',
+    'followupmaterial': 'Follow-up Material',
+    'followupmaterials': 'Follow-up Material',
+    'followupmat': 'Follow-up Material',
+    'fumaterial': 'Follow-up Material',
+    'followupmeeting': 'Follow-up Meeting',
+    'followupmtg': 'Follow-up Meeting',
+    'fumeeting': 'Follow-up Meeting',
   };
   if (aliases[norm]) return aliases[norm];
   return matchEnum(value, VALID_PROJECT_TYPES);
