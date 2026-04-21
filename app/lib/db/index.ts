@@ -125,6 +125,9 @@ export async function getConnection(): Promise<DuckDBConnection> {
       // One-time migration: rename department value 'Institution' → 'Institutional'
       await conn.run(`UPDATE engagements SET internal_client_dept = 'Institutional' WHERE internal_client_dept = 'Institution'`);
 
+      // One-time migration: rename intake_type value 'SRRF' → 'SERF'
+      await conn.run(`UPDATE engagements SET intake_type = 'SERF' WHERE intake_type = 'SRRF'`);
+
       // One-time migration: add team column for team-based data isolation
       const teamCheck = await conn.runAndReadAll(
         `SELECT column_name FROM information_schema.columns WHERE table_name = 'engagements' AND column_name = 'team'`

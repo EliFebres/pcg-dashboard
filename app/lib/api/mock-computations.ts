@@ -145,25 +145,25 @@ export function getMockMetrics(filters: EngagementFilters): DashboardMetrics {
   const filtered = applyMockFilters(mockEngagements, { ...filters, period });
   const periodDates = getPeriodDates(period);
 
-  const srrfAndIrqs = filtered.filter(e => e.intakeType === 'SRRF' || e.intakeType === 'IRQ');
-  const clientProjects = srrfAndIrqs.filter(e => e.type !== 'PCR').length;
+  const serfAndIrqs = filtered.filter(e => e.intakeType === 'SERF' || e.intakeType === 'IRQ');
+  const clientProjects = serfAndIrqs.filter(e => e.type !== 'PCR').length;
 
-  const prevPeriodSrrfAndIrqs = mockEngagements.filter(e => {
+  const prevPeriodSerfAndIrqs = mockEngagements.filter(e => {
     const d = new Date(e.dateStarted);
-    return (e.intakeType === 'SRRF' || e.intakeType === 'IRQ') &&
+    return (e.intakeType === 'SERF' || e.intakeType === 'IRQ') &&
       d >= periodDates.previousStart && d <= periodDates.previousEnd;
   });
-  const prevClientProjects = prevPeriodSrrfAndIrqs.filter(e => e.type !== 'PCR').length;
+  const prevClientProjects = prevPeriodSerfAndIrqs.filter(e => e.type !== 'PCR').length;
   const clientProjectsChangePercent = prevClientProjects > 0
     ? Math.round(((clientProjects - prevClientProjects) / prevClientProjects) * 100)
     : clientProjects > 0 ? 100 : 0;
 
-  const nonPcrProjects = srrfAndIrqs.filter(e => e.type !== 'PCR');
+  const nonPcrProjects = serfAndIrqs.filter(e => e.type !== 'PCR');
   const irqCount = nonPcrProjects.filter(e => e.intakeType === 'IRQ').length;
-  const srrfCount = nonPcrProjects.filter(e => e.intakeType === 'SRRF').length;
-  const totalProjects = irqCount + srrfCount;
+  const serfCount = nonPcrProjects.filter(e => e.intakeType === 'SERF').length;
+  const totalProjects = irqCount + serfCount;
   const eligibleForPortfolio = filtered.filter(e =>
-    (e.intakeType === 'SRRF' || e.intakeType === 'IRQ') && e.type !== 'PCR'
+    (e.intakeType === 'SERF' || e.intakeType === 'IRQ') && e.type !== 'PCR'
   );
   const portfoliosLogged = eligibleForPortfolio.filter(e => e.portfolioLogged).length;
 
@@ -209,8 +209,8 @@ export function getMockMetrics(filters: EngagementFilters): DashboardMetrics {
       intakeSourceBreakdown: {
         irqCount,
         irqPercent: totalProjects > 0 ? Math.round((irqCount / totalProjects) * 100) : 0,
-        srrfCount,
-        srrfPercent: totalProjects > 0 ? Math.round((srrfCount / totalProjects) * 100) : 0,
+        serfCount,
+        serfPercent: totalProjects > 0 ? Math.round((serfCount / totalProjects) * 100) : 0,
         portfoliosLogged,
         portfoliosTotal: eligibleForPortfolio.length,
         portfoliosPercent: eligibleForPortfolio.length > 0 ? Math.round((portfoliosLogged / eligibleForPortfolio.length) * 100) : 0,
@@ -336,7 +336,7 @@ export function getMockFilterOptions(): FilterOptions {
     teamMembers: ['All Team Members', 'Austin Office', 'Charlotte Office'],
     teamMemberGroups: [{ label: 'Office', options: ['Austin Office', 'Charlotte Office'] }],
     departments: Array.from(departments).sort(),
-    intakeTypes: ['IRQ', 'SRRF', 'GCG Ad-Hoc'].filter(t => intakeTypes.has(t)),
+    intakeTypes: ['IRQ', 'SERF', 'GCG Ad-Hoc'].filter(t => intakeTypes.has(t)),
     projectTypes: Array.from(projectTypes).sort(),
     statuses: Array.from(statuses).sort(),
   };

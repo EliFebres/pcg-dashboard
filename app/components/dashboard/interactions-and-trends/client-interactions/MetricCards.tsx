@@ -322,22 +322,22 @@ export default function MetricCards({ metrics, flippedCard, onCardEnter, onCardL
                         <span className="text-[11px] text-muted ml-1.5">({metric.intakeSourceBreakdown!.irqPercent}%)</span>
                       </div>
                     </div>
-                    {/* SRRF Bar */}
+                    {/* SERF Bar */}
                     <div className="flex items-center gap-2">
-                      <div className="w-[45px] text-[11px] text-muted">SRRF</div>
+                      <div className="w-[45px] text-[11px] text-muted">SERF</div>
                       <div className="flex-1 h-1.5 bg-zinc-800 rounded-full overflow-hidden">
                         <div
                           className="h-full rounded-full transition-all duration-500"
                           style={{
-                            width: `${metric.intakeSourceBreakdown!.srrfPercent}%`,
+                            width: `${metric.intakeSourceBreakdown!.serfPercent}%`,
                             backgroundColor: '#a5f3fc',
                             boxShadow: '0 0 6px #a5f3fc40'
                           }}
                         />
                       </div>
                       <div className="w-14 text-right">
-                        <span className="text-xs text-muted">{metric.intakeSourceBreakdown!.srrfCount}</span>
-                        <span className="text-[11px] text-muted ml-1.5">({metric.intakeSourceBreakdown!.srrfPercent}%)</span>
+                        <span className="text-xs text-muted">{metric.intakeSourceBreakdown!.serfCount}</span>
+                        <span className="text-[11px] text-muted ml-1.5">({metric.intakeSourceBreakdown!.serfPercent}%)</span>
                       </div>
                     </div>
                     {/* Divider */}

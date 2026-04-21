@@ -26,7 +26,7 @@ export const STATIC_FILTER_OPTIONS: FilterOptions = {
     { label: 'Office', options: ['Austin Office', 'Charlotte Office'] },
   ],
   departments: ['Broker-Dealer', 'IAG', 'Institutional', 'Retirement Group'],
-  intakeTypes: ['IRQ', 'SRRF', 'GCG Ad-Hoc'],
+  intakeTypes: ['IRQ', 'SERF', 'GCG Ad-Hoc'],
   projectTypes: ['Data Request', 'Discovery Meeting', 'Meeting', 'Other', 'PCR'],
   statuses: ['In Progress', 'Awaiting Meeting', 'Follow Up', 'Completed'],
 };
@@ -64,14 +64,14 @@ export async function computeMetrics(filters: EngagementFilters, serverConstrain
 
   // ---- Fire all 4 queries in parallel — none depends on another's result ----
   const [projectRows, prevRows, inProgressRows, sparklineRows] = await Promise.all([
-    // Current period: client projects (IRQ/SRRF non-PCR) + GCG Ad-Hoc
+    // Current period: client projects (IRQ/SERF non-PCR) + GCG Ad-Hoc
     query<Record<string, unknown>>(`
       SELECT
-        COUNT(*) FILTER (WHERE intake_type IN ('IRQ', 'SRRF') AND type != 'PCR')  AS project_count,
+        COUNT(*) FILTER (WHERE intake_type IN ('IRQ', 'SERF') AND type != 'PCR')  AS project_count,
         COUNT(*) FILTER (WHERE intake_type = 'IRQ'  AND type != 'PCR')            AS irq_count,
-        COUNT(*) FILTER (WHERE intake_type = 'SRRF' AND type != 'PCR')            AS srrf_count,
-        COUNT(*) FILTER (WHERE intake_type IN ('IRQ', 'SRRF') AND type != 'PCR')  AS eligible_count,
-        COUNT(*) FILTER (WHERE intake_type IN ('IRQ', 'SRRF') AND type != 'PCR'
+        COUNT(*) FILTER (WHERE intake_type = 'SERF' AND type != 'PCR')            AS serf_count,
+        COUNT(*) FILTER (WHERE intake_type IN ('IRQ', 'SERF') AND type != 'PCR')  AS eligible_count,
+        COUNT(*) FILTER (WHERE intake_type IN ('IRQ', 'SERF') AND type != 'PCR'
                            AND portfolio_logged = TRUE)                            AS portfolios_logged,
         COUNT(*) FILTER (WHERE intake_type = 'GCG Ad-Hoc')                        AS adhoc_count,
         COUNT(*) FILTER (WHERE intake_type = 'GCG Ad-Hoc' AND ad_hoc_channel = 'In-Person') AS adhoc_in_person,
@@ -87,7 +87,7 @@ export async function computeMetrics(filters: EngagementFilters, serverConstrain
     // Previous period: for change% calculations
     query<Record<string, unknown>>(`
       SELECT
-        COUNT(*) FILTER (WHERE intake_type IN ('IRQ', 'SRRF') AND type != 'PCR') AS prev_projects,
+        COUNT(*) FILTER (WHERE intake_type IN ('IRQ', 'SERF') AND type != 'PCR') AS prev_projects,
         COUNT(*) FILTER (WHERE intake_type = 'GCG Ad-Hoc')                       AS prev_adhoc,
         COALESCE(SUM(nna), 0)                                                    AS prev_nna
       FROM engagements ${prevAndClause}
@@ -126,10 +126,10 @@ export async function computeMetrics(filters: EngagementFilters, serverConstrain
     : projectCount > 0 ? 100 : 0;
 
   const irqCount = Number(p?.irq_count ?? 0);
-  const srrfCount = Number(p?.srrf_count ?? 0);
+  const serfCount = Number(p?.serf_count ?? 0);
   const eligibleCount = Number(p?.eligible_count ?? 0);
   const portfoliosLogged = Number(p?.portfolios_logged ?? 0);
-  const totalProjects = irqCount + srrfCount;
+  const totalProjects = irqCount + serfCount;
 
   const adhocCount = Number(p?.adhoc_count ?? 0);
   const prevAdhoc = Number(prev?.prev_adhoc ?? 0);
@@ -170,8 +170,8 @@ export async function computeMetrics(filters: EngagementFilters, serverConstrain
       intakeSourceBreakdown: {
         irqCount,
         irqPercent: totalProjects > 0 ? Math.round((irqCount / totalProjects) * 100) : 0,
-        srrfCount,
-        srrfPercent: totalProjects > 0 ? Math.round((srrfCount / totalProjects) * 100) : 0,
+        serfCount,
+        serfPercent: totalProjects > 0 ? Math.round((serfCount / totalProjects) * 100) : 0,
         portfoliosLogged,
         portfoliosTotal: eligibleCount,
         portfoliosPercent: eligibleCount > 0 ? Math.round((portfoliosLogged / eligibleCount) * 100) : 0,

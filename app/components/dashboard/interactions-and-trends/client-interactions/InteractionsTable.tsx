@@ -203,7 +203,7 @@ case 'PCR': return 'bg-rose-500/15 text-rose-400';
   const getIntakeTypeStyle = (intakeType: string): string => {
     switch (intakeType) {
       case 'IRQ': return 'bg-blue-500/15 text-blue-400 border border-blue-500/30';
-      case 'SRRF': return 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30';
+      case 'SERF': return 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30';
       case 'GCG Ad-Hoc': return 'bg-pink-500/15 text-pink-400 border border-pink-500/30';
       default: return 'bg-zinc-500/10 text-muted border border-zinc-500/30';
     }

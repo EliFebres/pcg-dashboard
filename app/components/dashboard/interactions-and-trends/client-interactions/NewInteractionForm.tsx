@@ -16,7 +16,7 @@ export interface InteractionFormData {
   externalClient: string | null;
   internalClient: string;
   internalClientDept: 'IAG' | 'Broker-Dealer' | 'Institutional' | 'Retirement Group' | '';
-  intakeType: 'IRQ' | 'SRRF' | 'GCG Ad-Hoc' | '';
+  intakeType: 'IRQ' | 'SERF' | 'GCG Ad-Hoc' | '';
   adHocChannel?: 'In-Person' | 'Email' | 'Teams';
   projectType: string;
   teamMembers: string[];
@@ -60,7 +60,7 @@ const GCG_DEPARTMENTS = ['IAG', 'Broker-Dealer', 'Institutional', 'Retirement Gr
 // Project types by intake
 const projectTypesByIntake = {
   'IRQ': ['Meeting', 'Discovery Meeting', 'Data Request', 'PCR'],
-  'SRRF': ['Meeting', 'Discovery Meeting', 'Data Request', 'PCR'],
+  'SERF': ['Meeting', 'Discovery Meeting', 'Data Request', 'PCR'],
   'GCG Ad-Hoc': ['PCR', 'Discovery Meeting', 'Data Request', 'Other'],
 };
 
@@ -406,12 +406,12 @@ export default function NewInteractionForm({ isOpen, onClose, onSubmit, onUpdate
                   <div className="relative">
                     <select
                       value={formData.intakeType}
-                      onChange={(e) => setFormData(prev => ({ ...prev, intakeType: e.target.value as 'IRQ' | 'SRRF' | 'GCG Ad-Hoc' | '', adHocChannel: undefined }))}
+                      onChange={(e) => setFormData(prev => ({ ...prev, intakeType: e.target.value as 'IRQ' | 'SERF' | 'GCG Ad-Hoc' | '', adHocChannel: undefined }))}
                       className="w-full px-3 py-2 bg-zinc-800/50 border border-zinc-700 rounded-lg text-white focus:outline-none focus:border-cyan-500/50 transition-colors appearance-none cursor-pointer"
                     >
                       <option value="" className="bg-zinc-800">Select...</option>
                       <option value="IRQ" className="bg-zinc-800">IRQ</option>
-                      <option value="SRRF" className="bg-zinc-800">SRRF</option>
+                      <option value="SERF" className="bg-zinc-800">SERF</option>
                       <option value="GCG Ad-Hoc" className="bg-zinc-800">GCG Ad-Hoc</option>
                     </select>
                     <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted pointer-events-none" />

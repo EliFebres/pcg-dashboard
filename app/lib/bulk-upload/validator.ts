@@ -18,7 +18,7 @@ export interface ValidationResult {
   validRows: ParsedRow[];
 }
 
-const VALID_INTAKE_TYPES = ['IRQ', 'SRRF', 'GCG Ad-Hoc'];
+const VALID_INTAKE_TYPES = ['IRQ', 'SERF', 'GCG Ad-Hoc'];
 const VALID_AD_HOC_CHANNELS = ['In-Person', 'Email', 'Teams'];
 const VALID_PROJECT_TYPES = ['Meeting', 'Discovery Meeting', 'Data Request', 'PCR', 'Other'];
 const VALID_DEPARTMENTS = ['IAG', 'Broker-Dealer', 'Institutional', 'Retirement Group'];
@@ -44,8 +44,9 @@ const INTAKE_TYPE_ALIASES: Record<string, string> = {
   'ad-hoc': 'GCG Ad-Hoc',
   'gcg': 'GCG Ad-Hoc',
   'irq': 'IRQ',
-  'srrf': 'SRRF',
-  'grrf': 'SRRF', // old name alias
+  'serf': 'SERF',
+  'srrf': 'SERF', // old name alias
+  'grrf': 'SERF', // old name alias
 };
 
 function normalizeIntakeType(value: string): string | null {

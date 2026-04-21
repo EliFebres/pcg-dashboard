@@ -20,8 +20,8 @@ export interface IntakeBreakdown {
 export interface IntakeSourceBreakdown {
   irqCount: number;
   irqPercent: number;
-  srrfCount: number;
-  srrfPercent: number;
+  serfCount: number;
+  serfPercent: number;
   portfoliosLogged: number;
   portfoliosTotal: number;
   portfoliosPercent: number;
@@ -84,7 +84,7 @@ export interface Engagement {
   id: number;
   externalClient: string | null; // Optional - GCG Ad-Hoc may not have an external client
   internalClient: InternalClient; // Contact/relationship owner/salesperson
-  intakeType: 'IRQ' | 'SRRF' | 'GCG Ad-Hoc';
+  intakeType: 'IRQ' | 'SERF' | 'GCG Ad-Hoc';
   adHocChannel?: GCGAdHocChannel; // Only applicable when intakeType is 'GCG Ad-Hoc'
   type: string; // Project Type
   teamMembers: string[];

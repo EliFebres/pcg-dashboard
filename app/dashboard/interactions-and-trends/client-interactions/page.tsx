@@ -300,7 +300,7 @@ export default function EngagementsDashboard() {
       const newEngagement = await createEngagement({
         externalClient: data.externalClient ?? null,
         internalClient: { name: data.internalClient, gcgDepartment: data.internalClientDept as 'IAG' | 'Broker-Dealer' | 'Institutional' },
-        intakeType: data.intakeType as 'IRQ' | 'SRRF' | 'GCG Ad-Hoc',
+        intakeType: data.intakeType as 'IRQ' | 'SERF' | 'GCG Ad-Hoc',
         adHocChannel: data.adHocChannel,
         type: data.projectType,
         teamMembers: data.teamMembers,
@@ -405,7 +405,7 @@ export default function EngagementsDashboard() {
       await updateEngagement(engagementId, {
         externalClient: data.externalClient ?? null,
         internalClient: { name: data.internalClient, gcgDepartment: data.internalClientDept as 'IAG' | 'Broker-Dealer' | 'Institutional' },
-        intakeType: data.intakeType as 'IRQ' | 'SRRF' | 'GCG Ad-Hoc',
+        intakeType: data.intakeType as 'IRQ' | 'SERF' | 'GCG Ad-Hoc',
         adHocChannel: data.adHocChannel,
         type: data.projectType,
         teamMembers: data.teamMembers,

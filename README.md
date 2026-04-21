@@ -15,7 +15,7 @@ A Next.js dashboard application for the firm's Portfolio Construction Group. The
 - **`/admin/team-members`** — Manage the team member directory used throughout the dashboard (name, team, office, status; link to user account)
 
 ### Client Interactions Dashboard
-- Track and manage client engagements (IRQ, SRRF, GCG Ad-Hoc) with full CRUD support
+- Track and manage client engagements (IRQ, SERF, GCG Ad-Hoc) with full CRUD support
 - Create, edit, and delete engagements via modal forms
 - **Bulk upload** — import engagements from Excel (.xlsx) or CSV; downloadable XLSX template; in-browser preview and validation before committing
 - **Real-time cross-user updates** — Server-Sent Events stream (`/api/client-interactions/events`) pushes mutations from other users into open dashboards immediately, with no page refresh

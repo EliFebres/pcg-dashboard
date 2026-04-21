@@ -79,7 +79,7 @@ export async function GET() {
   };
 
   addValidation('C', '"IAG,Broker-Dealer,Institutional"');
-  addValidation('D', '"IRQ,SRRF,GCG Ad-Hoc"');
+  addValidation('D', '"IRQ,SERF,GCG Ad-Hoc"');
   addValidation('E', '"In-Person,Email,Teams"');
   addValidation('F', '"Meeting,Discovery Meeting,Data Request,PCR,Other"');
   addValidation('J', '"In Progress,Awaiting Meeting,Follow Up,Completed"');
@@ -115,7 +115,7 @@ export async function GET() {
       externalClient: 'BlueStar Wealth',
       internalClientName: 'David L.',
       internalClientDept: 'Broker-Dealer',
-      intakeType: 'SRRF',
+      intakeType: 'SERF',
       adHocChannel: '',
       type: 'Data Request',
       teamMembers: 'David L.',
@@ -173,7 +173,7 @@ export async function GET() {
     ['External Client', 'Name of the external client/fund. Leave blank for GCG Ad-Hoc rows.'],
     ['Internal Client Name', 'Required. Name of the internal contact (e.g. "Sarah K.")'],
     ['Internal Client Dept', 'Required. IAG | Broker-Dealer | Institutional'],
-    ['Intake Type', 'Required. IRQ | SRRF | GCG Ad-Hoc'],
+    ['Intake Type', 'Required. IRQ | SERF | GCG Ad-Hoc'],
     ['Ad-Hoc Channel', 'Required only for GCG Ad-Hoc rows. In-Person | Email | Teams'],
     ['Project Type', 'Required. Meeting | Discovery Meeting | Data Request | PCR | Other'],
     ['Team Members', 'Optional. Comma-separated names, e.g. "Eli F., Sarah K."'],
