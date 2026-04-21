@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { Search, Calendar, ChevronDown, Check, Filter } from 'lucide-react';
 import { Popover, PopoverTrigger, PopoverContent } from '@/app/components/ui/Popover';
@@ -255,8 +255,10 @@ export default function DashboardHeader({
     return filter.value !== filter.options[0];
   });
 
-  // Start or restart the collapse timeout (only if no active filters)
-  const startCollapseTimeout = () => {
+  // Start or restart the collapse timeout (only if no active filters).
+  // Wrapped in useCallback so the useEffects below can list it as a dep
+  // without firing on every render.
+  const startCollapseTimeout = useCallback(() => {
     if (collapseTimeoutRef.current) {
       clearTimeout(collapseTimeoutRef.current);
     }
@@ -268,7 +270,7 @@ export default function DashboardHeader({
         setFiltersExpanded(false);
       }
     }, 30000);
-  };
+  }, [hasActiveFilters]);
 
   // Auto-collapse filters after 30 seconds of inactivity (only if no active filters)
   useEffect(() => {
@@ -286,7 +288,7 @@ export default function DashboardHeader({
         clearTimeout(collapseTimeoutRef.current);
       }
     };
-  }, [filtersExpanded, hasActiveFilters]);
+  }, [filtersExpanded, hasActiveFilters, startCollapseTimeout]);
 
   // Reset timeout when any filter value changes (only if no active filters)
   useEffect(() => {
@@ -297,7 +299,7 @@ export default function DashboardHeader({
         startCollapseTimeout();
       }
     }
-  }, [filters, filtersExpanded, hasActiveFilters]);
+  }, [filters, filtersExpanded, hasActiveFilters, startCollapseTimeout]);
 
   // Hover handlers for the filters container
   const handleMouseEnter = () => {

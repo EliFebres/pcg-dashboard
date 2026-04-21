@@ -30,10 +30,14 @@ export default function ContributionGraph({ data, contributionChanges }: Contrib
   const recentWeeks = data.slice(-52);
   const flatData = recentWeeks.flat();
 
+  // Depend on `data` rather than the sliced array — recentWeeks gets a new
+  // reference every render, which prevents React Compiler from preserving
+  // this memoization.
   const monthMarkers = useMemo(() => {
     const markers: { label: string; colIndex: number }[] = [];
+    const weeks = data.slice(-52);
     let lastMonth = -1;
-    recentWeeks.forEach((week, weekIndex) => {
+    weeks.forEach((week, weekIndex) => {
       const firstDay = new Date(week[0].date);
       const month = firstDay.getMonth();
       if (month !== lastMonth) {
@@ -42,7 +46,7 @@ export default function ContributionGraph({ data, contributionChanges }: Contrib
       }
     });
     return markers;
-  }, [recentWeeks]);
+  }, [data]);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>

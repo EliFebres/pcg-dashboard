@@ -48,13 +48,14 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
     },
   });
 
-  // Sync external value changes (e.g. reset after save)
+  // Sync external value changes (e.g. reset after save). `setContent` emits
+  // an `update` event by default, so `onUpdate` above takes care of keeping
+  // `isEmpty` in sync — no setState needed here.
   useEffect(() => {
     if (!editor) return;
     const current = editor.isEmpty ? '' : editor.getHTML();
     if (value !== current) {
       editor.commands.setContent(value || '');
-      setIsEmpty(!value);
     }
   }, [value, editor]);
 

@@ -38,46 +38,41 @@ const createEmptyRow = (): EditableHolding => ({
   weight: '',
 });
 
-const PortfolioModal: React.FC<PortfolioModalProps> = ({
-  isOpen,
+// Outer wrapper keeps the body unmounted while closed — so each reopen is a
+// fresh mount and state initializes lazily from the current prop snapshot.
+// This avoids the setState-in-effect reset pattern.
+const PortfolioModal: React.FC<PortfolioModalProps> = (props) => {
+  if (!props.isOpen) return null;
+  return <PortfolioModalBody {...props} />;
+};
+
+const PortfolioModalBody: React.FC<PortfolioModalProps> = ({
   onClose,
   currentPortfolio,
   onSave,
 }) => {
-  const [holdings, setHoldings] = useState<EditableHolding[]>([createEmptyRow()]);
+  const [holdings, setHoldings] = useState<EditableHolding[]>(() =>
+    currentPortfolio && currentPortfolio.length > 0
+      ? currentPortfolio.map((h) => ({
+          id: generateId(),
+          identifier: h.identifier,
+          constituentType: h.constituentType,
+          assetClass: h.assetClass,
+          weight: (h.weight * 100).toFixed(2), // Convert to percentage for display
+        }))
+      : [createEmptyRow()]
+  );
   const [pasteError, setPasteError] = useState<string | null>(null);
   const tableRef = useRef<HTMLDivElement>(null);
-
-  // Reset holdings when modal opens with new data
-  useEffect(() => {
-    if (isOpen) {
-      setPasteError(null);
-      if (currentPortfolio && currentPortfolio.length > 0) {
-        setHoldings(
-          currentPortfolio.map((h) => ({
-            id: generateId(),
-            identifier: h.identifier,
-            constituentType: h.constituentType,
-            assetClass: h.assetClass,
-            weight: (h.weight * 100).toFixed(2), // Convert to percentage for display
-          }))
-        );
-      } else {
-        setHoldings([createEmptyRow()]);
-      }
-    }
-  }, [isOpen, currentPortfolio]);
 
   // Handle escape key
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isOpen) {
-        onClose();
-      }
+      if (e.key === 'Escape') onClose();
     };
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, onClose]);
+  }, [onClose]);
 
   const updateHolding = (id: string, field: keyof EditableHolding, value: string) => {
     setHoldings((prev) => {
@@ -235,8 +230,6 @@ const PortfolioModal: React.FC<PortfolioModalProps> = ({
   const hasValidHoldings = previewNormalized.length > 0;
   const hasChanges =
     JSON.stringify(previewNormalized) !== JSON.stringify(currentPortfolio || []);
-
-  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">

@@ -11,7 +11,6 @@ import {
   getMockDepartmentBreakdown,
   getMockContributionData,
   getMockEngagementsList,
-  getMockFilterOptions,
 } from '../api/mock-computations';
 import { buildFilterClause, rowToEngagement, SORT_COLUMN_MAP } from './queries';
 import type { ServerConstraints } from './queries';
@@ -55,9 +54,6 @@ export async function computeMetrics(filters: EngagementFilters, serverConstrain
   // In-progress count + sparkline (share the same base filter)
   const inProgressFilters = { ...filters, status: undefined };
   const { whereClause: ipWhere, params: ipParams } = buildFilterClause(inProgressFilters, '', serverConstraints);
-  const inProgressAndClause = ipWhere
-    ? `${ipWhere} AND status = 'In Progress'`
-    : `WHERE status = 'In Progress'`;
   const sparklineAndClause = ipWhere
     ? `${ipWhere} AND date_started >= (CURRENT_DATE - INTERVAL '8 weeks')`
     : `WHERE date_started >= (CURRENT_DATE - INTERVAL '8 weeks')`;

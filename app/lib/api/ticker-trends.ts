@@ -7,8 +7,6 @@ import type { HotTicker } from '../types/trends';
 // API Configuration
 // =============================================================================
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '/api';
-
 // Simulate network delay for development (set to 0 for production)
 const SIMULATED_DELAY = process.env.NODE_ENV === 'development' ? 200 : 0;
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
@@ -308,7 +306,7 @@ const mockHotTickers: HotTicker[] = [
  * Fetch top 10 hot tickers with firm competitors
  * Returns pre-computed data from the backend
  */
-export async function getHotTickers(filters?: HotTickersFilters): Promise<HotTickersResponse> {
+export async function getHotTickers(_filters?: HotTickersFilters): Promise<HotTickersResponse> {
   if (SIMULATED_DELAY) await delay(SIMULATED_DELAY);
 
   return {

@@ -113,7 +113,6 @@ export function getPreviousPeriodDates(period: string): { start: string; end: st
       };
     }
     case 'YTD': {
-      const currStart = new Date(now.getFullYear(), 0, 1);
       const prevEnd = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
       const prevStart = new Date(now.getFullYear() - 1, 0, 1);
       return {

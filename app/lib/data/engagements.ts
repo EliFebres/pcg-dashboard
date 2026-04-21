@@ -162,7 +162,6 @@ export const teamMemberOffices: Record<string, 'Charlotte' | 'Austin'> = {
 
 const teamMembers = Object.keys(teamMemberOffices);
 const internalClientKeys = Object.keys(internalClients) as (keyof typeof internalClients)[];
-const departments: ('IAG' | 'Broker-Dealer' | 'Institutional' | 'Retirement Group')[] = ['IAG', 'Broker-Dealer', 'Institutional', 'Retirement Group'];
 const projectTypes = ['Meeting', 'Discovery Meeting', 'Data Request', 'PCR', 'Follow-up Material', 'Follow-up Meeting'];
 const adHocProjectTypes = ['PCR', 'Discovery Meeting', 'Data Request', 'Other']; // Project types specific to GCG Ad-Hoc
 

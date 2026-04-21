@@ -1,11 +1,20 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useSyncExternalStore } from 'react';
 import { ArrowUpRight, ArrowDownRight } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell, AreaChart, Area, PieChart, Pie, Tooltip } from 'recharts';
 import ClientOnlyChart from '@/app/components/dashboard/shared/ClientOnlyChart';
 import type { EngagementMetric } from '@/app/lib/types/engagements';
 import type { ChangeFlash, MetricKey } from '@/app/lib/hooks/useDashboardChanges';
+
+// useSyncExternalStore subscription for window.innerWidth — avoids the
+// setState-in-effect pattern that fires on mount and on every resize.
+const subscribeToResize = (onChange: () => void) => {
+  window.addEventListener('resize', onChange);
+  return () => window.removeEventListener('resize', onChange);
+};
+const getWindowWidth = () => window.innerWidth;
+const getServerWindowWidth = () => 0;
 
 interface MetricCardsProps {
   metrics: EngagementMetric[];
@@ -16,13 +25,7 @@ interface MetricCardsProps {
 }
 
 export default function MetricCards({ metrics, flippedCard, onCardEnter, onCardLeave, metricChanges }: MetricCardsProps) {
-  const [windowWidth, setWindowWidth] = useState(0);
-  useEffect(() => {
-    setWindowWidth(window.innerWidth);
-    const handler = () => setWindowWidth(window.innerWidth);
-    window.addEventListener('resize', handler);
-    return () => window.removeEventListener('resize', handler);
-  }, []);
+  const windowWidth = useSyncExternalStore(subscribeToResize, getWindowWidth, getServerWindowWidth);
   const showCharts = windowWidth >= 1600;
 
   return (

@@ -11,6 +11,13 @@ const g = global as typeof globalThis & {
   _usersConnectionPromise?: Promise<DuckDBConnection>;
 };
 
+// Returns the in-flight (or resolved) users connection only if one has already
+// been started. Used by the auto-backup path so it can snapshot users.duckdb
+// through the live connection without triggering its bootstrap.
+export function getUsersConnectionIfOpen(): Promise<DuckDBConnection> | undefined {
+  return g._usersConnectionPromise;
+}
+
 export async function getUsersConnection(): Promise<DuckDBConnection> {
   if (!g._usersConnectionPromise) {
     g._usersConnectionPromise = (async () => {

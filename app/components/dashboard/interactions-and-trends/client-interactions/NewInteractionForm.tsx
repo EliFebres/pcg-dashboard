@@ -64,37 +64,6 @@ const projectTypesByIntake = {
   'GCG Ad-Hoc': ['PCR', 'Discovery Meeting', 'Data Request', 'Other'],
 };
 
-// Parse NNA input string to number (handles commas, M, B, K suffixes)
-const parseNNAInput = (input: string): number | undefined => {
-  if (!input.trim()) return undefined;
-
-  // Remove commas and spaces
-  let cleaned = input.replace(/,/g, '').replace(/\s/g, '').toUpperCase();
-
-  // Remove leading $ if present
-  if (cleaned.startsWith('$')) {
-    cleaned = cleaned.substring(1);
-  }
-
-  // Handle M (millions), B (billions), and K (thousands) suffixes
-  let multiplier = 1;
-  if (cleaned.endsWith('M')) {
-    multiplier = 1_000_000;
-    cleaned = cleaned.slice(0, -1);
-  } else if (cleaned.endsWith('B')) {
-    multiplier = 1_000_000_000;
-    cleaned = cleaned.slice(0, -1);
-  } else if (cleaned.endsWith('K')) {
-    multiplier = 1_000;
-    cleaned = cleaned.slice(0, -1);
-  }
-
-  const num = parseFloat(cleaned);
-  if (isNaN(num)) return undefined;
-
-  return Math.round(num * multiplier);
-};
-
 // Format NNA for display
 const formatNNADisplay = (value: number | null): string => {
   if (!value || value === 0) return '—';
@@ -204,12 +173,12 @@ export default function NewInteractionForm({ isOpen, onClose, onSubmit, onUpdate
 
   // If we have a linkedFromId but no preview (e.g. opened an existing engagement that had a link),
   // fetch the slim summary so we can render the chip.
+  const { linkedFromId: linkedFromIdDep, linkedFromPreview: linkedFromPreviewDep } = formData;
   useEffect(() => {
     if (!isOpen) return;
-    const { linkedFromId, linkedFromPreview } = formData;
-    if (!linkedFromId || linkedFromPreview) return;
+    if (!linkedFromIdDep || linkedFromPreviewDep) return;
     let cancelled = false;
-    searchEngagementsForLink({ id: linkedFromId, limit: 1 })
+    searchEngagementsForLink({ id: linkedFromIdDep, limit: 1 })
       .then(rows => {
         if (cancelled) return;
         const hit = rows[0];
@@ -217,7 +186,7 @@ export default function NewInteractionForm({ isOpen, onClose, onSubmit, onUpdate
       })
       .catch(() => { /* non-fatal — chip will show minimal info */ });
     return () => { cancelled = true; };
-  }, [isOpen, formData.linkedFromId, formData.linkedFromPreview]);
+  }, [isOpen, linkedFromIdDep, linkedFromPreviewDep]);
 
   // Clients matching the current search, grouped by department
   const trimmedSearch = internalClientSearch.trim();

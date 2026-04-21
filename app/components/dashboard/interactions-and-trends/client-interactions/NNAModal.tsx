@@ -13,8 +13,14 @@ interface NNAModalProps {
   onSave: (engagementId: number, nna: number | undefined) => void;
 }
 
-const NNAModal: React.FC<NNAModalProps> = ({
-  isOpen,
+// Outer wrapper keeps the body unmounted while closed — so each reopen is a
+// fresh mount and state initializes lazily from the current prop snapshot.
+const NNAModal: React.FC<NNAModalProps> = (props) => {
+  if (!props.isOpen) return null;
+  return <NNAModalBody {...props} />;
+};
+
+const NNAModalBody: React.FC<NNAModalProps> = ({
   onClose,
   engagementId,
   externalClient,
@@ -22,44 +28,25 @@ const NNAModal: React.FC<NNAModalProps> = ({
   currentNNA,
   onSave,
 }) => {
-  const [nnaValue, setNnaValue] = useState('');
+  const [nnaValue, setNnaValue] = useState(() =>
+    currentNNA ? currentNNA.toLocaleString('en-US') : ''
+  );
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Reset value when modal opens with new data
+  // Focus input on mount (i.e. when the modal opens)
   useEffect(() => {
-    if (isOpen) {
-      // Format current NNA for display
-      if (currentNNA) {
-        setNnaValue(formatForInput(currentNNA));
-      } else {
-        setNnaValue('');
-      }
-    }
-  }, [isOpen, currentNNA]);
-
-  // Focus input when modal opens
-  useEffect(() => {
-    if (isOpen && inputRef.current) {
-      inputRef.current.focus();
-      inputRef.current.select();
-    }
-  }, [isOpen]);
+    inputRef.current?.focus();
+    inputRef.current?.select();
+  }, []);
 
   // Handle escape key
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isOpen) {
-        onClose();
-      }
+      if (e.key === 'Escape') onClose();
     };
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, onClose]);
-
-  // Format number for input display (e.g., 50000000 -> "50,000,000")
-  const formatForInput = (value: number): string => {
-    return value.toLocaleString('en-US');
-  };
+  }, [onClose]);
 
   // Parse input string to number (handles commas, M, B suffixes)
   const parseNNAInput = (input: string): number | undefined => {
@@ -119,8 +106,6 @@ const NNAModal: React.FC<NNAModalProps> = ({
   const parsedPreview = parseNNAInput(nnaValue);
   const hasChanges = parsedPreview !== currentNNA;
   const clientDisplay = externalClient || internalClient;
-
-  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">

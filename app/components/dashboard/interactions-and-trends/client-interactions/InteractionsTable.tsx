@@ -148,17 +148,22 @@ const InteractionsTable: React.FC<InteractionsTableProps> = ({ engagements, sort
     }
   }, [sortConfig, onSort]);
 
+  // Reset to page 1 when data or sort changes. Adjust state during render
+  // rather than in an effect — React discards the in-progress render and
+  // restarts with the new state, so there's no extra commit.
+  const resetKey = `${engagements.length}|${sortConfig.column}|${sortConfig.direction}`;
+  const [prevResetKey, setPrevResetKey] = useState(resetKey);
+  if (prevResetKey !== resetKey) {
+    setPrevResetKey(resetKey);
+    setCurrentPage(1);
+  }
+
   // Pagination calculations — engagements already arrive sorted from server
   const totalPages = Math.ceil(engagements.length / pageSize);
   const paginatedEngagements = useMemo(() => {
     const startIndex = (currentPage - 1) * pageSize;
     return engagements.slice(startIndex, startIndex + pageSize);
   }, [engagements, currentPage]);
-
-  // Reset to page 1 when data or sort changes
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [engagements.length, sortConfig.column, sortConfig.direction]);
 
   // Generate page numbers to display
   const getPageNumbers = (): (number | 'ellipsis')[] => {
@@ -177,37 +182,49 @@ const InteractionsTable: React.FC<InteractionsTableProps> = ({ engagements, sort
     return pages;
   };
 
+  // Shared palette so same-colored badges render identically across columns.
+  const BADGE_COLORS = {
+    blue:    'bg-blue-500/15 text-blue-400 border border-blue-500/30',
+    emerald: 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30',
+    amber:   'bg-amber-500/15 text-amber-400 border border-amber-500/30',
+    orange:  'bg-orange-500/15 text-orange-400 border border-orange-500/30',
+    cyan:    'bg-cyan-500/15 text-cyan-400 border border-cyan-500/30',
+    violet:  'bg-violet-500/15 text-violet-400 border border-violet-500/30',
+    rose:    'bg-rose-500/15 text-rose-400 border border-rose-500/30',
+    pink:    'bg-pink-500/15 text-pink-400 border border-pink-500/30',
+    zinc:    'bg-zinc-500/15 text-muted border border-zinc-500/30',
+  } as const;
+
   // Style helpers
   const getStatusStyle = (status: string): string => {
     switch (status) {
-      case 'Completed': return 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20';
-      case 'In Progress': return 'bg-blue-500/10 text-blue-400 border border-blue-500/20';
-
-      case 'Awaiting Meeting': return 'bg-amber-500/10 text-amber-400 border border-amber-500/20';
-      case 'Follow Up': return 'bg-orange-500/10 text-orange-400 border border-orange-500/20';
-      default: return 'bg-zinc-500/10 text-muted border border-zinc-500/20';
+      case 'Completed': return BADGE_COLORS.emerald;
+      case 'In Progress': return BADGE_COLORS.blue;
+      case 'Awaiting Meeting': return BADGE_COLORS.amber;
+      case 'Follow Up': return BADGE_COLORS.orange;
+      default: return BADGE_COLORS.zinc;
     }
   };
 
   const getTypeStyle = (type: string): string => {
     switch (type) {
-      case 'Data Request': return 'bg-cyan-500/15 text-cyan-400 border border-cyan-500/30';
-      case 'Meeting': return 'bg-violet-500/15 text-violet-400 border border-violet-500/30';
-      case 'Discovery Meeting': return 'bg-blue-500/15 text-blue-400 border border-blue-500/30';
-      case 'PCR': return 'bg-rose-500/15 text-rose-400 border border-rose-500/30';
-      case 'Follow-up Material': return 'bg-amber-500/15 text-amber-400 border border-amber-500/30';
-      case 'Follow-up Meeting': return 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30';
-      case 'Other': return 'bg-zinc-500/15 text-muted border border-zinc-500/30';
-      default: return 'bg-zinc-500/10 text-muted border border-zinc-500/30';
+      case 'Data Request': return BADGE_COLORS.cyan;
+      case 'Meeting': return BADGE_COLORS.violet;
+      case 'Discovery Meeting': return BADGE_COLORS.blue;
+      case 'PCR': return BADGE_COLORS.rose;
+      case 'Follow-up Material': return BADGE_COLORS.amber;
+      case 'Follow-up Meeting': return BADGE_COLORS.emerald;
+      case 'Other': return BADGE_COLORS.zinc;
+      default: return BADGE_COLORS.zinc;
     }
   };
 
   const getIntakeTypeStyle = (intakeType: string): string => {
     switch (intakeType) {
-      case 'IRQ': return 'bg-blue-500/15 text-blue-400 border border-blue-500/30';
-      case 'SERF': return 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30';
-      case 'GCG Ad-Hoc': return 'bg-pink-500/15 text-pink-400 border border-pink-500/30';
-      default: return 'bg-zinc-500/10 text-muted border border-zinc-500/30';
+      case 'IRQ': return BADGE_COLORS.blue;
+      case 'SERF': return BADGE_COLORS.emerald;
+      case 'GCG Ad-Hoc': return BADGE_COLORS.pink;
+      default: return BADGE_COLORS.zinc;
     }
   };
 

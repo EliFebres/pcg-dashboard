@@ -172,8 +172,11 @@ export async function getConnection(): Promise<DuckDBConnection> {
 
       // Fire-and-forget: take a daily safety backup if >20h have passed since
       // the last one. Errors are logged inside and never bubble up — a backup
-      // failure must not keep the app from serving requests.
-      maybeRunDailyAutoBackup().catch(() => {});
+      // failure must not keep the app from serving requests. Pass `conn` so
+      // the backup copies the live engagements DB via ATTACH/COPY instead of
+      // fs.copyFileSync, which fails with EBUSY on Windows while the file is
+      // locked by the server.
+      maybeRunDailyAutoBackup(conn).catch(() => {});
 
       return conn;
     })();

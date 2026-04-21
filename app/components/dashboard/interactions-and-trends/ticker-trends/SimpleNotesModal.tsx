@@ -13,8 +13,14 @@ interface SimpleNotesModalProps {
   placeholder?: string;
 }
 
-const SimpleNotesModal: React.FC<SimpleNotesModalProps> = ({
-  isOpen,
+// Outer wrapper keeps the body unmounted while closed — so each reopen is a
+// fresh mount and state initializes lazily from the current prop snapshot.
+const SimpleNotesModal: React.FC<SimpleNotesModalProps> = (props) => {
+  if (!props.isOpen) return null;
+  return <SimpleNotesModalBody {...props} />;
+};
+
+const SimpleNotesModalBody: React.FC<SimpleNotesModalProps> = ({
   onClose,
   title,
   subtitle,
@@ -26,20 +32,16 @@ const SimpleNotesModal: React.FC<SimpleNotesModalProps> = ({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
-    if (isOpen) setNotes(currentNotes);
-  }, [isOpen, currentNotes]);
-
-  useEffect(() => {
-    if (isOpen && textareaRef.current) textareaRef.current.focus();
-  }, [isOpen]);
+    textareaRef.current?.focus();
+  }, []);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isOpen) onClose();
+      if (e.key === 'Escape') onClose();
     };
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, onClose]);
+  }, [onClose]);
 
   const handleSave = () => {
     onSave(notes);
@@ -47,8 +49,6 @@ const SimpleNotesModal: React.FC<SimpleNotesModalProps> = ({
   };
 
   const hasChanges = notes !== currentNotes;
-
-  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">

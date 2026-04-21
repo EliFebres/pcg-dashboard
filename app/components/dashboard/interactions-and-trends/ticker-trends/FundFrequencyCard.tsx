@@ -17,12 +17,15 @@ function FundDetailCard({ tickers, isLoading }: FundDetailCardProps) {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Default to first ticker when tickers change
-  useEffect(() => {
-    if (tickers.length > 0 && (!selectedTicker || !tickers.find((t) => t.ticker === selectedTicker))) {
-      setSelectedTicker(tickers[0].ticker);
-    }
-  }, [tickers, selectedTicker]);
+  // Default to first ticker when tickers change. Adjust state during render
+  // rather than in an effect — React discards the in-progress render and
+  // restarts with the new state, so there's no extra commit.
+  if (
+    tickers.length > 0 &&
+    (!selectedTicker || !tickers.find((t) => t.ticker === selectedTicker))
+  ) {
+    setSelectedTicker(tickers[0].ticker);
+  }
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -40,7 +43,7 @@ function FundDetailCard({ tickers, isLoading }: FundDetailCardProps) {
     [tickers, selectedTicker]
   );
 
-  const { currentQ, prevQ, qoqChange, avgQoqChange, deviation } = useMemo(() => {
+  const { currentQ, prevQ, qoqChange, deviation } = useMemo(() => {
     if (!selectedFund?.quarterlyRequests || selectedFund.quarterlyRequests.length < 2) {
       return { currentQ: 0, prevQ: 0, qoqChange: 0, avgQoqChange: 0, deviation: 0 };
     }

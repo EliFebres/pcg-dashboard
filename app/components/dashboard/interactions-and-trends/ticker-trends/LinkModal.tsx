@@ -15,8 +15,14 @@ interface LinkModalProps {
   placeholder?: string;
 }
 
-const LinkModal: React.FC<LinkModalProps> = ({
-  isOpen,
+// Outer wrapper keeps the body unmounted while closed — so each reopen is a
+// fresh mount and state initializes lazily from the current prop snapshot.
+const LinkModal: React.FC<LinkModalProps> = (props) => {
+  if (!props.isOpen) return null;
+  return <LinkModalBody {...props} />;
+};
+
+const LinkModalBody: React.FC<LinkModalProps> = ({
   onClose,
   title,
   label,
@@ -29,31 +35,20 @@ const LinkModal: React.FC<LinkModalProps> = ({
   const [url, setUrl] = useState(currentUrl);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Reset URL when modal opens with new data
+  // Focus input on mount (i.e. when the modal opens)
   useEffect(() => {
-    if (isOpen) {
-      setUrl(currentUrl);
-    }
-  }, [isOpen, currentUrl]);
-
-  // Focus input when modal opens
-  useEffect(() => {
-    if (isOpen && inputRef.current) {
-      inputRef.current.focus();
-      inputRef.current.select();
-    }
-  }, [isOpen]);
+    inputRef.current?.focus();
+    inputRef.current?.select();
+  }, []);
 
   // Handle escape key
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isOpen) {
-        onClose();
-      }
+      if (e.key === 'Escape') onClose();
     };
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, onClose]);
+  }, [onClose]);
 
   const handleSave = () => {
     onSave(ticker, url.trim());
@@ -67,8 +62,6 @@ const LinkModal: React.FC<LinkModalProps> = ({
 
   const hasChanges = url.trim() !== currentUrl;
   const isValidUrl = !url.trim() || url.trim().startsWith('http://') || url.trim().startsWith('https://') || url.trim().startsWith('/');
-
-  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">

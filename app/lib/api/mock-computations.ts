@@ -289,7 +289,7 @@ export function getMockContributionData(filters: EngagementFilters): Contributio
 export function getMockEngagementsList(filters: EngagementFilters): EngagementsResponse {
   const filtered = applyMockFilters(mockEngagements, filters);
 
-  let sorted = [...filtered];
+  const sorted = [...filtered];
   if (filters.sortColumn) {
     const dir = filters.sortDirection === 'asc' ? 1 : -1;
     sorted.sort((a, b) => {

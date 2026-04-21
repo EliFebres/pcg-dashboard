@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useLayoutEffect, useRef, useState } from 'react';
+import React, { useLayoutEffect, useRef } from 'react';
 import { X } from 'lucide-react';
 import { Popover, PopoverTrigger, PopoverContent } from '@/app/components/ui/Popover';
 import { renderAlertContent } from '@/app/components/dashboard/alertContent';
@@ -24,20 +24,22 @@ export function NotificationsPopover({
   children,
 }: NotificationsPopoverProps) {
   const listRef = useRef<HTMLDivElement>(null);
-  const [maxListHeight, setMaxListHeight] = useState<number | undefined>(undefined);
 
+  // Measure the first N children and clamp max-height directly on the node.
+  // Applying the style via the ref avoids routing a purely-derived DOM
+  // measurement through React state, which the set-state-in-effect rule flags.
   useLayoutEffect(() => {
     const el = listRef.current;
     if (!el) return;
     const children = Array.from(el.children) as HTMLElement[];
     if (children.length <= MAX_VISIBLE_ALERTS) {
-      setMaxListHeight(undefined);
+      el.style.maxHeight = '';
       return;
     }
     const visibleHeight = children
       .slice(0, MAX_VISIBLE_ALERTS)
       .reduce((sum, child) => sum + child.offsetHeight, 0);
-    setMaxListHeight(visibleHeight);
+    el.style.maxHeight = `${visibleHeight}px`;
   }, [alerts]);
 
   return (
@@ -68,7 +70,6 @@ export function NotificationsPopover({
         <div
           ref={listRef}
           className="overflow-y-auto min-h-0"
-          style={maxListHeight !== undefined ? { maxHeight: `${maxListHeight}px` } : undefined}
         >
           {alerts.length === 0 ? (
             <div className="px-4 py-12 text-center text-sm text-white">

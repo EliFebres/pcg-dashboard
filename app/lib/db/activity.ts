@@ -23,6 +23,13 @@ async function columnExists(
   return reader.getRowObjects().length > 0;
 }
 
+// Returns the in-flight (or resolved) activity connection only if one has
+// already been started. Used by the auto-backup path so it can snapshot
+// activity.duckdb through the live connection without triggering its bootstrap.
+export function getActivityConnectionIfOpen(): Promise<DuckDBConnection> | undefined {
+  return g._activityConnectionPromise;
+}
+
 export async function getActivityConnection(): Promise<DuckDBConnection> {
   if (!g._activityConnectionPromise) {
     const p = (async () => {

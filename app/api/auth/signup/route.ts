@@ -68,7 +68,6 @@ export async function POST(req: NextRequest) {
     const passwordHash = await hashPassword(password);
     const role = isFirstUser ? 'admin' : 'user';
     const status = isFirstUser ? 'active' : 'pending';
-    const approvedAt = isFirstUser ? 'now()' : null;
 
     if (isFirstUser) {
       await executeUsers(

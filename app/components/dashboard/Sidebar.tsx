@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { LayoutDashboard, ChevronDown, PieChart, Flame, User, LogOut, Users, UserCheck, PanelLeftClose, PanelLeftOpen, Swords, TrendingUp, Landmark, Bell, Activity } from 'lucide-react';
 import { useCurrentUser } from '@/app/lib/auth/context';
-import { toDisplayName } from '@/app/lib/auth/types';
 import { useAlerts } from '@/app/lib/hooks/useAlerts';
 import { NotificationsPopover } from '@/app/components/dashboard/NotificationsPopover';
 
@@ -59,9 +58,17 @@ export default function Sidebar({ className = '' }: SidebarProps) {
   const { alerts, refetch: refetchAlerts, dismiss: dismissAlert, clearAll: clearAllAlerts } = useAlerts();
   const [isCollapsed, setIsCollapsed] = useState(false);
 
+  // Restore collapsed state from localStorage after mount. Can't use
+  // useState lazy-init here because it runs during SSR where localStorage
+  // doesn't exist, and a `typeof window` branch would create a hydration
+  // mismatch between the SSR HTML (always false) and the first client render.
+  // This one-time mount-only setState is exactly the "subscribe to external
+  // system" case the rule's docs allow.
   useEffect(() => {
-    const stored = localStorage.getItem('sidebar-collapsed');
-    if (stored === 'true') setIsCollapsed(true);
+    if (localStorage.getItem('sidebar-collapsed') === 'true') {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setIsCollapsed(true);
+    }
   }, []);
 
   const toggleCollapsed = () => {

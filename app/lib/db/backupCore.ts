@@ -1,7 +1,14 @@
 import fs from 'fs';
 import path from 'path';
+import type { DuckDBConnection } from '@duckdb/node-api';
 
 export const DB_FILES = ['engagements.duckdb', 'users.duckdb', 'activity.duckdb'] as const;
+
+// Map keyed by DB filename (e.g. 'engagements.duckdb') → its live connection.
+// When a connection is supplied, runBackup copies via DuckDB's own ATTACH/COPY
+// mechanism instead of fs.copyFileSync — necessary on Windows where the open
+// DB file is exclusively locked by the running server.
+export type LiveSources = Partial<Record<(typeof DB_FILES)[number], DuckDBConnection>>;
 
 // Folder-name pattern for auto-backups. pre-restore-* snapshots and any other
 // human-named folders intentionally don't match this and are never auto-pruned.
@@ -39,6 +46,33 @@ export function copyIfExists(src: string, dest: string): boolean {
     return true;
   }
   return false;
+}
+
+// Copy a DuckDB file that's currently open by the app. Uses the live connection
+// to CHECKPOINT (flush WAL into main), then ATTACH the destination path and
+// COPY FROM DATABASE into it. This is the only reliable way to snapshot an open
+// DB on Windows, where the main file is held with an exclusive lock.
+export async function copyLiveDuckDb(
+  conn: DuckDBConnection,
+  destPath: string,
+): Promise<void> {
+  await conn.run(`CHECKPOINT`);
+  // ATTACH refuses to overwrite an existing file — clear any stale target first.
+  if (fs.existsSync(destPath)) fs.unlinkSync(destPath);
+
+  const srcReader = await conn.runAndReadAll(`SELECT current_database() AS db`);
+  const srcAlias = String((srcReader.getRowObjects()[0] as { db: string }).db);
+
+  const bakAlias = `bak_${Date.now()}_${Math.floor(Math.random() * 1e6)}`;
+  // ATTACH doesn't support bound parameters for the path — interpolate, with
+  // forward slashes (Windows-safe) and single-quote escaping.
+  const sqlPath = destPath.replace(/\\/g, '/').replace(/'/g, "''");
+  await conn.run(`ATTACH '${sqlPath}' AS ${bakAlias}`);
+  try {
+    await conn.run(`COPY FROM DATABASE "${srcAlias}" TO ${bakAlias}`);
+  } finally {
+    try { await conn.run(`DETACH ${bakAlias}`); } catch { /* best-effort */ }
+  }
 }
 
 export function listAutoBackups(backupDir: string): string[] {
@@ -90,6 +124,7 @@ export async function runBackup(opts: {
   retentionDays?: number;
   force?: boolean;
   log?: Logger;
+  liveSources?: LiveSources;
 }): Promise<BackupResult> {
   const {
     dbDir,
@@ -97,6 +132,7 @@ export async function runBackup(opts: {
     retentionDays = DEFAULT_RETENTION_DAYS,
     force = false,
     log = () => {},
+    liveSources = {},
   } = opts;
 
   fs.mkdirSync(backupDir, { recursive: true });
@@ -125,7 +161,26 @@ export async function runBackup(opts: {
   let any = false;
   for (const f of DB_FILES) {
     const src = path.join(dbDir, f);
-    const copiedMain = copyIfExists(src, path.join(target, f));
+    const destMain = path.join(target, f);
+    const liveConn = liveSources[f];
+
+    if (liveConn) {
+      // Live DB: use DuckDB's own copy mechanism; the source file is locked by
+      // the running server, so fs.copyFileSync would fail with EBUSY on Windows.
+      // After CHECKPOINT inside copyLiveDuckDb, the WAL is empty, so there's
+      // nothing to copy separately.
+      try {
+        await copyLiveDuckDb(liveConn, destMain);
+        const sz = (fs.statSync(destMain).size / 1024).toFixed(1);
+        log(`  ✓ ${f} (${sz} KB, live copy)`);
+        any = true;
+      } catch (err) {
+        log(`  ! ${f} live copy failed: ${(err as Error).message}`);
+      }
+      continue;
+    }
+
+    const copiedMain = copyIfExists(src, destMain);
     const copiedWal  = copyIfExists(`${src}.wal`, path.join(target, `${f}.wal`));
     if (copiedMain) {
       const sz = (fs.statSync(src).size / 1024).toFixed(1);
