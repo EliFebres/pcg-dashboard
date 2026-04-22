@@ -1,3 +1,6 @@
+export const READ_ONLY_TEAMS = ['Leadership', 'Guest'] as const;
+export type ReadOnlyTeam = typeof READ_ONLY_TEAMS[number];
+
 export interface User {
   id: string;
   email: string;
@@ -5,13 +8,23 @@ export interface User {
   lastName: string;
   title: string;
   department: 'ISG';
-  team: 'Portfolio Consulting Group' | 'Equity Specialist' | 'Fixed Income Specialist';
+  team:
+    | 'Portfolio Consulting Group'
+    | 'Equity Specialist'
+    | 'Fixed Income Specialist'
+    | 'Leadership'
+    | 'Guest';
   office: 'Charlotte' | 'Austin' | 'Santa Monica' | 'UK' | 'Sydney';
   role: 'user' | 'admin';
   status: 'pending' | 'active' | 'inactive';
   createdAt: string;
   approvedAt: string | null;
   approvedById: string | null;
+}
+
+export function isReadOnlyUser(user: Pick<User, 'team'> | null | undefined): boolean {
+  if (!user) return false;
+  return (READ_ONLY_TEAMS as readonly string[]).includes(user.team);
 }
 
 /**

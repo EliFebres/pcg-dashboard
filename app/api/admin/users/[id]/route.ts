@@ -4,6 +4,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { queryUsers, executeUsers } from '@/app/lib/db/users';
 import { verifyJWT, SESSION_COOKIE } from '@/app/lib/auth/jwt';
 import { rowToUser, toDisplayName } from '@/app/lib/auth/types';
+import { emitUserChange } from '@/app/lib/events';
+import { logActivity } from '@/app/lib/activity/log';
 
 const VALID_STATUSES = ['pending', 'active', 'inactive'];
 const VALID_ROLES = ['user', 'admin'];
@@ -115,9 +117,74 @@ export async function PATCH(
       }
     }
 
+    void logActivity(req, {
+      action: 'user.update',
+      entityType: 'user',
+      entityId: id,
+      details: {
+        targetEmail: user.email,
+        status: status ?? undefined,
+        role: role ?? undefined,
+      },
+    });
+
     return NextResponse.json(user, { status: 200 });
   } catch (err) {
     console.error('[PATCH /api/admin/users/[id]]', err);
+    return NextResponse.json({ error: 'Internal server error.' }, { status: 500 });
+  }
+}
+
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const token = req.cookies.get(SESSION_COOKIE)?.value;
+    if (!token) {
+      return NextResponse.json({ error: 'Not authenticated.' }, { status: 401 });
+    }
+
+    let payload;
+    try {
+      payload = await verifyJWT(token);
+    } catch {
+      return NextResponse.json({ error: 'Invalid or expired session.' }, { status: 401 });
+    }
+
+    if (payload.role !== 'admin') {
+      return NextResponse.json({ error: 'Forbidden.' }, { status: 403 });
+    }
+
+    const { id } = await params;
+
+    const rows = await queryUsers('SELECT * FROM users WHERE id = ?', [id]);
+    if (rows.length === 0) {
+      return NextResponse.json({ error: 'User not found.' }, { status: 404 });
+    }
+
+    const target = rows[0] as Record<string, unknown>;
+
+    if (target.status !== 'pending') {
+      return NextResponse.json({ error: 'Only pending accounts can be deleted.' }, { status: 400 });
+    }
+
+    if (payload.sub === id) {
+      return NextResponse.json({ error: 'You cannot delete your own account.' }, { status: 400 });
+    }
+
+    await executeUsers('DELETE FROM users WHERE id = ?', [id]);
+    emitUserChange('deleted');
+    void logActivity(req, {
+      action: 'user.delete',
+      entityType: 'user',
+      entityId: id,
+      details: { targetEmail: target.email as string },
+    });
+
+    return new Response(null, { status: 204 });
+  } catch (err) {
+    console.error('[DELETE /api/admin/users/[id]]', err);
     return NextResponse.json({ error: 'Internal server error.' }, { status: 500 });
   }
 }

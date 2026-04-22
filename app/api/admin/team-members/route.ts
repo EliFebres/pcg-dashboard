@@ -6,11 +6,14 @@ import { verifyJWT, SESSION_COOKIE } from '@/app/lib/auth/jwt';
 import { rowToTeamMember, toDisplayName } from '@/app/lib/auth/types';
 import type { User } from '@/app/lib/auth/types';
 import { randomUUID } from 'crypto';
+import { logActivity } from '@/app/lib/activity/log';
 
 const VALID_TEAMS: User['team'][] = [
   'Portfolio Consulting Group',
   'Equity Specialist',
   'Fixed Income Specialist',
+  'Leadership',
+  'Guest',
 ];
 const VALID_OFFICES: User['office'][] = ['Austin', 'Charlotte', 'Santa Monica', 'UK', 'Sydney'];
 
@@ -110,6 +113,12 @@ export async function POST(req: NextRequest) {
     );
 
     const rows = await queryUsers(`SELECT * FROM team_members WHERE id = ?`, [id]);
+    void logActivity(req, {
+      action: 'team_member.create',
+      entityType: 'team_member',
+      entityId: id,
+      details: { displayName, team, office },
+    });
     return NextResponse.json(rowToTeamMember(rows[0] as Record<string, unknown>), { status: 201 });
   } catch (err) {
     console.error('[POST /api/admin/team-members]', err);

@@ -1,9 +1,10 @@
 export const runtime = 'nodejs';
 
 import { NextRequest, NextResponse } from 'next/server';
-import { execute } from '@/app/lib/db';
-import { requireAuth, teamConstraint } from '@/app/lib/auth/require-auth';
+import { execute, query } from '@/app/lib/db';
+import { requireAuth, teamConstraint, canModify, readOnlyError } from '@/app/lib/auth/require-auth';
 import { emitEngagementChange } from '@/app/lib/events';
+import { logActivity } from '@/app/lib/activity/log';
 
 // PATCH /api/client-interactions/engagements/:id/nna
 // Body: { nna: number | null }
@@ -16,6 +17,7 @@ export async function PATCH(
   }
   const auth = await requireAuth(req);
   if (auth.error) return auth.error;
+  if (!canModify(auth.payload)) return readOnlyError();
   const sc = teamConstraint(auth.payload);
 
   try {
@@ -38,6 +40,16 @@ export async function PATCH(
     );
 
     emitEngagementChange('updated');
+    const clientRows = await query<{ internal_client_name: string | null }>(
+      `SELECT internal_client_name FROM engagements WHERE id = ?`,
+      [engagementId]
+    );
+    void logActivity(req, {
+      action: 'engagement.nna_change',
+      entityType: 'engagement',
+      entityId: engagementId,
+      details: { nna: nna ?? null, internalClient: clientRows[0]?.internal_client_name ?? null },
+    });
     return NextResponse.json({ id: engagementId, nna: nna ?? undefined });
   } catch (err) {
     console.error('PATCH .../nna error:', err);

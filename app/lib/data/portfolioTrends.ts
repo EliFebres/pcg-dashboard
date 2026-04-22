@@ -18,12 +18,12 @@ export const loggedPortfolios: LoggedPortfolio[] = [
     loggedAt: 'Jan 15, 2026',
     dataAsOf: 'Dec 31, 2025',
     positions: [
-      { ticker: 'DFUS', name: 'DFA US Core Equity 1', weight: 0.35 },
-      { ticker: 'DFAI', name: 'DFA Intl Core Equity', weight: 0.20 },
-      { ticker: 'DFAE', name: 'DFA Emerging Core Equity', weight: 0.05 },
-      { ticker: 'DFSV', name: 'DFA US Small Cap Value', weight: 0.10 },
-      { ticker: 'DFIV', name: 'DFA Intl Small Cap Value', weight: 0.05 },
-      { ticker: 'DFCF', name: 'DFA Core Fixed Income', weight: 0.15 },
+      { ticker: 'FMUS', name: 'Firm US Core Equity 1', weight: 0.35 },
+      { ticker: 'FMAI', name: 'Firm Intl Core Equity', weight: 0.20 },
+      { ticker: 'FMAE', name: 'Firm Emerging Core Equity', weight: 0.05 },
+      { ticker: 'FMSV', name: 'Firm US Small Cap Value', weight: 0.10 },
+      { ticker: 'FMIV', name: 'Firm Intl Small Cap Value', weight: 0.05 },
+      { ticker: 'FMCF', name: 'Firm Core Fixed Income', weight: 0.15 },
       { ticker: 'VOO', name: 'Vanguard S&P 500 ETF', weight: 0.10 },
     ],
     characteristics: {
@@ -56,11 +56,11 @@ export const loggedPortfolios: LoggedPortfolio[] = [
     loggedAt: 'Jan 12, 2026',
     dataAsOf: 'Dec 31, 2025',
     positions: [
-      { ticker: 'DFUS', name: 'DFA US Core Equity 1', weight: 0.40 },
-      { ticker: 'DFAI', name: 'DFA Intl Core Equity', weight: 0.25 },
-      { ticker: 'DFAE', name: 'DFA Emerging Core Equity', weight: 0.10 },
-      { ticker: 'DFCF', name: 'DFA Core Fixed Income', weight: 0.20 },
-      { ticker: 'DFLV', name: 'DFA US Large Cap Value', weight: 0.05 },
+      { ticker: 'FMUS', name: 'Firm US Core Equity 1', weight: 0.40 },
+      { ticker: 'FMAI', name: 'Firm Intl Core Equity', weight: 0.25 },
+      { ticker: 'FMAE', name: 'Firm Emerging Core Equity', weight: 0.10 },
+      { ticker: 'FMCF', name: 'Firm Core Fixed Income', weight: 0.20 },
+      { ticker: 'FMLV', name: 'Firm US Large Cap Value', weight: 0.05 },
     ],
     characteristics: {
       weightedAvgMarketCap: 320.1,
@@ -92,12 +92,12 @@ export const loggedPortfolios: LoggedPortfolio[] = [
     loggedAt: 'Jan 10, 2026',
     dataAsOf: 'Dec 31, 2025',
     positions: [
-      { ticker: 'DFUS', name: 'DFA US Core Equity 1', weight: 0.30 },
-      { ticker: 'DFAC', name: 'DFA US Core Equity 2', weight: 0.15 },
-      { ticker: 'DFAI', name: 'DFA Intl Core Equity', weight: 0.15 },
-      { ticker: 'DFAE', name: 'DFA Emerging Core Equity', weight: 0.08 },
-      { ticker: 'DFSV', name: 'DFA US Small Cap Value', weight: 0.12 },
-      { ticker: 'DFCF', name: 'DFA Core Fixed Income', weight: 0.20 },
+      { ticker: 'FMUS', name: 'Firm US Core Equity 1', weight: 0.30 },
+      { ticker: 'FMAC', name: 'Firm US Core Equity 2', weight: 0.15 },
+      { ticker: 'FMAI', name: 'Firm Intl Core Equity', weight: 0.15 },
+      { ticker: 'FMAE', name: 'Firm Emerging Core Equity', weight: 0.08 },
+      { ticker: 'FMSV', name: 'Firm US Small Cap Value', weight: 0.12 },
+      { ticker: 'FMCF', name: 'Firm Core Fixed Income', weight: 0.20 },
     ],
     characteristics: {
       weightedAvgMarketCap: 195.8,
@@ -129,9 +129,9 @@ export const loggedPortfolios: LoggedPortfolio[] = [
     loggedAt: 'Jan 8, 2026',
     dataAsOf: 'Dec 31, 2025',
     positions: [
-      { ticker: 'DFUS', name: 'DFA US Core Equity 1', weight: 0.45 },
-      { ticker: 'DFAI', name: 'DFA Intl Core Equity', weight: 0.20 },
-      { ticker: 'DFSV', name: 'DFA US Small Cap Value', weight: 0.15 },
+      { ticker: 'FMUS', name: 'Firm US Core Equity 1', weight: 0.45 },
+      { ticker: 'FMAI', name: 'Firm Intl Core Equity', weight: 0.20 },
+      { ticker: 'FMSV', name: 'Firm US Small Cap Value', weight: 0.15 },
       { ticker: 'VTI', name: 'Vanguard Total Stock Market', weight: 0.10 },
       { ticker: 'BND', name: 'Vanguard Total Bond Market', weight: 0.10 },
     ],
@@ -165,12 +165,12 @@ export const loggedPortfolios: LoggedPortfolio[] = [
     loggedAt: 'Jan 5, 2026',
     dataAsOf: 'Dec 31, 2025',
     positions: [
-      { ticker: 'DFUS', name: 'DFA US Core Equity 1', weight: 0.25 },
-      { ticker: 'DFAI', name: 'DFA Intl Core Equity', weight: 0.15 },
-      { ticker: 'DFAE', name: 'DFA Emerging Core Equity', weight: 0.05 },
-      { ticker: 'DFIV', name: 'DFA Intl Small Cap Value', weight: 0.10 },
-      { ticker: 'DFCF', name: 'DFA Core Fixed Income', weight: 0.30 },
-      { ticker: 'DFSD', name: 'DFA Short Duration Fixed Income', weight: 0.15 },
+      { ticker: 'FMUS', name: 'Firm US Core Equity 1', weight: 0.25 },
+      { ticker: 'FMAI', name: 'Firm Intl Core Equity', weight: 0.15 },
+      { ticker: 'FMAE', name: 'Firm Emerging Core Equity', weight: 0.05 },
+      { ticker: 'FMIV', name: 'Firm Intl Small Cap Value', weight: 0.10 },
+      { ticker: 'FMCF', name: 'Firm Core Fixed Income', weight: 0.30 },
+      { ticker: 'FMSD', name: 'Firm Short Duration Fixed Income', weight: 0.15 },
     ],
     characteristics: {
       weightedAvgMarketCap: 245.2,
@@ -202,12 +202,12 @@ export const loggedPortfolios: LoggedPortfolio[] = [
     loggedAt: 'Jan 3, 2026',
     dataAsOf: 'Dec 31, 2025',
     positions: [
-      { ticker: 'DFUS', name: 'DFA US Core Equity 1', weight: 0.35 },
-      { ticker: 'DFAI', name: 'DFA Intl Core Equity', weight: 0.25 },
-      { ticker: 'DFAE', name: 'DFA Emerging Core Equity', weight: 0.15 },
-      { ticker: 'DFSV', name: 'DFA US Small Cap Value', weight: 0.08 },
-      { ticker: 'DISV', name: 'DFA Intl Small Cap Value', weight: 0.07 },
-      { ticker: 'DFCF', name: 'DFA Core Fixed Income', weight: 0.10 },
+      { ticker: 'FMUS', name: 'Firm US Core Equity 1', weight: 0.35 },
+      { ticker: 'FMAI', name: 'Firm Intl Core Equity', weight: 0.25 },
+      { ticker: 'FMAE', name: 'Firm Emerging Core Equity', weight: 0.15 },
+      { ticker: 'FMSV', name: 'Firm US Small Cap Value', weight: 0.08 },
+      { ticker: 'FISV', name: 'Firm Intl Small Cap Value', weight: 0.07 },
+      { ticker: 'FMCF', name: 'Firm Core Fixed Income', weight: 0.10 },
     ],
     characteristics: {
       weightedAvgMarketCap: 180.3,
@@ -239,9 +239,9 @@ export const loggedPortfolios: LoggedPortfolio[] = [
     loggedAt: 'Dec 28, 2025',
     dataAsOf: 'Nov 30, 2025',
     positions: [
-      { ticker: 'DFUS', name: 'DFA US Core Equity 1', weight: 0.50 },
-      { ticker: 'DFAI', name: 'DFA Intl Core Equity', weight: 0.20 },
-      { ticker: 'DFCF', name: 'DFA Core Fixed Income', weight: 0.25 },
+      { ticker: 'FMUS', name: 'Firm US Core Equity 1', weight: 0.50 },
+      { ticker: 'FMAI', name: 'Firm Intl Core Equity', weight: 0.20 },
+      { ticker: 'FMCF', name: 'Firm Core Fixed Income', weight: 0.25 },
       { ticker: 'IJR', name: 'iShares Core S&P Small-Cap', weight: 0.05 },
     ],
     characteristics: {
@@ -274,12 +274,12 @@ export const loggedPortfolios: LoggedPortfolio[] = [
     loggedAt: 'Dec 20, 2025',
     dataAsOf: 'Nov 30, 2025',
     positions: [
-      { ticker: 'DFUS', name: 'DFA US Core Equity 1', weight: 0.30 },
-      { ticker: 'DFAC', name: 'DFA US Core Equity 2', weight: 0.10 },
-      { ticker: 'DFAI', name: 'DFA Intl Core Equity', weight: 0.18 },
-      { ticker: 'DFAE', name: 'DFA Emerging Core Equity', weight: 0.07 },
-      { ticker: 'DFSV', name: 'DFA US Small Cap Value', weight: 0.10 },
-      { ticker: 'DFCF', name: 'DFA Core Fixed Income', weight: 0.15 },
+      { ticker: 'FMUS', name: 'Firm US Core Equity 1', weight: 0.30 },
+      { ticker: 'FMAC', name: 'Firm US Core Equity 2', weight: 0.10 },
+      { ticker: 'FMAI', name: 'Firm Intl Core Equity', weight: 0.18 },
+      { ticker: 'FMAE', name: 'Firm Emerging Core Equity', weight: 0.07 },
+      { ticker: 'FMSV', name: 'Firm US Small Cap Value', weight: 0.10 },
+      { ticker: 'FMCF', name: 'Firm Core Fixed Income', weight: 0.15 },
       { ticker: 'VOO', name: 'Vanguard S&P 500 ETF', weight: 0.10 },
     ],
     characteristics: {
@@ -312,10 +312,10 @@ export const loggedPortfolios: LoggedPortfolio[] = [
     loggedAt: 'Dec 15, 2025',
     dataAsOf: 'Nov 30, 2025',
     positions: [
-      { ticker: 'DFUS', name: 'DFA US Core Equity 1', weight: 0.40 },
-      { ticker: 'DFAI', name: 'DFA Intl Core Equity', weight: 0.22 },
-      { ticker: 'DFAE', name: 'DFA Emerging Core Equity', weight: 0.08 },
-      { ticker: 'DFCF', name: 'DFA Core Fixed Income', weight: 0.20 },
+      { ticker: 'FMUS', name: 'Firm US Core Equity 1', weight: 0.40 },
+      { ticker: 'FMAI', name: 'Firm Intl Core Equity', weight: 0.22 },
+      { ticker: 'FMAE', name: 'Firm Emerging Core Equity', weight: 0.08 },
+      { ticker: 'FMCF', name: 'Firm Core Fixed Income', weight: 0.20 },
       { ticker: 'VXUS', name: 'Vanguard Total Intl Stock', weight: 0.10 },
     ],
     characteristics: {
@@ -348,12 +348,12 @@ export const loggedPortfolios: LoggedPortfolio[] = [
     loggedAt: 'Dec 10, 2025',
     dataAsOf: 'Nov 30, 2025',
     positions: [
-      { ticker: 'DFUS', name: 'DFA US Core Equity 1', weight: 0.35 },
-      { ticker: 'DFAI', name: 'DFA Intl Core Equity', weight: 0.20 },
-      { ticker: 'DFAE', name: 'DFA Emerging Core Equity', weight: 0.05 },
-      { ticker: 'DFSV', name: 'DFA US Small Cap Value', weight: 0.12 },
-      { ticker: 'DFIV', name: 'DFA Intl Small Cap Value', weight: 0.08 },
-      { ticker: 'DFCF', name: 'DFA Core Fixed Income', weight: 0.20 },
+      { ticker: 'FMUS', name: 'Firm US Core Equity 1', weight: 0.35 },
+      { ticker: 'FMAI', name: 'Firm Intl Core Equity', weight: 0.20 },
+      { ticker: 'FMAE', name: 'Firm Emerging Core Equity', weight: 0.05 },
+      { ticker: 'FMSV', name: 'Firm US Small Cap Value', weight: 0.12 },
+      { ticker: 'FMIV', name: 'Firm Intl Small Cap Value', weight: 0.08 },
+      { ticker: 'FMCF', name: 'Firm Core Fixed Income', weight: 0.20 },
     ],
     characteristics: {
       weightedAvgMarketCap: 220.4,
@@ -381,11 +381,11 @@ export const loggedPortfolios: LoggedPortfolio[] = [
 
 // ==================== HELPER FUNCTIONS ====================
 
-// DFA ticker prefixes for identification
-const DFA_PREFIXES = ['DF', 'DI'];
+// Firm ticker prefixes for identification
+const FIRM_PREFIXES = ['FM', 'FI', 'FS'];
 
-export function isDFATicker(ticker: string): boolean {
-  return DFA_PREFIXES.some(prefix => ticker.startsWith(prefix));
+export function isFirmTicker(ticker: string): boolean {
+  return FIRM_PREFIXES.some(prefix => ticker.startsWith(prefix));
 }
 
 // Parse date string like "Jan 15, 2025" to Date object
@@ -467,7 +467,7 @@ export function computePortfolioMetrics(portfolios: LoggedPortfolio[]): Portfoli
       { label: 'Avg Line Items', value: '—', change: '—', isPositive: true, benchmark: null },
       { label: 'Avg Value Exposure', value: '—', change: '—', isPositive: true, benchmark: 'ACWI: 30%' },
       { label: 'Avg Growth Exposure', value: '—', change: '—', isPositive: true, benchmark: 'ACWI: 65%' },
-      { label: 'Avg DFA Wallet Share', value: '—', change: '—', isPositive: true, benchmark: null },
+      { label: 'Avg Firm Wallet Share', value: '—', change: '—', isPositive: true, benchmark: null },
     ];
   }
 
@@ -476,24 +476,24 @@ export function computePortfolioMetrics(portfolios: LoggedPortfolio[]): Portfoli
   const avgValueExposure = portfolios.reduce((sum, p) => sum + p.characteristics.valueAllocation, 0) / portfolios.length;
   const avgGrowthExposure = portfolios.reduce((sum, p) => sum + p.characteristics.growthAllocation, 0) / portfolios.length;
 
-  // Calculate DFA wallet share (sum of DFA ticker weights / total)
-  let totalDFAWeight = 0;
+  // Calculate firm wallet share (sum of firm ticker weights / total)
+  let totalFirmWeight = 0;
   let totalWeight = 0;
   portfolios.forEach(p => {
     p.positions.forEach(pos => {
       totalWeight += pos.weight;
-      if (isDFATicker(pos.ticker)) {
-        totalDFAWeight += pos.weight;
+      if (isFirmTicker(pos.ticker)) {
+        totalFirmWeight += pos.weight;
       }
     });
   });
-  const avgDFAWalletShare = totalWeight > 0 ? (totalDFAWeight / totalWeight) * 100 : 0;
+  const avgFirmWalletShare = totalWeight > 0 ? (totalFirmWeight / totalWeight) * 100 : 0;
 
   return [
     { label: 'Avg Line Items', value: avgLineItems.toFixed(1), change: '+0.8', isPositive: true, benchmark: null },
     { label: 'Avg Value Exposure', value: `${Math.round(avgValueExposure)}%`, change: '+2%', isPositive: true, benchmark: 'ACWI: 30%' },
     { label: 'Avg Growth Exposure', value: `${Math.round(avgGrowthExposure)}%`, change: '+1%', isPositive: true, benchmark: 'ACWI: 65%' },
-    { label: 'Avg DFA Wallet Share', value: `${Math.round(avgDFAWalletShare)}%`, change: '+4%', isPositive: true, benchmark: null },
+    { label: 'Avg Firm Wallet Share', value: `${Math.round(avgFirmWalletShare)}%`, change: '+4%', isPositive: true, benchmark: null },
   ];
 }
 

@@ -1,12 +1,13 @@
 // Data and functions for Client Engagements Dashboard
 // Used for mock data (when DUCKDB_DIR is not set) and by scripts/seed-db.ts
 
+
 import type { Engagement, DayData, GCGAdHocChannel, PortfolioHolding, AssetClass } from '../types/engagements';
 
 // Sample tickers for portfolio generation
 const sampleTickers = [
-  'DFAC', 'DFAS', 'DFAT', 'DFAX', 'DFCF', 'DFEM', 'DFEV', 'DFIC', 'DFIP', 'DFIS',
-  'DFIV', 'DFLV', 'DFND', 'DFNM', 'DFSD', 'DFSV', 'DFUV', 'DFVX', 'DISV', 'DSTX',
+  'FMAC', 'FMAS', 'FMAT', 'FMAX', 'FMCF', 'FMEM', 'FMEV', 'FMIC', 'FMIP', 'FMIS',
+  'FMIV', 'FMLV', 'FMND', 'FMNM', 'FMSD', 'FMSV', 'FMUV', 'FMVX', 'FISV', 'FSTX',
   'VTI', 'VOO', 'VEA', 'VWO', 'BND', 'BNDX', 'VNQ', 'VIG', 'VXUS', 'VGT',
   'AGG', 'LQD', 'HYG', 'TIP', 'MUB', 'SHY', 'IEF', 'TLT', 'EMB', 'VCIT',
 ];
@@ -37,7 +38,7 @@ function generatePortfolio(seed: number): PortfolioHolding[] {
 
     // Determine asset class based on ticker prefix
     let assetClass: AssetClass;
-    if (ticker.startsWith('DF') || ['VTI', 'VOO', 'VEA', 'VWO', 'VIG', 'VXUS', 'VGT', 'VNQ'].includes(ticker)) {
+    if (ticker.startsWith('FM') || ticker.startsWith('FI') || ticker.startsWith('FS') || ['VTI', 'VOO', 'VEA', 'VWO', 'VIG', 'VXUS', 'VGT', 'VNQ'].includes(ticker)) {
       assetClass = 'Equity';
     } else if (['AGG', 'LQD', 'HYG', 'TIP', 'MUB', 'SHY', 'IEF', 'TLT', 'EMB', 'VCIT', 'BND', 'BNDX'].includes(ticker)) {
       assetClass = 'Fixed Income';
@@ -59,10 +60,10 @@ function generatePortfolio(seed: number): PortfolioHolding[] {
 // GCG Ad-Hoc interaction channels
 const adHocChannels: GCGAdHocChannel[] = ['In-Person', 'Email', 'Teams'];
 
-// Sample tickers mentioned in GCG Ad-Hoc conversations (mix of DFA, competitors, and popular ETFs)
+// Sample tickers mentioned in GCG Ad-Hoc conversations (mix of firm funds, competitors, and popular ETFs)
 const conversationTickers = [
-  // DFA funds
-  'DFAC', 'DFAS', 'DFAT', 'DFAX', 'DFCF', 'DFEM', 'DFEV', 'DFIC', 'DFIV', 'DFLV', 'DFUV', 'DFSV',
+  // Firm funds
+  'FMAC', 'FMAS', 'FMAT', 'FMAX', 'FMCF', 'FMEM', 'FMEV', 'FMIC', 'FMIV', 'FMLV', 'FMUV', 'FMSV',
   // Popular competitor ETFs
   'VOO', 'VTI', 'SPY', 'IVV', 'QQQ', 'VEA', 'VWO', 'IEMG', 'EFA', 'AGG', 'BND', 'LQD',
   // Large cap stocks often discussed
@@ -95,7 +96,7 @@ function generateTickersMentioned(seed: number): string[] {
 const sampleNotes = [
   'Client requested additional breakdowns by sector. Follow up scheduled for next week.',
   'Discussed portfolio rebalancing strategy. Client prefers conservative approach with 60/40 allocation.',
-  'Meeting went well. Client interested in DFA funds for tax-loss harvesting opportunities.',
+  'Meeting went well. Client interested in firm funds for tax-loss harvesting opportunities.',
   'Need to send updated performance report. Client comparing against Vanguard benchmark.',
   'Client has concerns about interest rate sensitivity. Recommended shorter duration bonds.',
   'Follow-up call to discuss model changes. Client approved new allocation.',
@@ -161,8 +162,7 @@ export const teamMemberOffices: Record<string, 'Charlotte' | 'Austin'> = {
 
 const teamMembers = Object.keys(teamMemberOffices);
 const internalClientKeys = Object.keys(internalClients) as (keyof typeof internalClients)[];
-const departments: ('IAG' | 'Broker-Dealer' | 'Institutional' | 'Retirement Group')[] = ['IAG', 'Broker-Dealer', 'Institutional', 'Retirement Group'];
-const projectTypes = ['Meeting', 'Discovery Meeting', 'Data Request', 'PCR'];
+const projectTypes = ['Meeting', 'Discovery Meeting', 'Data Request', 'PCR', 'Follow-up Material', 'Follow-up Meeting'];
 const adHocProjectTypes = ['PCR', 'Discovery Meeting', 'Data Request', 'Other']; // Project types specific to GCG Ad-Hoc
 
 // Seeded random for consistent data generation
@@ -189,7 +189,7 @@ function getInternalClientByDepartment(dept: 'IAG' | 'Broker-Dealer' | 'Institut
 
 // Generate NNA (Net New Assets) value based on department
 // IAG: averages ~$20M, Broker-Dealer/Institutional: usually ~$100M, rare $1B (whales)
-function generateNNA(dept: 'IAG' | 'Broker-Dealer' | 'Institutional', seed: number): number {
+function generateNNA(dept: 'IAG' | 'Broker-Dealer' | 'Institutional' | 'Retirement Group', seed: number): number {
   const rand = seededRandom(seed);
 
   if (dept === 'IAG') {
@@ -328,7 +328,7 @@ function generateEngagements(): Engagement[] {
       const seed = id * 23;
       const dept = getWeightedDepartment(seed);
       const internalClient = getInternalClientByDepartment(dept, seed + 1);
-      const intakeType: 'IRQ' | 'SRRF' = seededRandom(seed + 2) > 0.5 ? 'IRQ' : 'SRRF';
+      const intakeType: 'IRQ' | 'SERF' = seededRandom(seed + 2) > 0.5 ? 'IRQ' : 'SERF';
       const projectType = projectTypes[Math.floor(seededRandom(seed + 3) * projectTypes.length)];
       const teamCount = 1 + Math.floor(seededRandom(seed + 4) * 3);
       const selectedTeam: string[] = [];
@@ -381,7 +381,7 @@ function generateEngagements(): Engagement[] {
     const seed = (id + i) * 31;
     const dept = getWeightedDepartment(seed);
     const internalClient = getInternalClientByDepartment(dept, seed + 1);
-    const intakeType: 'IRQ' | 'SRRF' = seededRandom(seed + 2) > 0.5 ? 'IRQ' : 'SRRF';
+    const intakeType: 'IRQ' | 'SERF' = seededRandom(seed + 2) > 0.5 ? 'IRQ' : 'SERF';
     const status = i < 3 ? 'In Progress' : 'Pending';
     const teamCount = 1 + Math.floor(seededRandom(seed + 4) * 3);
     const selectedTeam: string[] = [];

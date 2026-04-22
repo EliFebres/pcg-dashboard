@@ -3,8 +3,10 @@ export const runtime = 'nodejs';
 import { NextRequest, NextResponse } from 'next/server';
 import { query, execute } from '@/app/lib/db';
 import { verifyJWT, SESSION_COOKIE } from '@/app/lib/auth/jwt';
+import { canModify, readOnlyError } from '@/app/lib/auth/require-auth';
 import type { NoteEntry } from '@/app/lib/types/engagements';
 import { emitEngagementChange } from '@/app/lib/events';
+import { logActivity } from '@/app/lib/activity/log';
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -62,6 +64,7 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
     try { payload = await verifyJWT(token); } catch {
       return NextResponse.json({ error: 'Invalid or expired session.' }, { status: 401 });
     }
+    if (!canModify(payload)) return readOnlyError();
 
     const { id } = await params;
     const engagementId = Number(id);
@@ -89,7 +92,22 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
     );
 
     emitEngagementChange('updated');
-    return NextResponse.json(rowToNoteEntry(rows[0]), { status: 201 });
+    const newNote = rowToNoteEntry(rows[0]);
+    const clientRows = await query<{ internal_client_name: string | null }>(
+      `SELECT internal_client_name FROM engagements WHERE id = ?`,
+      [engagementId]
+    );
+    void logActivity(req, {
+      action: 'note.create',
+      entityType: 'note',
+      entityId: newNote.id,
+      details: {
+        engagementId,
+        length: newNote.noteText.length,
+        internalClient: clientRows[0]?.internal_client_name ?? null,
+      },
+    });
+    return NextResponse.json(newNote, { status: 201 });
   } catch (err) {
     console.error('POST .../notes error:', err);
     return NextResponse.json({ error: 'Failed to add note' }, { status: 500 });

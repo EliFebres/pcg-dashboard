@@ -1,9 +1,11 @@
 export const runtime = 'nodejs';
 
 import { NextRequest, NextResponse } from 'next/server';
-import { query } from '@/app/lib/db';
+import { query, queryWrite } from '@/app/lib/db';
 import { verifyJWT, SESSION_COOKIE } from '@/app/lib/auth/jwt';
+import { canModify, readOnlyError } from '@/app/lib/auth/require-auth';
 import type { NoteEntry } from '@/app/lib/types/engagements';
+import { logActivity } from '@/app/lib/activity/log';
 
 type RouteParams = { params: Promise<{ id: string; noteId: string }> };
 
@@ -33,6 +35,7 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
     try { payload = await verifyJWT(token); } catch {
       return NextResponse.json({ error: 'Invalid or expired session.' }, { status: 401 });
     }
+    if (!canModify(payload)) return readOnlyError();
 
     const { noteId } = await params;
     const id = Number(noteId);
@@ -43,7 +46,7 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
     }
 
     // Atomic ownership check + update: if author_id doesn't match, 0 rows returned
-    const updated = await query<Record<string, unknown>>(
+    const updated = await queryWrite<Record<string, unknown>>(
       `UPDATE engagement_notes SET note_text = ? WHERE id = ? AND author_id = ? RETURNING *`,
       [noteText.trim(), id, payload.sub]
     );
@@ -56,7 +59,21 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'You can only edit your own notes.' }, { status: 403 });
     }
 
-    return NextResponse.json(rowToNoteEntry(updated[0]));
+    const updatedNote = rowToNoteEntry(updated[0]);
+    const clientRows = await query<{ internal_client_name: string | null }>(
+      `SELECT internal_client_name FROM engagements WHERE id = ?`,
+      [updatedNote.engagementId]
+    );
+    void logActivity(req, {
+      action: 'note.update',
+      entityType: 'note',
+      entityId: updatedNote.id,
+      details: {
+        engagementId: updatedNote.engagementId,
+        internalClient: clientRows[0]?.internal_client_name ?? null,
+      },
+    });
+    return NextResponse.json(updatedNote);
   } catch (err) {
     console.error('PATCH .../notes/:noteId error:', err);
     return NextResponse.json({ error: 'Failed to update note' }, { status: 500 });
@@ -77,12 +94,14 @@ export async function DELETE(req: NextRequest, { params }: RouteParams) {
     try { payload = await verifyJWT(token); } catch {
       return NextResponse.json({ error: 'Invalid or expired session.' }, { status: 401 });
     }
+    if (!canModify(payload)) return readOnlyError();
 
-    const { noteId } = await params;
+    const { id: engagementIdParam, noteId } = await params;
     const id = Number(noteId);
+    const engagementId = Number(engagementIdParam);
 
     // Atomic ownership check + delete: if author_id doesn't match, 0 rows returned
-    const deleted = await query(
+    const deleted = await queryWrite(
       `DELETE FROM engagement_notes WHERE id = ? AND author_id = ? RETURNING id`,
       [id, payload.sub]
     );
@@ -95,6 +114,19 @@ export async function DELETE(req: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'You can only delete your own notes.' }, { status: 403 });
     }
 
+    const clientRows = await query<{ internal_client_name: string | null }>(
+      `SELECT internal_client_name FROM engagements WHERE id = ?`,
+      [engagementId]
+    );
+    void logActivity(req, {
+      action: 'note.delete',
+      entityType: 'note',
+      entityId: id,
+      details: {
+        engagementId,
+        internalClient: clientRows[0]?.internal_client_name ?? null,
+      },
+    });
     return new NextResponse(null, { status: 204 });
   } catch (err) {
     console.error('DELETE .../notes/:noteId error:', err);

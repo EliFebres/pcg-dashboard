@@ -20,8 +20,8 @@ export interface IntakeBreakdown {
 export interface IntakeSourceBreakdown {
   irqCount: number;
   irqPercent: number;
-  srrfCount: number;
-  srrfPercent: number;
+  serfCount: number;
+  serfPercent: number;
   portfoliosLogged: number;
   portfoliosTotal: number;
   portfoliosPercent: number;
@@ -84,7 +84,7 @@ export interface Engagement {
   id: number;
   externalClient: string | null; // Optional - GCG Ad-Hoc may not have an external client
   internalClient: InternalClient; // Contact/relationship owner/salesperson
-  intakeType: 'IRQ' | 'SRRF' | 'GCG Ad-Hoc';
+  intakeType: 'IRQ' | 'SERF' | 'GCG Ad-Hoc';
   adHocChannel?: GCGAdHocChannel; // Only applicable when intakeType is 'GCG Ad-Hoc'
   type: string; // Project Type
   teamMembers: string[];
@@ -101,6 +101,18 @@ export interface Engagement {
   tickersMentioned?: string[]; // Tickers discussed during GCG Ad-Hoc interactions (used for Ticker Trends)
   createdById?: string; // User ID of the person who created this engagement
   createdByName?: string; // Display name of the creator
+  linkedFromId?: number | null; // Parent engagement this one was the result of (for funnel KPIs)
+}
+
+// Slim shape for the link picker — avoids fetching full engagement payloads
+export interface EngagementLinkSummary {
+  id: number;
+  dateStarted: string;
+  type: string;
+  intakeType: string;
+  internalClientName: string;
+  internalClientDept: string;
+  externalClient: string | null;
 }
 
 export interface ContributionData {

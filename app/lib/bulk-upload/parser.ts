@@ -18,6 +18,8 @@ export interface ParsedRow {
   nna: number | null; // stored in dollars (input is in $M)
   notes: string | null;
   tickersMentioned: string[];
+  portfolio: string | null; // JSON string of PortfolioHolding[] or null
+  structuredNotes: string | null; // JSON string of note entries with metadata or null
 }
 
 export interface ParseResult {
@@ -137,6 +139,9 @@ export async function parseUploadedFile(buffer: Buffer, filename: string): Promi
       const nnaMRaw = get(11);
       const notes = str(get(12)) || null;
       const tickersMentioned = parseCommaSeparated(get(13));
+      const portfolioLoggedRaw = get(14);
+      const portfolioRaw = str(get(15)) || null;
+      const structuredNotesRaw = str(get(16)) || null;
 
       const dateStarted = parseDate(dateStartedRaw);
       const dateFinished = parseDate(dateFinishedRaw);
@@ -166,10 +171,12 @@ export async function parseUploadedFile(buffer: Buffer, filename: string): Promi
         dateStarted,
         dateFinished,
         status,
-        portfolioLogged: false, // always false on bulk import; can be updated individually
+        portfolioLogged: parseBoolean(portfolioLoggedRaw),
         nna,
         notes,
         tickersMentioned,
+        portfolio: portfolioRaw,
+        structuredNotes: structuredNotesRaw,
       });
     } catch (e) {
       parseErrors.push({ rowNumber, message: `Unexpected parse error: ${e instanceof Error ? e.message : String(e)}` });

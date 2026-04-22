@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Users, CheckCircle, XCircle, ShieldCheck, ShieldOff, RotateCcw, Clock } from 'lucide-react';
+import { Users, CheckCircle, XCircle, ShieldCheck, ShieldOff, RotateCcw, Clock, Trash2 } from 'lucide-react';
 import { useCurrentUser } from '@/app/lib/auth/context';
 import type { User } from '@/app/lib/auth/types';
 
@@ -23,7 +23,7 @@ function StatusBadge({ status }: { status: User['status'] }) {
     );
   }
   return (
-    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-zinc-500/15 text-zinc-400 border border-zinc-500/20">
+    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-zinc-500/15 text-muted border border-zinc-500/20">
       <span className="w-1.5 h-1.5 rounded-full bg-zinc-400" />
       Inactive
     </span>
@@ -40,7 +40,7 @@ function RoleBadge({ role }: { role: User['role'] }) {
     );
   }
   return (
-    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-zinc-800/60 text-zinc-500 border border-zinc-700/50">
+    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-zinc-800/60 text-muted border border-zinc-700/50">
       User
     </span>
   );
@@ -56,7 +56,7 @@ function ActionButton({
   onClick: () => void;
   disabled?: boolean;
   title?: string;
-  variant: 'approve' | 'deactivate' | 'reactivate' | 'makeAdmin' | 'removeAdmin';
+  variant: 'approve' | 'deactivate' | 'reactivate' | 'makeAdmin' | 'removeAdmin' | 'delete';
   children: React.ReactNode;
 }) {
   const styles = {
@@ -64,7 +64,8 @@ function ActionButton({
     deactivate: 'text-red-400 hover:bg-red-500/10 border-red-500/20',
     reactivate: 'text-cyan-400 hover:bg-cyan-500/10 border-cyan-500/20',
     makeAdmin: 'text-cyan-400 hover:bg-cyan-500/10 border-cyan-500/20',
-    removeAdmin: 'text-zinc-400 hover:bg-zinc-500/10 border-zinc-500/20',
+    removeAdmin: 'text-muted hover:bg-zinc-500/10 border-zinc-500/20',
+    delete: 'text-red-400 hover:bg-red-500/10 border-red-500/20',
   };
 
   return (
@@ -130,6 +131,21 @@ export default function AdminUsersPage() {
     }
   }
 
+  async function deleteUser(id: string, name: string) {
+    if (!window.confirm(`Permanently delete the pending account for ${name}? This cannot be undone.`)) {
+      return;
+    }
+    setActionLoading(id);
+    try {
+      const res = await fetch(`/api/admin/users/${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        await fetchUsers();
+      }
+    } finally {
+      setActionLoading(null);
+    }
+  }
+
   function formatDate(iso: string | null) {
     if (!iso) return '—';
     return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
@@ -153,7 +169,7 @@ export default function AdminUsersPage() {
           </div>
           <div>
             <h1 className="text-xl font-semibold text-zinc-100">User Management</h1>
-            <p className="text-sm text-zinc-500">Manage team member accounts and permissions</p>
+            <p className="text-sm text-muted">Manage team member accounts and permissions</p>
           </div>
         </div>
       </div>
@@ -165,21 +181,21 @@ export default function AdminUsersPage() {
       )}
 
       {isLoading ? (
-        <div className="flex items-center justify-center h-48 text-zinc-500 text-sm">Loading...</div>
+        <div className="flex items-center justify-center h-48 text-muted text-sm">Loading...</div>
       ) : (
         <div className="bg-zinc-900/40 border border-zinc-800/50 rounded-xl overflow-x-auto scrollbar-thin">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-zinc-800/50">
-                <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 uppercase tracking-wider">Name</th>
-                <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 uppercase tracking-wider">Email</th>
-                <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 uppercase tracking-wider">Title</th>
-                <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 uppercase tracking-wider">Team</th>
-                <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 uppercase tracking-wider">Office</th>
-                <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 uppercase tracking-wider">Role</th>
-                <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 uppercase tracking-wider">Status</th>
-                <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 uppercase tracking-wider">Actions</th>
-                <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 uppercase tracking-wider">Joined</th>
+                <th className="text-left px-4 py-3 text-xs font-medium text-muted uppercase tracking-wider">Name</th>
+                <th className="text-left px-4 py-3 text-xs font-medium text-muted uppercase tracking-wider">Email</th>
+                <th className="text-left px-4 py-3 text-xs font-medium text-muted uppercase tracking-wider">Title</th>
+                <th className="text-left px-4 py-3 text-xs font-medium text-muted uppercase tracking-wider">Team</th>
+                <th className="text-left px-4 py-3 text-xs font-medium text-muted uppercase tracking-wider">Office</th>
+                <th className="text-left px-4 py-3 text-xs font-medium text-muted uppercase tracking-wider">Role</th>
+                <th className="text-left px-4 py-3 text-xs font-medium text-muted uppercase tracking-wider">Status</th>
+                <th className="text-left px-4 py-3 text-xs font-medium text-muted uppercase tracking-wider">Actions</th>
+                <th className="text-left px-4 py-3 text-xs font-medium text-muted uppercase tracking-wider">Joined</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-800/30">
@@ -195,26 +211,36 @@ export default function AdminUsersPage() {
                           {u.firstName[0]}{u.lastName[0]}
                         </div>
                         <span className="text-zinc-200 font-medium">{u.firstName} {u.lastName}</span>
-                        {self && <span className="text-xs text-zinc-600">(you)</span>}
+                        {self && <span className="text-xs text-muted">(you)</span>}
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-zinc-400">{u.email}</td>
-                    <td className="px-4 py-3 text-zinc-400">{u.title}</td>
-                    <td className="px-4 py-3 text-zinc-400">{u.team}</td>
-                    <td className="px-4 py-3 text-zinc-400">{u.office}</td>
+                    <td className="px-4 py-3 text-muted">{u.email}</td>
+                    <td className="px-4 py-3 text-muted">{u.title}</td>
+                    <td className="px-4 py-3 text-muted">{u.team}</td>
+                    <td className="px-4 py-3 text-muted">{u.office}</td>
                     <td className="px-4 py-3"><RoleBadge role={u.role} /></td>
                     <td className="px-4 py-3"><StatusBadge status={u.status} /></td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-1.5 flex-wrap">
                         {u.status === 'pending' && (
-                          <ActionButton
-                            variant="approve"
-                            onClick={() => patch(u.id, { status: 'active' })}
-                            disabled={busy}
-                          >
-                            <CheckCircle className="w-3 h-3" />
-                            Approve
-                          </ActionButton>
+                          <>
+                            <ActionButton
+                              variant="approve"
+                              onClick={() => patch(u.id, { status: 'active' })}
+                              disabled={busy}
+                            >
+                              <CheckCircle className="w-3 h-3" />
+                              Approve
+                            </ActionButton>
+                            <ActionButton
+                              variant="delete"
+                              onClick={() => deleteUser(u.id, `${u.firstName} ${u.lastName}`)}
+                              disabled={busy}
+                            >
+                              <Trash2 className="w-3 h-3" />
+                              Delete
+                            </ActionButton>
+                          </>
                         )}
                         {u.status === 'active' && (
                           <ActionButton
@@ -265,13 +291,13 @@ export default function AdminUsersPage() {
                         )}
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-zinc-500 whitespace-nowrap">{formatDate(u.createdAt)}</td>
+                    <td className="px-4 py-3 text-muted whitespace-nowrap">{formatDate(u.createdAt)}</td>
                   </tr>
                 );
               })}
               {users.length === 0 && (
                 <tr>
-                  <td colSpan={9} className="px-4 py-8 text-center text-zinc-600">No users found.</td>
+                  <td colSpan={9} className="px-4 py-8 text-center text-muted">No users found.</td>
                 </tr>
               )}
             </tbody>

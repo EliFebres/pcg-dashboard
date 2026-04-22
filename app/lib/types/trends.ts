@@ -34,24 +34,24 @@ export interface HotTicker {
   name: string;
   requests: number;
   trend: string;
-  dfaCompetitor: string;
-  dfaName: string;
+  firmCompetitor: string;
+  firmName: string;
   returnComparison: {
     competitor: number;
-    dfa: number;
+    firm: number;
     delta: string;
   };
   expenseRatio: {
     competitor: number;
-    dfa: number;
+    firm: number;
   };
   aum: {
     competitor: string;
-    dfa: string;
+    firm: string;
   };
   flows: {
     competitor: string;
-    dfa: string;
+    firm: string;
   };
   notes: string;
   talkingPointsUrl: string;
@@ -60,7 +60,7 @@ export interface HotTicker {
   quarterlyRequests?: QuarterlyRequests[];
 }
 
-export interface PopularDFATicker {
+export interface PopularFirmTicker {
   rank: number;
   ticker: string;
   name: string;
@@ -71,9 +71,9 @@ export interface PopularDFATicker {
 
 export interface TickerTrend {
   month: string;
-  DFUS: number;
-  DFAI: number;
-  DFAE: number;
+  FMUS: number;
+  FMAI: number;
+  FMAE: number;
 }
 
 // Portfolio Logged Data Types
@@ -134,13 +134,13 @@ export interface TickerCount {
   count: number; // Number of portfolios containing this ticker
   totalWeight: number; // Sum of weights across all portfolios
   avgWeight: number; // Average weight when included
-  isDFA: boolean;
+  isFirm: boolean;
 }
 
-export interface DFAAlternative {
+export interface FirmAlternative {
   competitorTicker: string;
-  dfaTicker: string;
-  dfaName: string;
+  firmTicker: string;
+  firmName: string;
   matchType: 'overlap' | 'benchmark' | 'manual';
   overlapScore?: number;
 }
@@ -151,10 +151,10 @@ export interface ComputedHotTicker {
   name: string;
   count: number; // Number of mentions/holdings
   trend: string;
-  dfaAlternative: DFAAlternative | null;
+  firmAlternative: FirmAlternative | null;
 }
 
-export interface ComputedPopularDFATicker {
+export interface ComputedPopularFirmTicker {
   rank: number;
   ticker: string;
   name: string;

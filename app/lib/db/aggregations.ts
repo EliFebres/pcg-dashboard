@@ -11,7 +11,6 @@ import {
   getMockDepartmentBreakdown,
   getMockContributionData,
   getMockEngagementsList,
-  getMockFilterOptions,
 } from '../api/mock-computations';
 import { buildFilterClause, rowToEngagement, SORT_COLUMN_MAP } from './queries';
 import type { ServerConstraints } from './queries';
@@ -26,8 +25,8 @@ export const STATIC_FILTER_OPTIONS: FilterOptions = {
     { label: 'Office', options: ['Austin Office', 'Charlotte Office'] },
   ],
   departments: ['Broker-Dealer', 'IAG', 'Institutional', 'Retirement Group'],
-  intakeTypes: ['IRQ', 'SRRF', 'GCG Ad-Hoc'],
-  projectTypes: ['Data Request', 'Discovery Meeting', 'Meeting', 'Other', 'PCR'],
+  intakeTypes: ['IRQ', 'SERF', 'GCG Ad-Hoc'],
+  projectTypes: ['Data Request', 'Discovery Meeting', 'Follow-up Material', 'Follow-up Meeting', 'Meeting', 'Other', 'PCR'],
   statuses: ['In Progress', 'Awaiting Meeting', 'Follow Up', 'Completed'],
 };
 
@@ -55,23 +54,20 @@ export async function computeMetrics(filters: EngagementFilters, serverConstrain
   // In-progress count + sparkline (share the same base filter)
   const inProgressFilters = { ...filters, status: undefined };
   const { whereClause: ipWhere, params: ipParams } = buildFilterClause(inProgressFilters, '', serverConstraints);
-  const inProgressAndClause = ipWhere
-    ? `${ipWhere} AND status = 'In Progress'`
-    : `WHERE status = 'In Progress'`;
   const sparklineAndClause = ipWhere
     ? `${ipWhere} AND date_started >= (CURRENT_DATE - INTERVAL '8 weeks')`
     : `WHERE date_started >= (CURRENT_DATE - INTERVAL '8 weeks')`;
 
   // ---- Fire all 4 queries in parallel — none depends on another's result ----
   const [projectRows, prevRows, inProgressRows, sparklineRows] = await Promise.all([
-    // Current period: client projects (IRQ/SRRF non-PCR) + GCG Ad-Hoc
+    // Current period: client projects (IRQ/SERF non-PCR) + GCG Ad-Hoc
     query<Record<string, unknown>>(`
       SELECT
-        COUNT(*) FILTER (WHERE intake_type IN ('IRQ', 'SRRF') AND type != 'PCR')  AS project_count,
+        COUNT(*) FILTER (WHERE intake_type IN ('IRQ', 'SERF') AND type != 'PCR')  AS project_count,
         COUNT(*) FILTER (WHERE intake_type = 'IRQ'  AND type != 'PCR')            AS irq_count,
-        COUNT(*) FILTER (WHERE intake_type = 'SRRF' AND type != 'PCR')            AS srrf_count,
-        COUNT(*) FILTER (WHERE intake_type IN ('IRQ', 'SRRF') AND type != 'PCR')  AS eligible_count,
-        COUNT(*) FILTER (WHERE intake_type IN ('IRQ', 'SRRF') AND type != 'PCR'
+        COUNT(*) FILTER (WHERE intake_type = 'SERF' AND type != 'PCR')            AS serf_count,
+        COUNT(*) FILTER (WHERE intake_type IN ('IRQ', 'SERF') AND type != 'PCR')  AS eligible_count,
+        COUNT(*) FILTER (WHERE intake_type IN ('IRQ', 'SERF') AND type != 'PCR'
                            AND portfolio_logged = TRUE)                            AS portfolios_logged,
         COUNT(*) FILTER (WHERE intake_type = 'GCG Ad-Hoc')                        AS adhoc_count,
         COUNT(*) FILTER (WHERE intake_type = 'GCG Ad-Hoc' AND ad_hoc_channel = 'In-Person') AS adhoc_in_person,
@@ -87,14 +83,19 @@ export async function computeMetrics(filters: EngagementFilters, serverConstrain
     // Previous period: for change% calculations
     query<Record<string, unknown>>(`
       SELECT
-        COUNT(*) FILTER (WHERE intake_type IN ('IRQ', 'SRRF') AND type != 'PCR') AS prev_projects,
+        COUNT(*) FILTER (WHERE intake_type IN ('IRQ', 'SERF') AND type != 'PCR') AS prev_projects,
         COUNT(*) FILTER (WHERE intake_type = 'GCG Ad-Hoc')                       AS prev_adhoc,
         COALESCE(SUM(nna), 0)                                                    AS prev_nna
       FROM engagements ${prevAndClause}
     `, prevParams),
-    // In-progress count (respects all active filters except status)
+    // In-progress: current count + last week's count (currently in-progress OR finished this week)
     query<Record<string, unknown>>(`
-      SELECT COUNT(*) AS count FROM engagements ${inProgressAndClause}
+      SELECT
+        COUNT(*) FILTER (WHERE status = 'In Progress') AS count,
+        COUNT(*) FILTER (WHERE status = 'In Progress'
+          OR (date_finished >= date_trunc('week', CURRENT_DATE) AND status != 'In Progress')
+        ) AS last_week
+      FROM engagements ${ipWhere || ''}
     `, ipParams),
     // Weekly in-progress sparkline (last 8 weeks, same filters)
     query<Record<string, unknown>>(`
@@ -121,10 +122,10 @@ export async function computeMetrics(filters: EngagementFilters, serverConstrain
     : projectCount > 0 ? 100 : 0;
 
   const irqCount = Number(p?.irq_count ?? 0);
-  const srrfCount = Number(p?.srrf_count ?? 0);
+  const serfCount = Number(p?.serf_count ?? 0);
   const eligibleCount = Number(p?.eligible_count ?? 0);
   const portfoliosLogged = Number(p?.portfolios_logged ?? 0);
-  const totalProjects = irqCount + srrfCount;
+  const totalProjects = irqCount + serfCount;
 
   const adhocCount = Number(p?.adhoc_count ?? 0);
   const prevAdhoc = Number(prev?.prev_adhoc ?? 0);
@@ -148,9 +149,8 @@ export async function computeMetrics(filters: EngagementFilters, serverConstrain
   while (sparklineValues.length < 8) {
     sparklineValues.unshift({ value: 0 });
   }
-  const inProgressChange = sparklineValues.length >= 2
-    ? sparklineValues[sparklineValues.length - 1].value - sparklineValues[sparklineValues.length - 2].value
-    : 0;
+  const lastWeekInProgress = Number(inProgressRows[0]?.last_week ?? 0);
+  const inProgressChange = inProgressCount - lastWeekInProgress;
 
   const INTAKE_COLORS: Record<string, string> = {
     'In-Person': '#a5f3fc',
@@ -166,8 +166,8 @@ export async function computeMetrics(filters: EngagementFilters, serverConstrain
       intakeSourceBreakdown: {
         irqCount,
         irqPercent: totalProjects > 0 ? Math.round((irqCount / totalProjects) * 100) : 0,
-        srrfCount,
-        srrfPercent: totalProjects > 0 ? Math.round((srrfCount / totalProjects) * 100) : 0,
+        serfCount,
+        serfPercent: totalProjects > 0 ? Math.round((serfCount / totalProjects) * 100) : 0,
         portfoliosLogged,
         portfoliosTotal: eligibleCount,
         portfoliosPercent: eligibleCount > 0 ? Math.round((portfoliosLogged / eligibleCount) * 100) : 0,
@@ -352,7 +352,7 @@ export async function computeEngagementsList(filters: EngagementFilters, serverC
       `SELECT *,
          (SELECT COUNT(*) FROM engagement_notes WHERE engagement_id = engagements.id) AS note_count
        FROM engagements ${whereClause}
-       ORDER BY ${sortCol} ${sortDir} NULLS LAST
+       ORDER BY ${sortCol} ${sortDir} ${sortDir === 'DESC' ? 'NULLS FIRST' : 'NULLS LAST'}
        LIMIT ? OFFSET ?`,
       [...params, pageSize, offset]
     ),

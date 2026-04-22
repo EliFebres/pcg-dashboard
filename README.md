@@ -1,6 +1,6 @@
 # PCG Insights Dashboard
 
-A Next.js dashboard application for tracking client interactions, portfolio trends, and ticker analytics for Dimensional's Portfolio Construction Group.
+A Next.js dashboard application for the firm's Portfolio Construction Group. The **Client Interactions** dashboard is fully live, backed by DuckDB with real-time cross-user updates. The Portfolio Trends, Ticker Trends, and Competitive Landscape sections are scaffolded and disabled in the sidebar pending a future re-enable.
 
 ## Features
 
@@ -15,11 +15,13 @@ A Next.js dashboard application for tracking client interactions, portfolio tren
 - **`/admin/team-members`** — Manage the team member directory used throughout the dashboard (name, team, office, status; link to user account)
 
 ### Client Interactions Dashboard
-- Track and manage client engagements (IRQ, SRRF, GCG Ad-Hoc) with full CRUD support
+- Track and manage client engagements (IRQ, SERF, GCG Ad-Hoc) with full CRUD support
 - Create, edit, and delete engagements via modal forms
-- **Bulk upload** — import engagements from Excel (.xlsx) or CSV; preview before committing
-- Inline edits for status, NNA (Net New Assets), and notes
-- **Rich text notes** — TipTap-powered editor with per-note author attribution and delete support
+- **Bulk upload** — import engagements from Excel (.xlsx) or CSV; downloadable XLSX template; in-browser preview and validation before committing
+- **Real-time cross-user updates** — Server-Sent Events stream (`/api/client-interactions/events`) pushes mutations from other users into open dashboards immediately, with no page refresh
+- **Bloomberg-style flash animations** — `useDashboardChanges` diffs each incoming snapshot and pulse-flashes added rows, removed rows (ghost-row fade), changed cells, metric deltas, contribution-graph cells, and department counts (neutral / blue / green / red / amber) for ~1.1s
+- Inline edits for status, NNA (Net New Assets), and notes (each backed by a dedicated single-field endpoint with optimistic locking)
+- **Rich text notes** — TipTap-powered editor with per-note author attribution; only the original author can edit or delete their own note
 - GitHub-style contribution heatmap showing daily activity over time
 - Department breakdown bar chart
 - Metric cards: Client Projects, GCG Ad-Hoc, In Progress, and NNA — all with period-over-period change
@@ -27,23 +29,34 @@ A Next.js dashboard application for tracking client interactions, portfolio tren
 - Fullscreen table view
 - Filters: Team Member, Department, Intake Type, Project Type, Time Period, Status
 - Text search across clients, intake type, and project type
-- CSV export
+- CSV export of the currently-filtered view
 
-### Portfolio Trends Dashboard *(currently inactive)*
+### Portfolio Trends Dashboard *(shelved — disabled in sidebar)*
 - Portfolio construction insights and client analytics
 - Style Map and Profitability Map visualizations
 - Benchmark comparison vs MSCI ACWI IMI
 - Equity and Fixed Income metrics
 - Logged Portfolios table with expandable position details and fullscreen view
 
-### Ticker Trends Dashboard *(currently inactive)*
-- Hot Tickers & DFA Competitors comparison table with inline editing (type, notes, talking points, PCR links)
-- Most Popular DFA Tickers ranking
+The page code still exists under `app/dashboard/interactions-and-trends/portfolio-trends/`, but the nav item is greyed out pending a future re-enable.
+
+### Ticker Trends Dashboard *(shelved — disabled in sidebar)*
+- Hot Tickers & Firm Competitors comparison table with inline editing (type, notes, talking points, PCR links)
+- Most Popular Firm Tickers ranking
 - Ticker Adoption Trend chart over time
+
+The page code still exists under `app/dashboard/interactions-and-trends/ticker-trends/`, but the nav item is greyed out.
+
+### Competitive Landscape *(scaffolded — all three pages disabled in sidebar)*
+- **Equity** — competitor equity fund comparison table with inline notes
+- **Fixed Income** — same pattern for fixed-income funds
+- **vs. Competitor** — head-to-head firm vs. competitor comparison split by category
+
+All three nav items are currently greyed out. UI components (`CompetitorTable`, `CompetitorVsFirmTable`, `CompetitiveNotesModal`) live under `app/components/dashboard/competitive-landscape/`, but data is mocked and the section is not yet wired up to DuckDB.
 
 ## Tech Stack
 
-- **Next.js 16.2.1** with App Router
+- **Next.js 16.2.1** with App Router and Server-Sent Events
 - **React 19.2.3** with TypeScript
 - **Tailwind CSS 4** for styling
 - **DuckDB 1.5.1** (Node API) for data persistence
@@ -129,46 +142,87 @@ The 8 most recent backups are kept automatically (~2 months of history).
 
 ```
 app/
-├── api/                         # Next.js route handlers (server-side)
-│   ├── auth/                    # Login, signup, logout, /me
-│   ├── client-interactions/     # Engagement CRUD, dashboard aggregations, bulk upload, export
-│   ├── admin/                   # User and team member management endpoints
-│   └── team-members/            # Public team member directory endpoint
+├── page.tsx                            # Public landing page
+├── layout.tsx                          # Root layout (Geist Sans/Mono + Inter fonts)
+├── globals.css                         # Theme, animations, pulse-flash keyframes
+├── api/                                # Next.js route handlers (server-side)
+│   ├── auth/                           # login, signup, logout, me
+│   ├── admin/
+│   │   ├── users/                      # List, update, plus SSE events for user admin
+│   │   └── team-members/               # Team member directory CRUD
+│   ├── team-members/                   # Public team member directory endpoint
+│   └── client-interactions/
+│       ├── dashboard/                  # Batched initial-load aggregation
+│       ├── metrics/                    # Metric cards
+│       ├── departments/                # Department breakdown
+│       ├── contribution-data/          # Heatmap
+│       ├── gcg-clients/                # Client autocomplete source
+│       ├── events/                     # SSE: cross-user real-time updates
+│       ├── export/                     # Filtered CSV export
+│       └── engagements/
+│           ├── route.ts                # List, create
+│           ├── bulk/                   # Bulk upload ingest
+│           ├── template/               # Engagements XLSX template
+│           ├── portfolio-template/     # Portfolio XLSX template
+│           └── [id]/
+│               ├── route.ts            # PATCH (with version check), DELETE
+│               ├── status/             # Single-field status update
+│               ├── nna/                # Single-field NNA update
+│               └── notes/              # Append, edit, delete notes (author-only)
 ├── admin/
-│   ├── users/                   # Admin user management page
-│   └── team-members/            # Admin team member directory page
-├── login/                       # Login page
-├── signup/                      # Registration/access request page
+│   ├── users/                          # Admin user management page
+│   └── team-members/                   # Admin team member directory page
+├── login/                              # Login page
+├── signup/                             # Registration / access request page
 ├── dashboard/
-│   ├── client-interactions/     # Client interaction tracking (active)
-│   └── trends/
-│       ├── portfolio-trends/    # Portfolio analytics (inactive)
-│       └── ticker-trends/       # Ticker analytics (inactive)
+│   ├── layout.tsx                      # AppShell wrapper
+│   ├── interactions-and-trends/
+│   │   ├── page.tsx                    # Redirect → client-interactions
+│   │   ├── client-interactions/        # ACTIVE — engagement tracking
+│   │   ├── portfolio-trends/           # DISABLED in sidebar
+│   │   └── ticker-trends/              # DISABLED in sidebar
+│   └── competitive-landscape/
+│       ├── page.tsx                    # Redirect → equity
+│       ├── equity/                     # DISABLED in sidebar
+│       ├── fixed-income/               # DISABLED in sidebar
+│       └── vs-competitor/              # DISABLED in sidebar
 ├── components/
-│   ├── AppShell.tsx             # Root app shell with sidebar and auth provider
-│   ├── Sidebar.tsx              # Navigation sidebar with collapsible sections
-│   ├── DashboardHeader.tsx      # Reusable header with filters and period selector
-│   ├── ClientOnlyChart.tsx      # SSR-safe chart wrapper for Recharts
-│   ├── pages/
-│   │   ├── client-interactions/ # MetricCards, ContributionGraph, DepartmentChart, InteractionsTable, NewInteractionForm, BulkUploadModal
-│   │   ├── shared/              # NNAModal, NotesModal, LinkModal, PortfolioModal, GlassSelect
-│   │   └── ticker-trends/       # HotTickersTable, FundFrequencyCard, RequestBreakdownChart
-│   └── ui/
-│       ├── RichTextEditor.tsx   # TipTap-based rich text input
-│       └── RichTextDisplay.tsx  # Sanitized HTML renderer for rich text
+│   ├── AppShell.tsx                    # Auth provider + sidebar + radial glow background
+│   ├── auth/                           # LoginModal, SignupModal
+│   ├── landing-page/                   # Hero, DashboardPreview, FeatureSections, PlatformRoadmap
+│   ├── ui/
+│   │   ├── Select.tsx                  # Radix Select wrapper with glass styling
+│   │   └── Popover.tsx                 # Radix Popover wrapper with glass styling
+│   └── dashboard/
+│       ├── Sidebar.tsx                 # Collapsible nav, admin section visible to admins only
+│       ├── shared/
+│       │   ├── DashboardHeader.tsx     # Reusable header with filters and period selector
+│       │   └── ClientOnlyChart.tsx     # SSR-safe chart wrapper for Recharts
+│       ├── interactions-and-trends/
+│       │   ├── client-interactions/    # MetricCards, ContributionGraph, DepartmentChart,
+│       │   │                           # InteractionsTable, NewInteractionForm, BulkUploadModal,
+│       │   │                           # NNAModal, NotesModal, PortfolioModal
+│       │   └── ticker-trends/          # HotTickersTable, SimpleNotesModal, LinkModal, charts
+│       └── competitive-landscape/
+│           ├── CompetitorTable.tsx
+│           ├── CompetitorVsFirmTable.tsx
+│           └── CompetitiveNotesModal.tsx
 └── lib/
-    ├── api/                     # Client-side API fetch functions
-    ├── auth/                    # JWT helpers, password utilities, and AuthContext
-    ├── bulk-upload/             # Excel/CSV parser and row validator
-    ├── data/                    # Mock data generation utilities (fallback)
-    ├── db/                      # DuckDB connection, queries, aggregations, date utils
-    └── types/                   # TypeScript interfaces
-middleware.ts                    # Route protection — redirects unauthenticated users and blocks API access without a valid JWT
+    ├── api/                            # Client-side fetch wrappers (+ docs/)
+    ├── auth/                           # JWT, scrypt password utils, AuthContext, require-auth
+    ├── bulk-upload/                    # Excel/CSV parser and row validator
+    ├── data/                           # Mock data generators (engagements is seed-only)
+    ├── db/                             # DuckDB connection, queries, aggregations, dateUtils
+    ├── hooks/                          # useDashboardChanges (flash-animation diffing)
+    ├── types/                          # TypeScript interfaces per domain
+    └── utils/
 scripts/
-├── seed-db.ts                   # Database schema creation and optional mock data seeding
-├── backup-db.ts                 # Database backup script
-└── restore-db.ts                # Database restore script
+├── seed-db.ts                          # Schema creation and optional mock data seeding
+├── backup-db.ts                        # Timestamped database backup (keeps 8)
+└── restore-db.ts                       # Restore from a backup folder
 ```
+
+Auth is enforced per-route via `app/lib/auth/require-auth.ts` — there is no top-level `middleware.ts`.
 
 ## Design
 
@@ -176,3 +230,4 @@ scripts/
 - Blue/cyan accent gradients
 - Glassmorphism UI with backdrop blur effects
 - Responsive layout with collapsible sidebar navigation
+- Bloomberg-style real-time pulse-flash animations (neutral / blue / green / red / amber) on row, cell, and metric changes — driven by `useDashboardChanges` and the `pulseFlash*` keyframes in `app/globals.css`

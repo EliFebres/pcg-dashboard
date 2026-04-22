@@ -1,12 +1,22 @@
-import { DuckDBInstance } from '@duckdb/node-api';
 import type { DuckDBConnection } from '@duckdb/node-api';
 import path from 'path';
 import fs from 'fs';
+import { serializeWrite } from './writeQueue';
+import { openDuckDbWithWalRecovery, registerCheckpointOnExit } from './shutdown';
+
+const QUEUE_KEY = 'users';
 
 // Store on `global` so the connection survives Next.js hot reloads in dev mode.
 const g = global as typeof globalThis & {
   _usersConnectionPromise?: Promise<DuckDBConnection>;
 };
+
+// Returns the in-flight (or resolved) users connection only if one has already
+// been started. Used by the auto-backup path so it can snapshot users.duckdb
+// through the live connection without triggering its bootstrap.
+export function getUsersConnectionIfOpen(): Promise<DuckDBConnection> | undefined {
+  return g._usersConnectionPromise;
+}
 
 export async function getUsersConnection(): Promise<DuckDBConnection> {
   if (!g._usersConnectionPromise) {
@@ -20,8 +30,12 @@ export async function getUsersConnection(): Promise<DuckDBConnection> {
       }
       const resolved = path.join(resolvedDir, 'users.duckdb');
 
-      const instance = await DuckDBInstance.create(resolved);
-      const conn = await instance.connect();
+      // Never auto-recreate — users holds account records. If unrecoverable,
+      // fail loudly so we restore from backup instead of silently losing users.
+      const conn = await openDuckDbWithWalRecovery(resolved, {
+        logTag: 'users',
+        allowRecreate: false,
+      });
 
       // Bootstrap schema on first connection — all statements are idempotent (IF NOT EXISTS)
       await conn.run(`
@@ -61,6 +75,10 @@ export async function getUsersConnection(): Promise<DuckDBConnection> {
       await conn.run(`CREATE INDEX IF NOT EXISTS idx_tm_team   ON team_members (team)`);
       await conn.run(`CREATE INDEX IF NOT EXISTS idx_tm_status ON team_members (status)`);
 
+      try { await conn.run(`CHECKPOINT`); } catch { /* best-effort */ }
+
+      registerCheckpointOnExit('users', conn);
+
       return conn;
     })();
   }
@@ -82,6 +100,22 @@ export async function executeUsers(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   params: any[] = []
 ): Promise<void> {
-  const conn = await getUsersConnection();
-  await conn.run(sql, params.length ? params : undefined);
+  return serializeWrite(QUEUE_KEY, async () => {
+    const conn = await getUsersConnection();
+    await conn.run(sql, params.length ? params : undefined);
+  });
+}
+
+// Use for mutations that return rows (UPDATE/DELETE/INSERT ... RETURNING).
+// Goes through the users write queue.
+export async function queryWriteUsers<T = Record<string, unknown>>(
+  sql: string,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  params: any[] = []
+): Promise<T[]> {
+  return serializeWrite(QUEUE_KEY, async () => {
+    const conn = await getUsersConnection();
+    const reader = await conn.runAndReadAll(sql, params.length ? params : undefined);
+    return reader.getRowObjects() as T[];
+  });
 }

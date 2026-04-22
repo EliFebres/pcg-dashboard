@@ -2,10 +2,12 @@ export const runtime = 'nodejs';
 
 import { NextRequest, NextResponse } from 'next/server';
 import { executeTransaction } from '@/app/lib/db';
-import { requireAuth } from '@/app/lib/auth/require-auth';
+import { requireAuth, canModify, readOnlyError } from '@/app/lib/auth/require-auth';
 import { parseUploadedFile } from '@/app/lib/bulk-upload/parser';
 import { validateRows } from '@/app/lib/bulk-upload/validator';
 import type { ParsedRow } from '@/app/lib/bulk-upload/parser';
+import { emitEngagementChange } from '@/app/lib/events';
+import { logActivity } from '@/app/lib/activity/log';
 
 // POST /api/client-interactions/engagements/bulk
 // Query: ?commit=true to actually insert (otherwise returns preview/errors only)
@@ -19,6 +21,7 @@ export async function POST(req: NextRequest) {
   }
   const auth = await requireAuth(req);
   if (auth.error) return auth.error;
+  if (!canModify(auth.payload)) return readOnlyError();
 
   const commit = req.nextUrl.searchParams.get('commit') === 'true';
 
@@ -116,16 +119,45 @@ export async function POST(req: NextRequest) {
             row.dateFinished ?? null,
             row.status,
             row.portfolioLogged,
-            null, // portfolio holdings not included in bulk upload
+            row.portfolio ?? null,
             row.nna ?? null,
-            row.notes ?? null,
+            row.structuredNotes ? null : (row.notes ?? null),
             row.tickersMentioned.length > 0 ? JSON.stringify(row.tickersMentioned) : null,
             auth.payload.team,
           ]
         );
+
+        // Insert structured notes into engagement_notes table if present
+        if (row.structuredNotes) {
+          const notes = JSON.parse(row.structuredNotes) as { text: string; author: string; authorId?: string; date?: string }[];
+          for (const note of notes) {
+            const noteSeq = await conn.runAndReadAll(
+              `SELECT nextval('engagement_notes_id_seq') AS nextval`
+            );
+            const noteId = Number(noteSeq.getRowObjects()[0].nextval);
+            await conn.run(
+              `INSERT INTO engagement_notes (id, engagement_id, note_text, author_name, author_id, created_at)
+               VALUES (?, ?, ?, ?, ?, ?)`,
+              [
+                noteId,
+                id,
+                note.text,
+                note.author,
+                note.authorId ?? 'bulk-import',
+                note.date ?? new Date().toISOString(),
+              ]
+            );
+          }
+        }
       }
     });
 
+    emitEngagementChange('created');
+    void logActivity(req, {
+      action: 'engagement.bulk_upload',
+      entityType: 'engagement',
+      details: { inserted: validRows.length, filename },
+    });
     return NextResponse.json({ inserted: validRows.length, warnings }, { status: 201 });
   } catch (err) {
     console.error('Bulk insert error:', err);
@@ -150,5 +182,7 @@ function buildPreview(rows: ParsedRow[]) {
     portfolioLogged: row.portfolioLogged,
     nna: row.nna,
     notes: row.notes,
+    portfolio: row.portfolio,
+    structuredNotes: row.structuredNotes,
   }));
 }

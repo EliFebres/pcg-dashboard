@@ -1,7 +1,9 @@
-import { DuckDBInstance } from '@duckdb/node-api';
 import type { DuckDBConnection } from '@duckdb/node-api';
 import path from 'path';
 import fs from 'fs';
+import { serializeWrite } from './writeQueue';
+import { openDuckDbWithWalRecovery, registerCheckpointOnExit } from './shutdown';
+import { maybeRunDailyAutoBackup } from './autoBackup';
 
 // Store on `global` so the connection survives Next.js hot reloads in dev mode.
 // Module-level variables get reset on each reload, leaving the old connection
@@ -10,14 +12,12 @@ const g = global as typeof globalThis & {
   _engagementsConnectionPromise?: Promise<DuckDBConnection>;
 };
 
-// Write serializer — ensures all DuckDB write operations execute one at a time,
-// preventing concurrent write conflicts on the single-file DuckDB database.
-let _writeQueue: Promise<unknown> = Promise.resolve();
+const QUEUE_KEY = 'engagements';
 
+// Backwards-compat re-export for any legacy caller; new code should use the
+// per-DB helpers below or `serializeWrite` from ./writeQueue directly.
 export function serializedWrite<T>(fn: () => Promise<T>): Promise<T> {
-  const result = _writeQueue.then(fn);
-  _writeQueue = result.then(() => {}, () => {}); // keep queue alive on errors
-  return result;
+  return serializeWrite(QUEUE_KEY, fn);
 }
 
 // Use for multi-statement transactions. Wraps the callback in a single serialized
@@ -25,7 +25,7 @@ export function serializedWrite<T>(fn: () => Promise<T>): Promise<T> {
 export async function executeTransaction(
   fn: (conn: DuckDBConnection) => Promise<void>
 ): Promise<void> {
-  return serializedWrite(async () => {
+  return serializeWrite(QUEUE_KEY, async () => {
     const conn = await getConnection();
     await conn.run('BEGIN');
     try {
@@ -51,8 +51,13 @@ export async function getConnection(): Promise<DuckDBConnection> {
       }
       const resolved = path.join(resolvedDir, 'engagements.duckdb');
 
-      const instance = await DuckDBInstance.create(resolved);
-      const conn = await instance.connect();
+      // Never auto-recreate — engagements holds the real user data. If the WAL
+      // is unrecoverable and the main file is also damaged, fail loudly so we
+      // go to backup restore rather than silently dropping data.
+      const conn = await openDuckDbWithWalRecovery(resolved, {
+        logTag: 'engagements',
+        allowRecreate: false,
+      });
 
       // Bootstrap schema on first connection — all statements are idempotent (IF NOT EXISTS)
       await conn.run(`
@@ -73,7 +78,8 @@ export async function getConnection(): Promise<DuckDBConnection> {
           portfolio            VARCHAR,
           nna                  BIGINT,
           notes                VARCHAR,
-          tickers_mentioned    VARCHAR
+          tickers_mentioned    VARCHAR,
+          linked_from_id       INTEGER
         )
       `);
       await conn.run(`CREATE SEQUENCE IF NOT EXISTS engagements_id_seq START 1`);
@@ -125,6 +131,9 @@ export async function getConnection(): Promise<DuckDBConnection> {
       // One-time migration: rename department value 'Institution' → 'Institutional'
       await conn.run(`UPDATE engagements SET internal_client_dept = 'Institutional' WHERE internal_client_dept = 'Institution'`);
 
+      // One-time migration: rename intake_type value 'SRRF' → 'SERF'
+      await conn.run(`UPDATE engagements SET intake_type = 'SERF' WHERE intake_type = 'SRRF'`);
+
       // One-time migration: add team column for team-based data isolation
       const teamCheck = await conn.runAndReadAll(
         `SELECT column_name FROM information_schema.columns WHERE table_name = 'engagements' AND column_name = 'team'`
@@ -144,6 +153,30 @@ export async function getConnection(): Promise<DuckDBConnection> {
         await conn.run(`ALTER TABLE engagements ADD COLUMN created_by_id VARCHAR`);
         await conn.run(`ALTER TABLE engagements ADD COLUMN created_by_name VARCHAR`);
       }
+
+      // One-time migration: add linked_from_id for parent/child engagement tracking
+      const linkedFromCheck = await conn.runAndReadAll(
+        `SELECT column_name FROM information_schema.columns WHERE table_name = 'engagements' AND column_name = 'linked_from_id'`
+      );
+      if (linkedFromCheck.getRowObjects().length === 0) {
+        await conn.run(`ALTER TABLE engagements ADD COLUMN linked_from_id INTEGER`);
+      }
+      await conn.run(`CREATE INDEX IF NOT EXISTS idx_linked_from_id ON engagements (linked_from_id)`);
+
+      // Fold any WAL content produced by bootstrap/migrations into the main
+      // file now, so an unclean shutdown later doesn't leave a migration to
+      // replay.
+      try { await conn.run(`CHECKPOINT`); } catch { /* best-effort */ }
+
+      registerCheckpointOnExit('engagements', conn);
+
+      // Fire-and-forget: take a daily safety backup if >20h have passed since
+      // the last one. Errors are logged inside and never bubble up — a backup
+      // failure must not keep the app from serving requests. Pass `conn` so
+      // the backup copies the live engagements DB via ATTACH/COPY instead of
+      // fs.copyFileSync, which fails with EBUSY on Windows while the file is
+      // locked by the server.
+      maybeRunDailyAutoBackup(conn).catch(() => {});
 
       return conn;
     })();
@@ -166,12 +199,26 @@ export async function query<T = Record<string, unknown>>(
   return reader.getRowObjects() as T[];
 }
 
+// Use for mutations that return rows (UPDATE/DELETE/INSERT ... RETURNING).
+// Goes through the engagements write queue so it can't interleave with other writes.
+export async function queryWrite<T = Record<string, unknown>>(
+  sql: string,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  params: any[] = []
+): Promise<T[]> {
+  return serializeWrite(QUEUE_KEY, async () => {
+    const conn = await getConnection();
+    const reader = await conn.runAndReadAll(sql, params.length ? params : undefined);
+    return reader.getRowObjects() as T[];
+  });
+}
+
 export async function execute(
   sql: string,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   params: any[] = []
 ): Promise<void> {
-  return serializedWrite(async () => {
+  return serializeWrite(QUEUE_KEY, async () => {
     const conn = await getConnection();
     await conn.run(sql, params.length ? params : undefined);
   });

@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { queryUsers, executeUsers } from '@/app/lib/db/users';
 import { verifyJWT, SESSION_COOKIE } from '@/app/lib/auth/jwt';
 import { rowToTeamMember } from '@/app/lib/auth/types';
+import { logActivity } from '@/app/lib/activity/log';
 
 const VALID_OFFICES = ['Austin', 'Charlotte', 'Santa Monica', 'UK', 'Sydney'];
 
@@ -90,6 +91,12 @@ export async function PATCH(
     await executeUsers(`UPDATE team_members SET ${sets.join(', ')} WHERE id = ?`, values);
 
     const updated = await queryUsers(`SELECT * FROM team_members WHERE id = ?`, [id]);
+    void logActivity(req, {
+      action: 'team_member.update',
+      entityType: 'team_member',
+      entityId: id,
+      details: { status, userId, office },
+    });
     return NextResponse.json(rowToTeamMember(updated[0] as Record<string, unknown>));
   } catch (err) {
     console.error('[PATCH /api/admin/team-members/[id]]', err);

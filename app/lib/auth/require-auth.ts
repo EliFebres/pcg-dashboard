@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { verifyJWT, SESSION_COOKIE } from './jwt';
 import type { JWTPayload } from './jwt';
 import type { ServerConstraints } from '../db/queries';
+import { READ_ONLY_TEAMS } from './types';
+import { touchPresence } from '../activity/log';
 
 export type AuthResult =
   | { payload: JWTPayload; error: null }
@@ -17,12 +19,33 @@ export async function requireAuth(req: NextRequest): Promise<AuthResult> {
     if (!payload.team && payload.role !== 'admin') {
       return { payload: null, error: NextResponse.json({ error: 'Session expired. Please log in again.' }, { status: 401 }) };
     }
+    void touchPresence(
+      payload.sub,
+      payload.email,
+      `${payload.firstName} ${payload.lastName}`.trim()
+    );
     return { payload, error: null };
   } catch {
     return { payload: null, error: NextResponse.json({ error: 'Invalid or expired session.' }, { status: 401 }) };
   }
 }
 
+export function isReadOnly(payload: JWTPayload): boolean {
+  return (READ_ONLY_TEAMS as readonly string[]).includes(payload.team);
+}
+
+export function canModify(payload: JWTPayload): boolean {
+  return !isReadOnly(payload);
+}
+
+export function readOnlyError(): NextResponse {
+  return NextResponse.json(
+    { error: 'This account has read-only access and cannot modify data.' },
+    { status: 403 }
+  );
+}
+
 export function teamConstraint(payload: JWTPayload): ServerConstraints {
-  return { team: payload.role === 'admin' ? undefined : payload.team };
+  if (payload.role === 'admin' || isReadOnly(payload)) return { team: undefined };
+  return { team: payload.team };
 }

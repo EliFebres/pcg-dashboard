@@ -7,8 +7,15 @@ import { hashPassword } from '@/app/lib/auth/password';
 import { signJWT, SESSION_COOKIE, COOKIE_OPTIONS } from '@/app/lib/auth/jwt';
 import { rowToUser } from '@/app/lib/auth/types';
 import { emitUserChange } from '@/app/lib/events';
+import { logActivity } from '@/app/lib/activity/log';
 
-const VALID_TEAMS = ['Portfolio Consulting Group', 'Equity Specialist', 'Fixed Income Specialist'];
+const VALID_TEAMS = [
+  'Portfolio Consulting Group',
+  'Equity Specialist',
+  'Fixed Income Specialist',
+  'Leadership',
+  'Guest',
+];
 const VALID_OFFICES = ['Austin', 'Charlotte', 'Santa Monica', 'UK', 'Sydney'];
 
 export async function POST(req: NextRequest) {
@@ -61,7 +68,6 @@ export async function POST(req: NextRequest) {
     const passwordHash = await hashPassword(password);
     const role = isFirstUser ? 'admin' : 'user';
     const status = isFirstUser ? 'active' : 'pending';
-    const approvedAt = isFirstUser ? 'now()' : null;
 
     if (isFirstUser) {
       await executeUsers(
@@ -79,6 +85,13 @@ export async function POST(req: NextRequest) {
 
     if (!isFirstUser) {
       emitUserChange('created');
+      void logActivity(req, {
+        action: 'auth.signup',
+        entityType: 'user',
+        entityId: id,
+        details: { team, office, firstUser: false },
+        userOverride: { id, email: email.toLowerCase(), name: `${firstName.trim()} ${lastName.trim()}` },
+      });
       return NextResponse.json(
         { message: 'Registration successful. Your account is pending admin approval.' },
         { status: 201 }
@@ -98,6 +111,14 @@ export async function POST(req: NextRequest) {
 
     const rows = await queryUsers('SELECT * FROM users WHERE id = ?', [id]);
     const user = rowToUser(rows[0] as Record<string, unknown>);
+
+    void logActivity(req, {
+      action: 'auth.signup',
+      entityType: 'user',
+      entityId: id,
+      details: { team, office, firstUser: true },
+      userOverride: { id, email: email.toLowerCase(), name: `${firstName.trim()} ${lastName.trim()}` },
+    });
 
     const response = NextResponse.json({ user, isFirstUser: true }, { status: 201 });
     response.cookies.set(SESSION_COOKIE, jwt, COOKIE_OPTIONS);

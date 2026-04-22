@@ -26,9 +26,14 @@ export async function proxy(req: NextRequest) {
   const isAuthenticated = payload !== null && payload.status === 'active';
   const isAdmin = isAuthenticated && payload?.role === 'admin';
 
+  // Logged-in users on landing page → send to dashboard
+  if (pathname === '/' && isAuthenticated) {
+    return NextResponse.redirect(new URL('/dashboard/interactions-and-trends/client-interactions', req.url));
+  }
+
   // Redirect already-authenticated users away from login/signup
   if ((pathname === '/login' || pathname === '/signup') && isAuthenticated) {
-    return NextResponse.redirect(new URL('/dashboard/client-interactions', req.url));
+    return NextResponse.redirect(new URL('/dashboard/interactions-and-trends/client-interactions', req.url));
   }
 
   // Protect API routes — return JSON 401/403 (no redirect)
@@ -52,7 +57,7 @@ export async function proxy(req: NextRequest) {
       return NextResponse.redirect(new URL('/login', req.url));
     }
     if (!isAdmin) {
-      return NextResponse.redirect(new URL('/dashboard/client-interactions', req.url));
+      return NextResponse.redirect(new URL('/dashboard/interactions-and-trends/client-interactions', req.url));
     }
   }
 
@@ -61,6 +66,7 @@ export async function proxy(req: NextRequest) {
 
 export const config = {
   matcher: [
+    '/',
     '/dashboard/:path*',
     '/admin/:path*',
     '/login',

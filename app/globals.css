@@ -10,6 +10,10 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+
+  /* Single muted grey for all dashboard + admin grey text.
+     Tweak this one hex value to rebalance grey text brightness app-wide. */
+  --color-muted: #a5a5b2;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -79,4 +83,140 @@ body {
     opacity: 1;
     transform: scaleY(1) translateY(0);
   }
+}
+
+/* ── Landing page (Linear-style) ─────────────────────────────── */
+
+.landing-gradient-text {
+  background: linear-gradient(180deg, #fff 0%, rgba(255, 255, 255, 0.55) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.hero-glow {
+  background: radial-gradient(ellipse 80% 50% at 50% -20%, rgba(6, 182, 212, 0.2), transparent);
+}
+
+@keyframes landingFadeIn {
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.fade-in      { animation: landingFadeIn 1s ease-out both; }
+.fade-in-d1   { animation: landingFadeIn 1s ease-out 0.1s both; }
+.fade-in-d2   { animation: landingFadeIn 1s ease-out 0.2s both; }
+.fade-in-d3   { animation: landingFadeIn 1s ease-out 0.35s both; }
+.fade-in-d4   { animation: landingFadeIn 1s ease-out 0.5s both; }
+
+/* Scroll-triggered fade-in */
+.scroll-fade-in {
+  opacity: 0;
+  transform: translateY(32px);
+  transition: opacity 0.8s ease-out, transform 0.8s ease-out;
+}
+.scroll-fade-in.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Logos infinite scroll */
+@keyframes logoScroll {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+.logo-scroll {
+  animation: logoScroll 30s linear infinite;
+}
+
+/* ── Bloomberg-style pulse flashes for realtime updates ─────── */
+
+@keyframes pulseFlashNeutral {
+  0%   { background-color: rgba(244, 244, 245, 0.22); box-shadow: inset 0 0 0 1px rgba(244, 244, 245, 0.18); }
+  100% { background-color: transparent; box-shadow: inset 0 0 0 1px transparent; }
+}
+@keyframes pulseFlashBlue {
+  0%   { background-color: rgba(34, 211, 238, 0.28); box-shadow: inset 0 0 0 1px rgba(34, 211, 238, 0.35); }
+  100% { background-color: transparent; box-shadow: inset 0 0 0 1px transparent; }
+}
+@keyframes pulseFlashGreen {
+  0%   { background-color: rgba(57, 255, 20, 0.25); box-shadow: inset 0 0 0 1px rgba(57, 255, 20, 0.35); }
+  100% { background-color: transparent; box-shadow: inset 0 0 0 1px transparent; }
+}
+@keyframes pulseFlashRed {
+  0%   { background-color: rgba(255, 49, 49, 0.28); box-shadow: inset 0 0 0 1px rgba(255, 49, 49, 0.35); }
+  100% { background-color: transparent; box-shadow: inset 0 0 0 1px transparent; }
+}
+@keyframes pulseFlashAmber {
+  0%   { background-color: rgba(245, 158, 11, 0.28); box-shadow: inset 0 0 0 1px rgba(245, 158, 11, 0.35); }
+  100% { background-color: transparent; box-shadow: inset 0 0 0 1px transparent; }
+}
+
+.flash-neutral { animation: pulseFlashNeutral 1100ms ease-out 1; }
+.flash-blue    { animation: pulseFlashBlue    1100ms ease-out 1; }
+.flash-green   { animation: pulseFlashGreen   1100ms ease-out 1; }
+.flash-red     { animation: pulseFlashRed     1100ms ease-out 1; }
+.flash-amber   { animation: pulseFlashAmber   1100ms ease-out 1; }
+
+/* Text-only flash — recolors the text itself instead of painting a box behind it.
+   Each keyframe only specifies `from`, so at 100% the element reverts to its normal
+   computed color. Works for any element regardless of its base text color. */
+@keyframes pulseFlashTextBlue {
+  from { color: #22d3ee; text-shadow: 0 0 10px rgba(34, 211, 238, 0.55); }
+}
+@keyframes pulseFlashTextGreen {
+  from { color: #39FF14; text-shadow: 0 0 10px rgba(57, 255, 20, 0.55); }
+}
+@keyframes pulseFlashTextRed {
+  from { color: #FF3131; text-shadow: 0 0 10px rgba(255, 49, 49, 0.55); }
+}
+@keyframes pulseFlashTextAmber {
+  from { color: #f59e0b; text-shadow: 0 0 10px rgba(245, 158, 11, 0.55); }
+}
+@keyframes pulseFlashTextNeutral {
+  from { color: #fafafa; text-shadow: 0 0 8px rgba(250, 250, 250, 0.35); }
+}
+.flash-text-blue    { animation: pulseFlashTextBlue    1100ms ease-out 1; }
+.flash-text-green   { animation: pulseFlashTextGreen   1100ms ease-out 1; }
+.flash-text-red     { animation: pulseFlashTextRed     1100ms ease-out 1; }
+.flash-text-amber   { animation: pulseFlashTextAmber   1100ms ease-out 1; }
+.flash-text-neutral { animation: pulseFlashTextNeutral 1100ms ease-out 1; }
+
+/* Ghost row: rows that were just deleted — fade + red tint, then unmount */
+@keyframes ghostRowFade {
+  0%   { background-color: rgba(255, 49, 49, 0.28); opacity: 1; }
+  100% { background-color: transparent; opacity: 0; }
+}
+.ghost-row { animation: ghostRowFade 1100ms ease-out 1 forwards; pointer-events: none; }
+
+/* Toast slide-in from right */
+@keyframes toastSlideIn {
+  0%   { opacity: 0; transform: translateX(24px); }
+  100% { opacity: 1; transform: translateX(0); }
+}
+.toast-enter { animation: toastSlideIn 200ms ease-out both; }
+
+@keyframes toastProgressShrink {
+  0%   { transform: scaleX(1); }
+  100% { transform: scaleX(0); }
+}
+.toast-progress {
+  transform-origin: left center;
+  animation: toastProgressShrink linear 1 both;
+}
+
+/* Subtle card shine on hover */
+.card-shine {
+  position: relative;
+  overflow: hidden;
+}
+.card-shine::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, transparent 40%, rgba(255,255,255,0.03) 50%, transparent 60%);
+  opacity: 0;
+  transition: opacity 0.5s;
+}
+.card-shine:hover::after {
+  opacity: 1;
 }

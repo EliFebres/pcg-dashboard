@@ -48,9 +48,9 @@ export async function GET() {
 
   // Example rows
   const examples: Record<string, unknown>[] = [
-    { identifier: 'DFAC',  constituentType: 'Security',         assetClass: 'Equity',       weight: 30 },
-    { identifier: 'DFCF',  constituentType: 'Security',         assetClass: 'Fixed Income', weight: 25 },
-    { identifier: 'DFREX', constituentType: 'Security',         assetClass: 'Alternatives', weight: 15 },
+    { identifier: 'FMAC',  constituentType: 'Security',         assetClass: 'Equity',       weight: 30 },
+    { identifier: 'FMCF',  constituentType: 'Security',         assetClass: 'Fixed Income', weight: 25 },
+    { identifier: 'FMREX', constituentType: 'Security',         assetClass: 'Alternatives', weight: 15 },
     { identifier: 'VBTLX', constituentType: 'Morningstar-Fund', assetClass: 'Fixed Income', weight: 20 },
     { identifier: 'BTC',   constituentType: 'Security',         assetClass: 'Crypto',       weight: 10 },
   ];

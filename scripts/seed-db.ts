@@ -67,7 +67,8 @@ async function main() {
       portfolio            VARCHAR,
       nna                  BIGINT,
       notes                VARCHAR,
-      tickers_mentioned    VARCHAR
+      tickers_mentioned    VARCHAR,
+      linked_from_id       INTEGER
     )
   `);
 

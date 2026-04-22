@@ -3,12 +3,14 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Users, Plus, LinkIcon, X, AlertCircle } from 'lucide-react';
 import type { TeamMember, User } from '@/app/lib/auth/types';
-import GlassSelect from '@/app/components/pages/shared/GlassSelect';
+import { Select } from '@/app/components/ui/Select';
 
 const TEAMS: User['team'][] = [
   'Portfolio Consulting Group',
   'Equity Specialist',
   'Fixed Income Specialist',
+  'Leadership',
+  'Guest',
 ];
 const OFFICES: User['office'][] = ['Austin', 'Charlotte', 'Santa Monica', 'UK', 'Sydney'];
 
@@ -27,7 +29,7 @@ function StatusBadge({ status }: { status: TeamMember['status'] }) {
     );
   }
   return (
-    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-zinc-500/15 text-zinc-400 border border-zinc-500/20">
+    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-zinc-500/15 text-muted border border-zinc-500/20">
       <span className="w-1.5 h-1.5 rounded-full bg-zinc-400" />
       Inactive
     </span>
@@ -48,7 +50,7 @@ function ActionButton({
   title?: string;
 }) {
   const styles = {
-    unlink: 'text-zinc-400 hover:bg-zinc-500/10 border-zinc-500/20',
+    unlink: 'text-muted hover:bg-zinc-500/10 border-zinc-500/20',
     deactivate: 'text-red-400 hover:bg-red-500/10 border-red-500/20',
     reactivate: 'text-cyan-400 hover:bg-cyan-500/10 border-cyan-500/20',
   };
@@ -104,14 +106,14 @@ function AddModal({ onClose, onAdded }: AddModalProps) {
       <div className="bg-zinc-900 border border-zinc-800 rounded-xl shadow-2xl w-full max-w-sm mx-4">
         <div className="flex items-center justify-between px-5 py-4 border-b border-zinc-800">
           <h2 className="text-base font-semibold text-zinc-100">Add Team Member</h2>
-          <button onClick={onClose} className="text-zinc-500 hover:text-zinc-300 transition-colors">
+          <button onClick={onClose} className="text-muted hover:text-muted transition-colors">
             <X className="w-4 h-4" />
           </button>
         </div>
         <form onSubmit={handleSubmit} className="p-5 space-y-4">
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-medium text-zinc-400 mb-1">First Name</label>
+              <label className="block text-xs font-medium text-muted mb-1">First Name</label>
               <input
                 type="text"
                 value={firstName}
@@ -121,7 +123,7 @@ function AddModal({ onClose, onAdded }: AddModalProps) {
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-zinc-400 mb-1">Last Name</label>
+              <label className="block text-xs font-medium text-muted mb-1">Last Name</label>
               <input
                 type="text"
                 value={lastName}
@@ -132,23 +134,23 @@ function AddModal({ onClose, onAdded }: AddModalProps) {
             </div>
           </div>
           <div>
-            <label className="block text-xs font-medium text-zinc-400 mb-1">Team</label>
-            <GlassSelect
+            <label className="block text-xs font-medium text-muted mb-1">Team</label>
+            <Select
               value={team}
-              onChange={v => setTeam(v as User['team'])}
+              onValueChange={v => setTeam(v as User['team'])}
               options={TEAMS}
             />
           </div>
           <div>
-            <label className="block text-xs font-medium text-zinc-400 mb-1">Office</label>
-            <GlassSelect
+            <label className="block text-xs font-medium text-muted mb-1">Office</label>
+            <Select
               value={office}
-              onChange={v => setOffice(v as User['office'])}
+              onValueChange={v => setOffice(v as User['office'])}
               options={OFFICES}
             />
           </div>
           {firstName && lastName && (
-            <p className="text-xs text-zinc-500">
+            <p className="text-xs text-muted">
               Will appear in the form as: <span className="text-cyan-400 font-medium">{firstName.trim()} {lastName.trim()[0]}.</span>
             </p>
           )}
@@ -159,7 +161,7 @@ function AddModal({ onClose, onAdded }: AddModalProps) {
             </div>
           )}
           <div className="flex justify-end gap-2 pt-1">
-            <button type="button" onClick={onClose} className="px-3 py-1.5 text-sm text-zinc-400 hover:text-zinc-200 transition-colors">Cancel</button>
+            <button type="button" onClick={onClose} className="px-3 py-1.5 text-sm text-muted hover:text-zinc-200 transition-colors">Cancel</button>
             <button
               type="submit"
               disabled={loading}
@@ -216,26 +218,23 @@ function LinkModal({ member, users, onClose, onLinked }: LinkModalProps) {
       <div className="bg-zinc-900 border border-zinc-800 rounded-xl shadow-2xl w-full max-w-sm mx-4">
         <div className="flex items-center justify-between px-5 py-4 border-b border-zinc-800">
           <h2 className="text-base font-semibold text-zinc-100">Link User Account</h2>
-          <button onClick={onClose} className="text-zinc-500 hover:text-zinc-300 transition-colors">
+          <button onClick={onClose} className="text-muted hover:text-muted transition-colors">
             <X className="w-4 h-4" />
           </button>
         </div>
         <div className="p-5 space-y-4">
-          <p className="text-sm text-zinc-400">
+          <p className="text-sm text-muted">
             Linking a user account to <span className="text-cyan-400 font-medium">{member.displayName}</span> will associate all past and future engagements with their profile.
           </p>
           {eligible.length === 0 ? (
-            <p className="text-xs text-zinc-500">No eligible active users found on the {member.team} team.</p>
+            <p className="text-xs text-muted">No eligible active users found on the {member.team} team.</p>
           ) : (
             <div>
-              <label className="block text-xs font-medium text-zinc-400 mb-1">Select user account</label>
-              <GlassSelect
-                value={selectedUserId ? (eligible.find(u => u.id === selectedUserId)?.firstName + ' ' + eligible.find(u => u.id === selectedUserId)?.lastName + ' (' + eligible.find(u => u.id === selectedUserId)?.email + ')') : ''}
-                onChange={v => {
-                  const match = eligible.find(u => `${u.firstName} ${u.lastName} (${u.email})` === v);
-                  if (match) setSelectedUserId(match.id);
-                }}
-                options={eligible.map(u => `${u.firstName} ${u.lastName} (${u.email})`)}
+              <label className="block text-xs font-medium text-muted mb-1">Select user account</label>
+              <Select
+                value={selectedUserId}
+                onValueChange={setSelectedUserId}
+                options={eligible.map(u => ({ value: u.id, label: `${u.firstName} ${u.lastName} (${u.email})` }))}
                 placeholder="— Select —"
               />
             </div>
@@ -247,7 +246,7 @@ function LinkModal({ member, users, onClose, onLinked }: LinkModalProps) {
             </div>
           )}
           <div className="flex justify-end gap-2 pt-1">
-            <button onClick={onClose} className="px-3 py-1.5 text-sm text-zinc-400 hover:text-zinc-200 transition-colors">Cancel</button>
+            <button onClick={onClose} className="px-3 py-1.5 text-sm text-muted hover:text-zinc-200 transition-colors">Cancel</button>
             <button
               onClick={handleLink}
               disabled={loading || !selectedUserId}
@@ -325,7 +324,7 @@ export default function AdminTeamMembersPage() {
           </div>
           <div>
             <h1 className="text-xl font-semibold text-zinc-100">Team Members</h1>
-            <p className="text-sm text-zinc-500">Manage the roster that appears in the New Interaction form</p>
+            <p className="text-sm text-muted">Manage the roster that appears in the New Interaction form</p>
           </div>
         </div>
         <button
@@ -342,22 +341,22 @@ export default function AdminTeamMembersPage() {
       )}
 
       {isLoading ? (
-        <div className="flex items-center justify-center h-48 text-zinc-500 text-sm">Loading...</div>
+        <div className="flex items-center justify-center h-48 text-muted text-sm">Loading...</div>
       ) : (
         <div className="space-y-6">
           {Object.entries(byTeam).map(([team, teamMembers]) => (
             <div key={team}>
-              <h2 className="text-xs font-medium text-zinc-500 uppercase tracking-wider mb-2">{team}</h2>
+              <h2 className="text-xs font-medium text-muted uppercase tracking-wider mb-2">{team}</h2>
               <div className="bg-zinc-900/40 border border-zinc-800/50 rounded-xl overflow-x-auto scrollbar-thin">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-zinc-800/50">
-                      <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 uppercase tracking-wider">Name</th>
-                      <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 uppercase tracking-wider">Display</th>
-                      <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 uppercase tracking-wider">Office</th>
-                      <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 uppercase tracking-wider">Status</th>
-                      <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 uppercase tracking-wider">Linked Account</th>
-                      <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 uppercase tracking-wider">Actions</th>
+                      <th className="text-left px-4 py-3 text-xs font-medium text-muted uppercase tracking-wider">Name</th>
+                      <th className="text-left px-4 py-3 text-xs font-medium text-muted uppercase tracking-wider">Display</th>
+                      <th className="text-left px-4 py-3 text-xs font-medium text-muted uppercase tracking-wider">Office</th>
+                      <th className="text-left px-4 py-3 text-xs font-medium text-muted uppercase tracking-wider">Status</th>
+                      <th className="text-left px-4 py-3 text-xs font-medium text-muted uppercase tracking-wider">Linked Account</th>
+                      <th className="text-left px-4 py-3 text-xs font-medium text-muted uppercase tracking-wider">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-zinc-800/30">
@@ -372,20 +371,19 @@ export default function AdminTeamMembersPage() {
                           <td className="px-4 py-3">
                             {editingOfficeId === m.id ? (
                               <div className="w-36">
-                                <GlassSelect
+                                <Select
                                   value={m.office}
-                                  onChange={v => {
+                                  onValueChange={v => {
                                     patch(m.id, { office: v });
                                     setEditingOfficeId(null);
                                   }}
                                   options={OFFICES}
-                                  menuFixed
                                 />
                               </div>
                             ) : (
                               <button
                                 onClick={() => setEditingOfficeId(m.id)}
-                                className="text-zinc-400 text-sm hover:text-zinc-200 transition-colors"
+                                className="text-muted text-sm hover:text-zinc-200 transition-colors"
                                 title="Click to edit office"
                               >
                                 {m.office}
@@ -397,13 +395,13 @@ export default function AdminTeamMembersPage() {
                             {m.linkedEmail ? (
                               <div className="flex items-center gap-1.5">
                                 <LinkIcon className="w-3 h-3 text-emerald-400" />
-                                <span className="text-zinc-300 text-xs">{m.linkedName}</span>
-                                <span className="text-zinc-600 text-xs">({m.linkedEmail})</span>
+                                <span className="text-muted text-xs">{m.linkedName}</span>
+                                <span className="text-muted text-xs">({m.linkedEmail})</span>
                               </div>
                             ) : (
                               <button
                                 onClick={() => setLinkingMember(m)}
-                                className="text-zinc-500 text-xs hover:text-cyan-400 border-b border-dashed border-zinc-700 hover:border-cyan-500/50 transition-colors"
+                                className="text-muted text-xs hover:text-cyan-400 border-b border-dashed border-zinc-700 hover:border-cyan-500/50 transition-colors"
                               >
                                 Unlinked
                               </button>
@@ -448,7 +446,7 @@ export default function AdminTeamMembersPage() {
                     })}
                     {teamMembers.length === 0 && (
                       <tr>
-                        <td colSpan={6} className="px-4 py-6 text-center text-zinc-600 text-xs">No members yet.</td>
+                        <td colSpan={6} className="px-4 py-6 text-center text-muted text-xs">No members yet.</td>
                       </tr>
                     )}
                   </tbody>
@@ -457,7 +455,7 @@ export default function AdminTeamMembersPage() {
             </div>
           ))}
           {members.length === 0 && (
-            <div className="text-center py-16 text-zinc-600 text-sm">
+            <div className="text-center py-16 text-muted text-sm">
               No team members added yet. Click &ldquo;Add Member&rdquo; to get started.
             </div>
           )}

@@ -1,11 +1,12 @@
 export const runtime = 'nodejs';
 
 import { NextRequest, NextResponse } from 'next/server';
-import { query } from '@/app/lib/db';
+import { query, queryWrite, executeTransaction } from '@/app/lib/db';
 import { rowToEngagement } from '@/app/lib/db/queries';
-import { requireAuth, teamConstraint } from '@/app/lib/auth/require-auth';
+import { requireAuth, teamConstraint, canModify, readOnlyError } from '@/app/lib/auth/require-auth';
 import { toISODate } from '@/app/lib/db/dateUtils';
 import { emitEngagementChange } from '@/app/lib/events';
+import { logActivity } from '@/app/lib/activity/log';
 
 // GET /api/client-interactions/engagements/:id
 export async function GET(
@@ -45,6 +46,7 @@ export async function PATCH(
   }
   const auth = await requireAuth(req);
   if (auth.error) return auth.error;
+  if (!canModify(auth.payload)) return readOnlyError();
   const sc = teamConstraint(auth.payload);
 
   try {
@@ -111,6 +113,34 @@ export async function PATCH(
       setClauses.push('tickers_mentioned = ?');
       values.push(body.tickersMentioned ? JSON.stringify(body.tickersMentioned) : null);
     }
+    if (body.linkedFromId !== undefined) {
+      // null explicitly clears the link; a number sets/changes it
+      if (body.linkedFromId === null) {
+        setClauses.push('linked_from_id = ?');
+        values.push(null);
+      } else {
+        const n = Number(body.linkedFromId);
+        if (!Number.isFinite(n) || n <= 0) {
+          return NextResponse.json({ error: 'Invalid linkedFromId' }, { status: 400 });
+        }
+        if (n === engagementId) {
+          return NextResponse.json({ error: 'Cannot link an engagement to itself' }, { status: 400 });
+        }
+        // Parent must exist in the same team
+        const parentTeamClause = sc.team ? 'AND team = ?' : '';
+        const parentParams: unknown[] = [n];
+        if (sc.team) parentParams.push(sc.team);
+        const parent = await query<{ id: number }>(
+          `SELECT id FROM engagements WHERE id = ? ${parentTeamClause}`,
+          parentParams
+        );
+        if (parent.length === 0) {
+          return NextResponse.json({ error: 'Linked engagement not found' }, { status: 400 });
+        }
+        setClauses.push('linked_from_id = ?');
+        values.push(n);
+      }
+    }
 
     if (setClauses.length === 0) {
       return NextResponse.json({ error: 'No fields to update' }, { status: 400 });
@@ -129,7 +159,7 @@ export async function PATCH(
     if (clientVersion !== null) values.push(clientVersion);
     if (sc.team) values.push(sc.team);
 
-    const updated = await query<Record<string, unknown>>(
+    const updated = await queryWrite<Record<string, unknown>>(
       `UPDATE engagements SET ${setClauses.join(', ')} ${whereClause} RETURNING id`,
       values
     );
@@ -150,6 +180,14 @@ export async function PATCH(
       [engagementId]
     );
     emitEngagementChange('updated');
+    const changedFields = Object.keys(body).filter(k => k !== 'version' && k !== 'id');
+    const internalClient = (rows[0].internal_client_name as string | null) ?? null;
+    void logActivity(req, {
+      action: 'engagement.update',
+      entityType: 'engagement',
+      entityId: engagementId,
+      details: { fields: changedFields, internalClient },
+    });
     return NextResponse.json(rowToEngagement(rows[0]));
   } catch (err) {
     console.error('PATCH /api/client-interactions/engagements/[id] error:', err);
@@ -167,6 +205,7 @@ export async function DELETE(
   }
   const auth = await requireAuth(req);
   if (auth.error) return auth.error;
+  if (!canModify(auth.payload)) return readOnlyError();
   const sc = teamConstraint(auth.payload);
 
   try {
@@ -189,8 +228,28 @@ export async function DELETE(
 
     const teamClause = sc.team ? 'AND team = ?' : '';
     const teamParams = sc.team ? [sc.team] : [];
-    await query(`DELETE FROM engagements WHERE id = ? ${teamClause}`, [engagementId, ...teamParams]);
+    // Capture internalClient for the activity log before the row is gone.
+    const preDelete = await query<{ internal_client_name: string | null }>(
+      `SELECT internal_client_name FROM engagements WHERE id = ?`,
+      [engagementId]
+    );
+    const internalClient = preDelete[0]?.internal_client_name ?? null;
+
+    // Null out any children's link, then delete — in one transaction so we don't leave orphans.
+    await executeTransaction(async (conn) => {
+      await conn.run(`UPDATE engagements SET linked_from_id = NULL WHERE linked_from_id = ?`, [engagementId]);
+      await conn.run(
+        `DELETE FROM engagements WHERE id = ? ${teamClause}`,
+        [engagementId, ...teamParams]
+      );
+    });
     emitEngagementChange('deleted');
+    void logActivity(req, {
+      action: 'engagement.delete',
+      entityType: 'engagement',
+      entityId: engagementId,
+      details: { internalClient },
+    });
     return new Response(null, { status: 204 });
   } catch (err) {
     console.error('DELETE /api/client-interactions/engagements/[id] error:', err);

@@ -69,7 +69,7 @@ Fetch all dashboard data in a single optimized call. This is the primary endpoin
   "period": "1Y",
   "team_member": "Eli F.",
   "departments": ["IAG", "Broker-Dealer"],
-  "intake_types": ["IRQ", "SRRF"],
+  "intake_types": ["IRQ", "SERF"],
   "project_types": ["Meeting", "Data Request"],
   "search": "Vanguard",
   "status": "In Progress",
@@ -85,7 +85,7 @@ Fetch all dashboard data in a single optimized call. This is the primary endpoin
 | `period` | string | No | Time period: `1W`, `1M`, `3M`, `6M`, `YTD`, `1Y`, `ALL`. Default: `1Y` |
 | `team_member` | string | No | Filter by team member name or office (`Austin Office`, `Charlotte Office`) |
 | `departments` | string[] | No | Multi-select: `IAG`, `Broker-Dealer`, `Institutional` |
-| `intake_types` | string[] | No | Multi-select: `IRQ`, `SRRF`, `GCG Ad-Hoc` |
+| `intake_types` | string[] | No | Multi-select: `IRQ`, `SERF`, `GCG Ad-Hoc` |
 | `project_types` | string[] | No | Multi-select: `Meeting`, `Discovery Meeting`, `Data Request`, `PCR`, `Other` |
 | `search` | string | No | Text search across client names, types, departments |
 | `status` | string | No | Filter by status: `In Progress`, `Pending`, `Completed` |
@@ -106,8 +106,8 @@ Fetch all dashboard data in a single optimized call. This is the primary endpoin
       "intake_source_breakdown": {
         "irq_count": 156,
         "irq_percent": 64,
-        "srrf_count": 89,
-        "srrf_percent": 36,
+        "serf_count": 89,
+        "serf_percent": 36,
         "portfolios_logged": 198,
         "portfolios_total": 245,
         "portfolios_percent": 81
@@ -195,7 +195,7 @@ Fetch all dashboard data in a single optimized call. This is the primary endpoin
       { "label": "Office", "options": ["Austin Office", "Charlotte Office"] }
     ],
     "departments": ["Broker-Dealer", "IAG", "Institutional"],
-    "intake_types": ["GCG Ad-Hoc", "SRRF", "IRQ"],
+    "intake_types": ["GCG Ad-Hoc", "SERF", "IRQ"],
     "project_types": ["Data Request", "Discovery Meeting", "Meeting", "Other", "PCR"],
     "statuses": ["Completed", "In Progress", "On Hold"]
   }
@@ -281,8 +281,8 @@ Fetch dashboard metrics only. Use for refreshing metrics without full reload.
     "intake_source_breakdown": {
       "irq_count": 156,
       "irq_percent": 64,
-      "srrf_count": 89,
-      "srrf_percent": 36,
+      "serf_count": 89,
+      "serf_percent": 36,
       "portfolios_logged": 198,
       "portfolios_total": 245,
       "portfolios_percent": 81
@@ -415,7 +415,7 @@ Create a new engagement.
 |-------|------|----------|-------------|
 | `external_client` | string \| null | No | External client company name |
 | `internal_client` | object | **Yes** | `{ name: string, gcg_department: string }` |
-| `intake_type` | string | **Yes** | `IRQ`, `SRRF`, or `GCG Ad-Hoc` |
+| `intake_type` | string | **Yes** | `IRQ`, `SERF`, or `GCG Ad-Hoc` |
 | `ad_hoc_channel` | string \| null | Conditional | Required if `intake_type` is `GCG Ad-Hoc`: `In-Person`, `Email`, `Teams` |
 | `type` | string | **Yes** | `Meeting`, `Discovery Meeting`, `Data Request`, `PCR`, `Other` |
 | `team_members` | string[] | **Yes** | Array of team member names |
@@ -645,7 +645,7 @@ ID,External Client,Internal Client,Department,Intake Type,Ad Hoc Channel,Type,Te
 | `id` | number | Unique identifier (auto-generated) |
 | `external_client` | string \| null | External client company name (optional) |
 | `internal_client` | InternalClient | GCG contact/relationship owner |
-| `intake_type` | string | `IRQ`, `SRRF`, or `GCG Ad-Hoc` |
+| `intake_type` | string | `IRQ`, `SERF`, or `GCG Ad-Hoc` |
 | `ad_hoc_channel` | string \| null | `In-Person`, `Email`, or `Teams` (only for GCG Ad-Hoc) |
 | `type` | string | Project type: `Meeting`, `Discovery Meeting`, `Data Request`, `PCR`, `Other` |
 | `team_members` | string[] | Array of team member names |
@@ -681,7 +681,7 @@ ID,External Client,Internal Client,Department,Intake Type,Ad Hoc Channel,Type,Te
 | `date` | string | ISO date string (e.g., `"2024-02-01"`) |
 | `level` | number | Activity level 0-4 for heatmap coloring |
 | `count` | number | Total engagements on this day |
-| `project_count` | number | Project engagements (IRQ/SRRF) |
+| `project_count` | number | Project engagements (IRQ/SERF) |
 | `ad_hoc_count` | number | GCG Ad-Hoc engagements |
 
 ### IntakeBreakdown

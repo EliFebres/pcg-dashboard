@@ -145,7 +145,7 @@ export function rowToEngagement(row: Record<string, unknown>): Engagement {
       name: row.internal_client_name as string,
       gcgDepartment: row.internal_client_dept as 'IAG' | 'Broker-Dealer' | 'Institutional',
     },
-    intakeType: row.intake_type as 'IRQ' | 'SRRF' | 'GCG Ad-Hoc',
+    intakeType: row.intake_type as 'IRQ' | 'SERF' | 'GCG Ad-Hoc',
     adHocChannel: (row.ad_hoc_channel as string | undefined) as import('../types/engagements').GCGAdHocChannel | undefined,
     type: row.type as string,
     teamMembers: JSON.parse((row.team_members as string) || '[]') as string[],
@@ -166,5 +166,6 @@ export function rowToEngagement(row: Record<string, unknown>): Engagement {
       : undefined,
     createdById: (row.created_by_id as string | undefined) || undefined,
     createdByName: (row.created_by_name as string | undefined) || undefined,
+    linkedFromId: row.linked_from_id != null ? Number(row.linked_from_id) : null,
   };
 }
