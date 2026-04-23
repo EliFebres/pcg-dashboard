@@ -20,8 +20,6 @@ import {
   computeAdHocChannelHealth,
   computeStaleEngagements,
   computeDormantClients,
-  computeTopTickers,
-  computePortfolioCoverage,
   computeDataQuality,
 } from '@/app/lib/db/kpi-aggregations';
 import type { KpiFilters } from '@/app/lib/api/kpi';
@@ -70,8 +68,6 @@ export async function POST(req: NextRequest) {
       adHocChannels,
       staleEngagements,
       dormantClients,
-      topTickers,
-      portfolioCoverage,
       dataQuality,
     ] = await Promise.all([
       computeHeroKpis(filters, constraints),
@@ -85,8 +81,6 @@ export async function POST(req: NextRequest) {
       computeAdHocChannelHealth(filters, constraints),
       computeStaleEngagements(filters, constraints),
       computeDormantClients(filters, constraints),
-      computeTopTickers(filters, constraints),
-      computePortfolioCoverage(filters, constraints),
       computeDataQuality(filters, constraints),
     ]);
 
@@ -106,8 +100,6 @@ export async function POST(req: NextRequest) {
       adHocChannels,
       staleEngagements,
       dormantClients,
-      topTickers,
-      portfolioCoverage,
       dataQuality,
     });
   } catch (err) {

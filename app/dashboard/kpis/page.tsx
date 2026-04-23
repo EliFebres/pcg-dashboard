@@ -15,8 +15,6 @@ import IntakeYieldTable from '@/app/components/dashboard/kpis/IntakeYieldTable';
 import AdHocChannelCard from '@/app/components/dashboard/kpis/AdHocChannelCard';
 import StaleEngagementsTable from '@/app/components/dashboard/kpis/StaleEngagementsTable';
 import DormantClientsTable from '@/app/components/dashboard/kpis/DormantClientsTable';
-import TopTickersChart from '@/app/components/dashboard/kpis/TopTickersChart';
-import PortfolioCoverageCard from '@/app/components/dashboard/kpis/PortfolioCoverageCard';
 import DataQualityStrip from '@/app/components/dashboard/kpis/DataQualityStrip';
 import { getKpiDashboardData, type KpiDashboardData, type KpiScope } from '@/app/lib/api/kpi';
 
@@ -151,11 +149,6 @@ export default function KpiDashboard() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
               <StaleEngagementsTable data={data.staleEngagements} />
               <DormantClientsTable data={data.dormantClients} />
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-              <TopTickersChart data={data.topTickers} />
-              <PortfolioCoverageCard data={data.portfolioCoverage} />
             </div>
           </>
         ) : !isLoading ? (

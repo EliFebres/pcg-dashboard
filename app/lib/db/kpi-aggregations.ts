@@ -27,8 +27,6 @@ import type {
   AdHocChannelRow,
   StaleEngagement,
   DormantClient,
-  TickerMention,
-  PortfolioCoverage,
   DataQuality,
 } from '../api/kpi';
 
@@ -739,83 +737,6 @@ export async function computeDormantClients(
     lastEngagedDate: String(r.last_started ?? '').split('T')[0],
     daysSinceLast: Number(r.days_since ?? 0),
   }));
-}
-
-// =============================================================================
-// 7a. TOP TICKERS MENTIONED
-// =============================================================================
-
-export async function computeTopTickers(
-  filters: KpiFilters,
-  constraints: ServerConstraints
-): Promise<TickerMention[]> {
-  if (!hasDb()) return [];
-  const { whereClause, params } = buildKpiWhere(filters, constraints);
-  const tickersWhere = whereClause
-    ? `${whereClause} AND tickers_mentioned IS NOT NULL AND tickers_mentioned != '[]' AND tickers_mentioned != ''`
-    : `WHERE tickers_mentioned IS NOT NULL AND tickers_mentioned != '[]' AND tickers_mentioned != ''`;
-
-  // tickers_mentioned is a JSON array stored as VARCHAR. Cast to JSON, then
-  // unnest the array into individual rows via json_each which returns one
-  // row per element with a `value` column.
-  const rows = await query<Record<string, unknown>>(
-    `
-      SELECT ticker, COUNT(*) AS cnt
-      FROM (
-        SELECT unnest(from_json(tickers_mentioned, '["VARCHAR"]')) AS ticker
-        FROM engagements
-        ${tickersWhere}
-      ) t
-      WHERE ticker IS NOT NULL AND ticker != ''
-      GROUP BY ticker
-      ORDER BY cnt DESC
-      LIMIT 15
-    `,
-    params
-  );
-
-  return rows.map(r => ({
-    ticker: String(r.ticker ?? ''),
-    count: Number(r.cnt ?? 0),
-  }));
-}
-
-// =============================================================================
-// 7b. PORTFOLIO COVERAGE
-// =============================================================================
-
-export async function computePortfolioCoverage(
-  filters: KpiFilters,
-  constraints: ServerConstraints
-): Promise<PortfolioCoverage> {
-  if (!hasDb()) return { coveragePercent: 0, avgHoldings: 0, eligibleCount: 0, loggedCount: 0 };
-  const { whereClause, params } = buildKpiWhere(filters, constraints);
-
-  const rows = await query<Record<string, unknown>>(
-    `
-      SELECT
-        COUNT(*) FILTER (WHERE intake_type IN ('IRQ', 'SERF') AND type != 'PCR') AS eligible,
-        COUNT(*) FILTER (WHERE intake_type IN ('IRQ', 'SERF') AND type != 'PCR' AND portfolio_logged = TRUE) AS logged,
-        AVG(
-          CASE WHEN portfolio IS NOT NULL AND portfolio != '[]' AND portfolio != ''
-               THEN json_array_length(portfolio)
-               ELSE NULL END
-        ) AS avg_holdings
-      FROM engagements
-      ${whereClause}
-    `,
-    params
-  );
-
-  const r = rows[0] ?? {};
-  const eligible = Number(r.eligible ?? 0);
-  const logged = Number(r.logged ?? 0);
-  return {
-    coveragePercent: pct(logged, eligible),
-    avgHoldings: r.avg_holdings != null ? Math.round(Number(r.avg_holdings) * 10) / 10 : 0,
-    eligibleCount: eligible,
-    loggedCount: logged,
-  };
 }
 
 // =============================================================================

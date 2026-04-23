@@ -123,18 +123,6 @@ export interface DormantClient {
   daysSinceLast: number;
 }
 
-export interface TickerMention {
-  ticker: string;
-  count: number;
-}
-
-export interface PortfolioCoverage {
-  coveragePercent: number;
-  avgHoldings: number;
-  eligibleCount: number;
-  loggedCount: number;
-}
-
 export interface DataQuality {
   interactions: number;
   nnaCoveragePercent: number;
@@ -156,8 +144,6 @@ export interface KpiDashboardData {
   adHocChannels: AdHocChannelRow[];
   staleEngagements: StaleEngagement[];
   dormantClients: DormantClient[];
-  topTickers: TickerMention[];
-  portfolioCoverage: PortfolioCoverage;
   dataQuality: DataQuality;
 }
 
