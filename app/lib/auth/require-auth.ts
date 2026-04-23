@@ -52,13 +52,20 @@ export function teamConstraint(payload: JWTPayload): ServerConstraints {
 
 export type KpiScope = 'all' | `team:${string}`;
 
-// KPI dashboard relaxes team isolation for aggregate views — anyone may see
-// any team's totals or the cross-team total. Individual-level scoping does
-// not exist in this path; clients cannot request per-user breakdowns.
+// KPI dashboard allows cross-team aggregates, but non-admins may only scope
+// to 'all' (cross-team totals) or to their own team — no peeking at another
+// team's team-level breakdown. Admins may scope to any team.
 export function kpiConstraint(scope: KpiScope): ServerConstraints {
   if (scope === 'all') return {};
   const team = scope.slice('team:'.length);
   return { team };
+}
+
+export function canAccessKpiScope(payload: JWTPayload, scope: KpiScope): boolean {
+  if (scope === 'all') return true;
+  if (payload.role === 'admin') return true;
+  const team = scope.slice('team:'.length);
+  return team === payload.team;
 }
 
 export function isValidKpiScope(scope: unknown): scope is KpiScope {

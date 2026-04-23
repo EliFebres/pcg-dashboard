@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Building2, Inbox, Loader2 } from 'lucide-react';
 import DashboardHeader from '@/app/components/dashboard/shared/DashboardHeader';
-import ScopeSelector from '@/app/components/dashboard/kpis/ScopeSelector';
+import ScopeSelector, { KPI_DELIVERY_TEAMS } from '@/app/components/dashboard/kpis/ScopeSelector';
+import { useCurrentUser } from '@/app/lib/auth/context';
 import HeroKPICards from '@/app/components/dashboard/kpis/HeroKPICards';
 import JourneyExplorer from '@/app/components/dashboard/kpis/JourneyExplorer';
 import GcgDeptChart from '@/app/components/dashboard/kpis/GcgDeptChart';
@@ -23,6 +24,8 @@ const GCG_DEPT_OPTIONS = ['All Departments', 'IAG', 'Broker-Dealer', 'Institutio
 const INTAKE_OPTIONS = ['All Intake Types', 'IRQ', 'SERF', 'GCG Ad-Hoc'];
 
 export default function KpiDashboard() {
+  const { user, isLoading: authLoading } = useCurrentUser();
+
   const [scope, setScope] = useState<KpiScope>('all');
   const [period, setPeriod] = useState('1Y');
   const [gcgDepts, setGcgDepts] = useState<string[]>([]);
@@ -31,7 +34,21 @@ export default function KpiDashboard() {
   const [data, setData] = useState<KpiDashboardData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Apply the default scope once the auth context finishes loading: everyone
+  // (including admins) defaults to their own team if they're on a KPI
+  // delivery team, otherwise 'all'. Guarded by a ref so a later user refetch
+  // doesn't stomp on a manual selection.
+  const defaultScopeAppliedRef = useRef(false);
   useEffect(() => {
+    if (authLoading || !user || defaultScopeAppliedRef.current) return;
+    defaultScopeAppliedRef.current = true;
+    const isKpiTeam = (KPI_DELIVERY_TEAMS as readonly string[]).includes(user.team);
+    if (isKpiTeam) setScope(`team:${user.team}`);
+  }, [authLoading, user]);
+
+  useEffect(() => {
+    // Wait for the user context so the first fetch uses the correct default.
+    if (authLoading) return;
     const controller = new AbortController();
     // Defer the setState so it's not synchronously inside the effect body,
     // matching the pattern used by the Client Interactions page.
@@ -55,7 +72,7 @@ export default function KpiDashboard() {
       clearTimeout(id);
       controller.abort();
     };
-  }, [scope, period, gcgDepts, intakeTypes]);
+  }, [scope, period, gcgDepts, intakeTypes, authLoading]);
 
   const subtitle = data?.scope.kind === 'team'
     ? `Team · ${data.scope.team}`

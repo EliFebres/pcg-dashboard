@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import {
   requireAuth,
   kpiConstraint,
+  canAccessKpiScope,
   isValidKpiScope,
   type KpiScope,
 } from '@/app/lib/auth/require-auth';
@@ -42,6 +43,9 @@ export async function POST(req: NextRequest) {
   const scope = body.scope;
   if (!isValidKpiScope(scope)) {
     return NextResponse.json({ error: 'Invalid scope.' }, { status: 400 });
+  }
+  if (!canAccessKpiScope(auth.payload, scope as KpiScope)) {
+    return NextResponse.json({ error: 'Forbidden.' }, { status: 403 });
   }
 
   const filters: KpiFilters = {
