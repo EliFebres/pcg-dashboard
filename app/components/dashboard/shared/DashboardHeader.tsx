@@ -259,32 +259,27 @@ export default function DashboardHeader({
     return filter.value !== filter.options[0];
   });
 
-  // Start or restart the collapse timeout (only if no active filters).
+  // Start or restart the collapse timeout.
   // Wrapped in useCallback so the useEffects below can list it as a dep
-  // without firing on every render.
+  // without firing on every render. Applying or changing a filter counts
+  // as activity (resets the timer); only `alwaysShowFilters` suppresses it.
   const startCollapseTimeout = useCallback(() => {
     if (collapseTimeoutRef.current) {
       clearTimeout(collapseTimeoutRef.current);
     }
-    // Don't start timeout if there are active filters or the filter bar is pinned open
-    if (hasActiveFilters || alwaysShowFilters) return;
+    if (alwaysShowFilters) return;
 
     collapseTimeoutRef.current = setTimeout(() => {
-      if (!isHoveringRef.current && !hasActiveFilters && !alwaysShowFilters) {
+      if (!isHoveringRef.current && !alwaysShowFilters) {
         setFiltersExpanded(false);
       }
     }, 10000);
-  }, [hasActiveFilters, alwaysShowFilters]);
+  }, [alwaysShowFilters]);
 
-  // Auto-collapse filters after 10 seconds of inactivity (only if no active filters)
+  // Auto-collapse filters after 10 seconds of inactivity
   useEffect(() => {
-    if (filtersExpanded && !hasActiveFilters) {
+    if (filtersExpanded) {
       startCollapseTimeout();
-    }
-
-    // Clear timeout if filters become active
-    if (hasActiveFilters && collapseTimeoutRef.current) {
-      clearTimeout(collapseTimeoutRef.current);
     }
 
     return () => {
@@ -292,18 +287,17 @@ export default function DashboardHeader({
         clearTimeout(collapseTimeoutRef.current);
       }
     };
-  }, [filtersExpanded, hasActiveFilters, startCollapseTimeout]);
+  }, [filtersExpanded, startCollapseTimeout]);
 
-  // Reset timeout when any filter value changes (only if no active filters)
+  // Reset timeout whenever a filter value changes — changing a filter
+  // counts as activity, so we restart the countdown rather than cancel it.
   useEffect(() => {
     const currentFilters = JSON.stringify(filters.map(f => f.value));
     if (prevFiltersRef.current !== currentFilters && filtersExpanded) {
       prevFiltersRef.current = currentFilters;
-      if (!hasActiveFilters) {
-        startCollapseTimeout();
-      }
+      startCollapseTimeout();
     }
-  }, [filters, filtersExpanded, hasActiveFilters, startCollapseTimeout]);
+  }, [filters, filtersExpanded, startCollapseTimeout]);
 
   // Hover handlers for the filters container
   const handleMouseEnter = () => {
