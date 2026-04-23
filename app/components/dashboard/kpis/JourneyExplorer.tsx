@@ -21,18 +21,20 @@ interface SankeyNodeProps {
   width?: number;
   height?: number;
   payload?: SankeyNode;
-  containerWidth?: number;
 }
-function RechartsNode({ x = 0, y = 0, width = 0, height = 0, payload, containerWidth = 0 }: SankeyNodeProps) {
-  const isLast = x + width + 6 > containerWidth;
+function RechartsNode({ x = 0, y = 0, width = 0, height = 0, payload }: SankeyNodeProps) {
   const color = payload ? nodeColor(payload) : '#71717a';
   const name = payload?.name ?? '';
+  // Intake labels render outside-left of the rectangle; project/outcome render
+  // outside-right. The `kind` field is authoritative — don't rely on x/width
+  // against containerWidth, which won't flip labels reliably.
+  const labelLeft = payload?.kind === 'intake';
   return (
     <Layer>
       <Rectangle x={x} y={y} width={width} height={height} fill={color} fillOpacity={0.9} />
       <text
-        textAnchor={isLast ? 'end' : 'start'}
-        x={isLast ? x - 6 : x + width + 6}
+        textAnchor={labelLeft ? 'end' : 'start'}
+        x={labelLeft ? x - 6 : x + width + 6}
         y={y + height / 2}
         fontSize={11}
         fill="#d4d4d8"
@@ -111,7 +113,7 @@ export default function JourneyExplorer({ sankey, templates }: JourneyExplorerPr
                   iterations={64}
                   node={<RechartsNode />}
                   link={{ stroke: '#52525b', strokeOpacity: 0.25 }}
-                  margin={{ left: 12, right: 140, top: 10, bottom: 10 }}
+                  margin={{ left: 90, right: 110, top: 10, bottom: 10 }}
                 >
                   <Tooltip content={<SankeyTooltipContent />} />
                 </Sankey>

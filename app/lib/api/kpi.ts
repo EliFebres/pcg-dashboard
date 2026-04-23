@@ -29,9 +29,9 @@ export interface KpiDelta {
 
 export interface HeroKpis {
   interactions: KpiDelta;
+  inProgress: KpiDelta;
   nna: KpiDelta;
   avgNnaPerInteraction: KpiDelta;
-  discoveryToMeetingRate: KpiDelta;
   completionRate: KpiDelta;
   zeroNnaRate: KpiDelta;
   periodLabel: string;

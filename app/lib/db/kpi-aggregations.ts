@@ -109,9 +109,9 @@ export async function computeHeroKpis(
   if (!hasDb()) {
     return {
       interactions: { value: 0, deltaPercent: 0 },
+      inProgress: { value: 0, deltaPercent: 0 },
       nna: { value: 0, deltaPercent: 0 },
       avgNnaPerInteraction: { value: 0, deltaPercent: 0 },
-      discoveryToMeetingRate: { value: 0, deltaPercent: 0 },
       completionRate: { value: 0, deltaPercent: 0 },
       zeroNnaRate: { value: 0, deltaPercent: 0 },
       periodLabel,
@@ -129,11 +129,12 @@ export async function computeHeroKpis(
     : 'WHERE date_started >= ? AND date_started <= ?';
   const prevParams = [...prev.params, prevDates.start, prevDates.end];
 
-  const [currRows, prevRows, discoveryRows] = await Promise.all([
+  const [currRows, prevRows] = await Promise.all([
     query<Record<string, unknown>>(
       `
         SELECT
           COUNT(*)                                                          AS interactions,
+          COUNT(*) FILTER (WHERE ${SQL_OPEN})                               AS in_progress,
           COALESCE(SUM(nna), 0)                                             AS total_nna,
           COUNT(*) FILTER (WHERE ${SQL_COMPLETED})                          AS completed,
           COUNT(*) FILTER (WHERE status = 'Completed')                      AS strict_completed,
@@ -147,6 +148,7 @@ export async function computeHeroKpis(
       `
         SELECT
           COUNT(*)                                                          AS interactions,
+          COUNT(*) FILTER (WHERE ${SQL_OPEN})                               AS in_progress,
           COALESCE(SUM(nna), 0)                                             AS total_nna,
           COUNT(*) FILTER (WHERE ${SQL_COMPLETED})                          AS completed,
           COUNT(*) FILTER (WHERE status = 'Completed')                      AS strict_completed,
@@ -156,29 +158,15 @@ export async function computeHeroKpis(
       `,
       prevParams
     ),
-    // Discovery→Meeting rate: of discoveries in this period, how many have a child Meeting / Follow-up Meeting?
-    query<Record<string, unknown>>(
-      `
-        SELECT
-          COUNT(*) FILTER (WHERE type = 'Discovery Meeting') AS discoveries,
-          COUNT(*) FILTER (WHERE type = 'Discovery Meeting' AND EXISTS (
-            SELECT 1 FROM engagements c
-            WHERE c.linked_from_id = e.id
-              AND c.type IN ('Meeting', 'Follow-up Meeting')
-          )) AS converted
-        FROM engagements e
-        ${curr.whereClause}
-      `,
-      curr.params
-    ),
   ]);
 
   const c = currRows[0] ?? {};
   const p = prevRows[0] ?? {};
-  const d = discoveryRows[0] ?? {};
 
   const currInteractions = Number(c.interactions ?? 0);
   const prevInteractions = Number(p.interactions ?? 0);
+  const currInProgress = Number(c.in_progress ?? 0);
+  const prevInProgress = Number(p.in_progress ?? 0);
   const currNna = Number(c.total_nna ?? 0);
   const prevNna = Number(p.total_nna ?? 0);
   const currCompleted = Number(c.completed ?? 0);
@@ -187,8 +175,6 @@ export async function computeHeroKpis(
   const prevStrictCompleted = Number(p.strict_completed ?? 0);
   const currZeroNna = Number(c.zero_nna ?? 0);
   const prevZeroNna = Number(p.zero_nna ?? 0);
-  const discoveries = Number(d.discoveries ?? 0);
-  const converted = Number(d.converted ?? 0);
 
   const currAvgNna = currInteractions > 0 ? currNna / currInteractions : 0;
   const prevAvgNna = prevInteractions > 0 ? prevNna / prevInteractions : 0;
@@ -199,13 +185,11 @@ export async function computeHeroKpis(
   const currZeroNnaRate = pct(currZeroNna, currStrictCompleted);
   const prevZeroNnaRate = pct(prevZeroNna, prevStrictCompleted);
 
-  const discoveryRate = pct(converted, discoveries);
-
   return {
     interactions: { value: currInteractions, deltaPercent: deltaPercent(currInteractions, prevInteractions) },
+    inProgress: { value: currInProgress, deltaPercent: deltaPercent(currInProgress, prevInProgress) },
     nna: { value: currNna, deltaPercent: deltaPercent(currNna, prevNna) },
     avgNnaPerInteraction: { value: Math.round(currAvgNna), deltaPercent: deltaPercent(currAvgNna, prevAvgNna) },
-    discoveryToMeetingRate: { value: discoveryRate, deltaPercent: 0 },
     completionRate: { value: currCompletionRate, deltaPercent: Math.round(currCompletionRate - prevCompletionRate) },
     zeroNnaRate: { value: currZeroNnaRate, deltaPercent: Math.round(currZeroNnaRate - prevZeroNnaRate) },
     periodLabel,

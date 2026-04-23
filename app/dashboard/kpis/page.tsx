@@ -129,12 +129,12 @@ export default function KpiDashboard() {
 
             <HeroKPICards heroKpis={data.heroKpis} />
 
-            <JourneyExplorer sankey={data.journeySankey} templates={data.journeyTemplates} />
-
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
               <GcgDeptChart data={data.gcgDepts} />
               <NnaConcentrationCard data={data.nnaConcentration} />
             </div>
+
+            <JourneyExplorer sankey={data.journeySankey} templates={data.journeyTemplates} />
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
               <ActivityHeatmap data={data.activityHeatmap} />

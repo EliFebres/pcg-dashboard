@@ -20,9 +20,15 @@ type CardDef = {
 export default function HeroKPICards({ heroKpis }: HeroKPICardsProps) {
   const cards: CardDef[] = [
     {
-      label: 'Interactions',
+      label: 'Total Interactions',
       value: formatNumber(heroKpis.interactions.value),
       deltaPercent: heroKpis.interactions.deltaPercent,
+      sublabel: heroKpis.periodLabel,
+    },
+    {
+      label: 'Total In-Progress Interactions',
+      value: formatNumber(heroKpis.inProgress.value),
+      deltaPercent: heroKpis.inProgress.deltaPercent,
       sublabel: heroKpis.periodLabel,
     },
     {
@@ -36,12 +42,6 @@ export default function HeroKPICards({ heroKpis }: HeroKPICardsProps) {
       value: formatCurrency(heroKpis.avgNnaPerInteraction.value),
       deltaPercent: heroKpis.avgNnaPerInteraction.deltaPercent,
       sublabel: heroKpis.periodLabel,
-    },
-    {
-      label: 'Discovery → Meeting',
-      value: `${heroKpis.discoveryToMeetingRate.value.toFixed(0)}%`,
-      deltaPercent: heroKpis.discoveryToMeetingRate.deltaPercent,
-      sublabel: 'conversion rate',
     },
     {
       label: 'Completion Rate',
