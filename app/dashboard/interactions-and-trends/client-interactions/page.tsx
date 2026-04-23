@@ -126,7 +126,7 @@ export default function EngagementsDashboard() {
   ]);
   const [statusFilter, setStatusFilter] = useState('All Statuses');
   const [period, setPeriod] = useState('1Y');
-  const [sortColumn, setSortColumn] = useState<string | null>('dateStarted');
+  const [sortColumn, setSortColumn] = useState<string | null>('dateFinished');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc' | null>('desc');
 
   const [isExporting, setIsExporting] = useState(false);

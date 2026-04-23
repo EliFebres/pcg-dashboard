@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, ChevronDown, PieChart, Flame, User, LogOut, Users, UserCheck, PanelLeftClose, PanelLeftOpen, Swords, TrendingUp, Landmark, Bell, Activity } from 'lucide-react';
+import { LayoutDashboard, ChevronDown, PieChart, Flame, User, LogOut, Users, UserCheck, PanelLeftClose, PanelLeftOpen, Swords, TrendingUp, Landmark, Bell, Activity, Target } from 'lucide-react';
 import { useCurrentUser } from '@/app/lib/auth/context';
 import { useAlerts } from '@/app/lib/hooks/useAlerts';
 import { NotificationsPopover } from '@/app/components/dashboard/NotificationsPopover';
@@ -24,11 +24,19 @@ interface NavSection {
 
 const navSections: NavSection[] = [
   {
-    title: 'Interactions & Trends',
+    title: 'Interactions & KPIs',
     items: [
       { label: 'Client Interactions', href: '/dashboard/interactions-and-trends/client-interactions', icon: LayoutDashboard },
-      { label: 'Portfolio Trends', href: '/dashboard/interactions-and-trends/portfolio-trends', icon: PieChart, disabled: true },
-      { label: 'Ticker Trends', href: '/dashboard/interactions-and-trends/ticker-trends', icon: Flame, disabled: true },
+      {
+        label: 'Client Trends',
+        href: '#',
+        icon: TrendingUp,
+        children: [
+          { label: 'Portfolio Trends', href: '/dashboard/interactions-and-trends/portfolio-trends', icon: PieChart, disabled: true },
+          { label: 'Ticker Trends', href: '/dashboard/interactions-and-trends/ticker-trends', icon: Flame, disabled: true },
+        ],
+      },
+      { label: 'Team KPIs', href: '/dashboard/kpis', icon: Target },
     ],
   },
   {
@@ -228,6 +236,24 @@ export default function Sidebar({ className = '' }: SidebarProps) {
                           {item.children!.map((child) => {
                             const ChildIcon = child.icon;
                             const childActive = isActive(child.href);
+                            const childDisabled = child.disabled === true;
+
+                            if (childDisabled) {
+                              return (
+                                <div
+                                  key={child.href}
+                                  className="relative"
+                                  onMouseMove={(e) => setDisabledTooltipPos({ x: e.clientX, y: e.clientY })}
+                                  onMouseLeave={() => setDisabledTooltipPos(null)}
+                                >
+                                  <div className="w-full flex items-center gap-2.5 px-2 py-1.5 border-l-2 border-transparent opacity-50 cursor-not-allowed">
+                                    <ChildIcon className="w-4 h-4 flex-shrink-0 text-muted" />
+                                    <span className="text-[0.85rem] font-semibold tracking-wide text-muted">{child.label}</span>
+                                  </div>
+                                </div>
+                              );
+                            }
+
                             return (
                               <Link
                                 key={child.href}

@@ -59,6 +59,8 @@ interface DashboardHeaderProps {
   onActionButtonClick?: () => void;
   secondaryActionButtonLabel?: string;
   onSecondaryActionButtonClick?: () => void;
+  rightContent?: React.ReactNode;
+  alwaysShowFilters?: boolean;
 }
 
 // Dropdown component for filters — Popover-based so portal, click-outside,
@@ -241,8 +243,10 @@ export default function DashboardHeader({
   onActionButtonClick,
   secondaryActionButtonLabel,
   onSecondaryActionButtonClick,
+  rightContent,
+  alwaysShowFilters = false,
 }: DashboardHeaderProps) {
-  const [filtersExpanded, setFiltersExpanded] = useState(false);
+  const [filtersExpanded, setFiltersExpanded] = useState(alwaysShowFilters);
   const collapseTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const prevFiltersRef = useRef<string>(JSON.stringify(filters.map(f => f.value)));
   const isHoveringRef = useRef(false);
@@ -262,17 +266,17 @@ export default function DashboardHeader({
     if (collapseTimeoutRef.current) {
       clearTimeout(collapseTimeoutRef.current);
     }
-    // Don't start timeout if there are active filters
-    if (hasActiveFilters) return;
+    // Don't start timeout if there are active filters or the filter bar is pinned open
+    if (hasActiveFilters || alwaysShowFilters) return;
 
     collapseTimeoutRef.current = setTimeout(() => {
-      if (!isHoveringRef.current && !hasActiveFilters) {
+      if (!isHoveringRef.current && !hasActiveFilters && !alwaysShowFilters) {
         setFiltersExpanded(false);
       }
-    }, 30000);
-  }, [hasActiveFilters]);
+    }, 10000);
+  }, [hasActiveFilters, alwaysShowFilters]);
 
-  // Auto-collapse filters after 30 seconds of inactivity (only if no active filters)
+  // Auto-collapse filters after 10 seconds of inactivity (only if no active filters)
   useEffect(() => {
     if (filtersExpanded && !hasActiveFilters) {
       startCollapseTimeout();
@@ -344,7 +348,7 @@ export default function DashboardHeader({
 
           {/* Filter Toggle Button */}
           <button
-            onClick={() => setFiltersExpanded(!filtersExpanded)}
+            onClick={() => { if (!alwaysShowFilters) setFiltersExpanded(!filtersExpanded); }}
             className={`relative flex items-center justify-center rounded-lg bg-gradient-to-r from-blue-600 to-cyan-500 text-white hover:from-blue-500 hover:to-cyan-400 transition-all duration-300 overflow-hidden group/filter ${
               hasActiveFilters ? 'ring-2 ring-cyan-400/50' : ''
             } ${filtersExpanded ? 'w-0 h-0 p-0 opacity-0 -ml-2' : 'w-9 h-9 opacity-100'}`}
@@ -366,7 +370,7 @@ export default function DashboardHeader({
 
           {/* Animated Filters Container */}
           <div
-            className={`flex items-center transition-all duration-1000 ease-out whitespace-nowrap ${
+            className={`flex items-center -ml-2 transition-all duration-1000 ease-out whitespace-nowrap ${
               filtersExpanded ? 'max-w-[1000px] opacity-100 gap-2 overflow-visible' : 'max-w-0 opacity-0 gap-0 overflow-hidden'
             }`}
             style={{
@@ -389,9 +393,10 @@ export default function DashboardHeader({
             )}
           </div>
 
-          {(actionButtonLabel || secondaryActionButtonLabel || (tabs && tabs.length > 0)) && (
+          {(actionButtonLabel || secondaryActionButtonLabel || rightContent || (tabs && tabs.length > 0)) && (
             <>
               <div className="flex-1" />
+              {rightContent}
               {tabs && tabs.length > 0 && (
                 <div className="flex items-center gap-1 bg-zinc-800/60 border border-zinc-700/50 p-1 rounded-lg">
                   {tabs.map((tab) => (

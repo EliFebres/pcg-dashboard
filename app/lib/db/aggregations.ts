@@ -340,8 +340,13 @@ export async function computeEngagementsList(filters: EngagementFilters, serverC
   const pageSize = filters.pageSize || 50;
   const offset = (page - 1) * pageSize;
 
-  const sortCol = SORT_COLUMN_MAP[filters.sortColumn || ''] || 'date_started';
+  const sortCol = SORT_COLUMN_MAP[filters.sortColumn || ''] || 'date_finished';
   const sortDir = filters.sortDirection === 'asc' ? 'ASC' : 'DESC';
+  const nullsOrder = sortDir === 'DESC' ? 'NULLS FIRST' : 'NULLS LAST';
+  // When sorting by date_finished (the default), use date_started DESC as a
+  // secondary so the most recently started rows surface within each group —
+  // in particular, within the NULLS-FIRST bucket of unfinished engagements.
+  const secondary = sortCol === 'date_finished' ? ', date_started DESC NULLS LAST' : '';
 
   const [countRows, dataRows] = await Promise.all([
     query<Record<string, unknown>>(
@@ -352,7 +357,7 @@ export async function computeEngagementsList(filters: EngagementFilters, serverC
       `SELECT *,
          (SELECT COUNT(*) FROM engagement_notes WHERE engagement_id = engagements.id) AS note_count
        FROM engagements ${whereClause}
-       ORDER BY ${sortCol} ${sortDir} ${sortDir === 'DESC' ? 'NULLS FIRST' : 'NULLS LAST'}
+       ORDER BY ${sortCol} ${sortDir} ${nullsOrder}${secondary}, id DESC
        LIMIT ? OFFSET ?`,
       [...params, pageSize, offset]
     ),
