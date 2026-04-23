@@ -17,6 +17,7 @@ import type { ServerConstraints } from './queries';
 import { getPreviousPeriodDates, getPeriodStartISO } from './dateUtils';
 import type { EngagementFilters, DashboardMetrics, DepartmentBreakdown, ContributionDataResponse, EngagementsResponse, FilterOptions } from '../api/client-interactions';
 import type { DayData } from '../types/engagements';
+import { VALID_STATUSES } from '../statusHelpers';
 
 // Static filter options — these don't change dynamically in this application
 export const STATIC_FILTER_OPTIONS: FilterOptions = {
@@ -27,7 +28,7 @@ export const STATIC_FILTER_OPTIONS: FilterOptions = {
   departments: ['Broker-Dealer', 'IAG', 'Institutional', 'Retirement Group'],
   intakeTypes: ['IRQ', 'SERF', 'GCG Ad-Hoc'],
   projectTypes: ['Data Request', 'Discovery Meeting', 'Follow-up Material', 'Follow-up Meeting', 'Meeting', 'Other', 'PCR'],
-  statuses: ['In Progress', 'Awaiting Meeting', 'Follow Up', 'Completed'],
+  statuses: [...VALID_STATUSES],
 };
 
 // =============================================================================

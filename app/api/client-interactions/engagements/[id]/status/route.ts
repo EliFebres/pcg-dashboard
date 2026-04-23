@@ -6,6 +6,7 @@ import { requireAuth, teamConstraint, canModify, readOnlyError } from '@/app/lib
 import { toDisplayDate } from '@/app/lib/db/dateUtils';
 import { emitEngagementChange } from '@/app/lib/events';
 import { logActivity } from '@/app/lib/activity/log';
+import { VALID_STATUSES } from '@/app/lib/statusHelpers';
 
 // PATCH /api/client-interactions/engagements/:id/status
 // Body: { status: string }
@@ -27,8 +28,7 @@ export async function PATCH(
     const engagementId = Number(id);
     const { status } = await req.json();
 
-    const VALID_STATUSES = ['In Progress', 'Awaiting Meeting', 'Follow Up', 'Completed'];
-    if (!status || !VALID_STATUSES.includes(status)) {
+    if (!status || !(VALID_STATUSES as readonly string[]).includes(status)) {
       return NextResponse.json({ error: 'Invalid status value' }, { status: 400 });
     }
 

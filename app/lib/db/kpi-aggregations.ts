@@ -12,6 +12,7 @@
 import { query } from './index';
 import type { ServerConstraints } from './queries';
 import { getPeriodStartISO, getPreviousPeriodDates } from './dateUtils';
+import { SQL_COMPLETED, SQL_OPEN } from '../statusHelpers';
 import type {
   KpiFilters,
   HeroKpis,
@@ -136,7 +137,8 @@ export async function computeHeroKpis(
         SELECT
           COUNT(*)                                                          AS interactions,
           COALESCE(SUM(nna), 0)                                             AS total_nna,
-          COUNT(*) FILTER (WHERE status = 'Completed')                      AS completed,
+          COUNT(*) FILTER (WHERE ${SQL_COMPLETED})                          AS completed,
+          COUNT(*) FILTER (WHERE status = 'Completed')                      AS strict_completed,
           COUNT(*) FILTER (WHERE status = 'Completed' AND (nna IS NULL OR nna = 0)) AS zero_nna
         FROM engagements
         ${curr.whereClause}
@@ -148,7 +150,8 @@ export async function computeHeroKpis(
         SELECT
           COUNT(*)                                                          AS interactions,
           COALESCE(SUM(nna), 0)                                             AS total_nna,
-          COUNT(*) FILTER (WHERE status = 'Completed')                      AS completed,
+          COUNT(*) FILTER (WHERE ${SQL_COMPLETED})                          AS completed,
+          COUNT(*) FILTER (WHERE status = 'Completed')                      AS strict_completed,
           COUNT(*) FILTER (WHERE status = 'Completed' AND (nna IS NULL OR nna = 0)) AS zero_nna
         FROM engagements
         ${prevWhere}
@@ -182,6 +185,8 @@ export async function computeHeroKpis(
   const prevNna = Number(p.total_nna ?? 0);
   const currCompleted = Number(c.completed ?? 0);
   const prevCompleted = Number(p.completed ?? 0);
+  const currStrictCompleted = Number(c.strict_completed ?? 0);
+  const prevStrictCompleted = Number(p.strict_completed ?? 0);
   const currZeroNna = Number(c.zero_nna ?? 0);
   const prevZeroNna = Number(p.zero_nna ?? 0);
   const discoveries = Number(d.discoveries ?? 0);
@@ -193,8 +198,8 @@ export async function computeHeroKpis(
   const currCompletionRate = pct(currCompleted, currInteractions);
   const prevCompletionRate = pct(prevCompleted, prevInteractions);
 
-  const currZeroNnaRate = pct(currZeroNna, currCompleted);
-  const prevZeroNnaRate = pct(prevZeroNna, prevCompleted);
+  const currZeroNnaRate = pct(currZeroNna, currStrictCompleted);
+  const prevZeroNnaRate = pct(prevZeroNna, prevStrictCompleted);
 
   const discoveryRate = pct(converted, discoveries);
 
@@ -223,9 +228,9 @@ export async function computeJourneySankey(
 
   const outcomeExpr = `
     CASE
-      WHEN status = 'Completed' AND nna IS NOT NULL AND nna > 0 THEN 'Completed w/ NNA'
-      WHEN status = 'Completed' THEN 'Completed no NNA'
-      WHEN status != 'Completed' AND date_started < CURRENT_DATE - INTERVAL '60 days' THEN 'Stalled'
+      WHEN ${SQL_COMPLETED} AND nna IS NOT NULL AND nna > 0 THEN 'Completed w/ NNA'
+      WHEN ${SQL_COMPLETED} THEN 'Completed no NNA'
+      WHEN NOT (${SQL_COMPLETED}) AND date_started < CURRENT_DATE - INTERVAL '60 days' THEN 'Stalled'
       ELSE 'Still Open'
     END
   `;
@@ -342,15 +347,15 @@ export async function computeJourneyTemplates(
       SELECT
         intake_type || ' → ' || path || ' → ' ||
           CASE
-            WHEN leaf_status = 'Completed' AND leaf_nna IS NOT NULL AND leaf_nna > 0 THEN 'Completed w/ NNA'
-            WHEN leaf_status = 'Completed' THEN 'Completed no NNA'
-            WHEN leaf_status != 'Completed' AND leaf_started < CURRENT_DATE - INTERVAL '60 days' THEN 'Stalled'
+            WHEN leaf_status IN ('Completed', 'Follow Up') AND leaf_nna IS NOT NULL AND leaf_nna > 0 THEN 'Completed w/ NNA'
+            WHEN leaf_status IN ('Completed', 'Follow Up') THEN 'Completed no NNA'
+            WHEN leaf_status NOT IN ('Completed', 'Follow Up') AND leaf_started < CURRENT_DATE - INTERVAL '60 days' THEN 'Stalled'
             ELSE 'Still Open'
           END AS signature,
         COUNT(*) AS journeys,
         AVG(CAST(leaf_nna AS DOUBLE)) AS avg_nna,
         AVG(CAST(leaf_finished - leaf_started AS DOUBLE)) AS avg_days,
-        COUNT(*) FILTER (WHERE leaf_status = 'Completed') AS completed_count
+        COUNT(*) FILTER (WHERE leaf_status IN ('Completed', 'Follow Up')) AS completed_count
       FROM terminal
       WHERE rn = 1
       GROUP BY signature
@@ -556,8 +561,8 @@ export async function computeInProgressTrend(
         COUNT(*) AS cnt
       FROM engagements
       ${whereClause
-        ? `${whereClause} AND status IN ('In Progress', 'Awaiting Meeting', 'Follow Up')`
-        : `WHERE status IN ('In Progress', 'Awaiting Meeting', 'Follow Up')`}
+        ? `${whereClause} AND ${SQL_OPEN}`
+        : `WHERE ${SQL_OPEN}`}
       GROUP BY week_start
       ORDER BY week_start
     `,
@@ -586,7 +591,8 @@ export async function computeIntakeYield(
       SELECT
         intake_type AS intake,
         COUNT(*) AS cnt,
-        COUNT(*) FILTER (WHERE status = 'Completed') AS completed,
+        COUNT(*) FILTER (WHERE ${SQL_COMPLETED}) AS completed,
+        COUNT(*) FILTER (WHERE status = 'Completed') AS strict_completed,
         COALESCE(AVG(CAST(nna AS DOUBLE)) FILTER (WHERE nna IS NOT NULL), 0) AS avg_nna,
         COUNT(*) FILTER (WHERE status = 'Completed' AND (nna IS NULL OR nna = 0)) AS zero_nna
       FROM engagements
@@ -600,12 +606,13 @@ export async function computeIntakeYield(
   return rows.map(r => {
     const count = Number(r.cnt ?? 0);
     const completed = Number(r.completed ?? 0);
+    const strictCompleted = Number(r.strict_completed ?? 0);
     return {
       intakeType: String(r.intake ?? ''),
       count,
       completionRate: pct(completed, count),
       avgNna: Math.round(Number(r.avg_nna ?? 0)),
-      zeroNnaRate: pct(Number(r.zero_nna ?? 0), completed),
+      zeroNnaRate: pct(Number(r.zero_nna ?? 0), strictCompleted),
     };
   });
 }
@@ -675,8 +682,8 @@ export async function computeStaleEngagements(
         CAST(date_started AS VARCHAR) AS date_started
       FROM engagements
       ${whereClause
-        ? `${whereClause} AND status IN ('In Progress', 'Awaiting Meeting', 'Follow Up')`
-        : `WHERE status IN ('In Progress', 'Awaiting Meeting', 'Follow Up')`}
+        ? `${whereClause} AND ${SQL_OPEN}`
+        : `WHERE ${SQL_OPEN}`}
       ORDER BY date_started ASC
       LIMIT 10
     `,

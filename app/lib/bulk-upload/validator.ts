@@ -1,4 +1,5 @@
 import type { ParsedRow } from './parser';
+import { VALID_STATUSES as STATUS_ENUM } from '../statusHelpers';
 
 export interface ValidationError {
   rowNumber: number;
@@ -22,7 +23,7 @@ const VALID_INTAKE_TYPES = ['IRQ', 'SERF', 'GCG Ad-Hoc'];
 const VALID_AD_HOC_CHANNELS = ['In-Person', 'Email', 'Teams'];
 const VALID_PROJECT_TYPES = ['Meeting', 'Discovery Meeting', 'Data Request', 'PCR', 'Other', 'Follow-up Material', 'Follow-up Meeting'];
 const VALID_DEPARTMENTS = ['IAG', 'Broker-Dealer', 'Institutional', 'Retirement Group'];
-const VALID_STATUSES = ['In Progress', 'Awaiting Meeting', 'Follow Up', 'Completed'];
+const VALID_STATUSES: string[] = [...STATUS_ENUM];
 const VALID_INTERNAL_CLIENT_DEPTS = ['IAG', 'Broker-Dealer', 'Institutional', 'Retirement Group'];
 const VALID_CONSTITUENT_TYPES = ['Portfolio', 'Morningstar-Fund', 'Security', 'Index'];
 const VALID_ASSET_CLASSES = ['Equity', 'Fixed Income', 'Alternatives', 'Crypto', 'Fund of Funds'];

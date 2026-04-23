@@ -8,6 +8,7 @@ import { Select } from '@/app/components/ui/Select';
 import type { Engagement } from '@/app/lib/types/engagements';
 import type { ChangeFlash, EngagementField } from '@/app/lib/hooks/useDashboardChanges';
 import { FLASH_CLASS, FLASH_TEXT_CLASS } from '@/app/lib/hooks/useDashboardChanges';
+import { VALID_STATUSES } from '@/app/lib/statusHelpers';
 
 // Sort configuration types
 type SortDirection = 'asc' | 'desc' | null;
@@ -135,7 +136,7 @@ const InteractionsTable: React.FC<InteractionsTableProps> = ({ engagements, sort
     return () => clearTimeout(timer);
   }, [ghostRows]);
 
-  const statusOptions = ['In Progress', 'Awaiting Meeting', 'Follow Up', 'Completed'];
+  const statusOptions = [...VALID_STATUSES];
 
   // Handle column sort — cycles asc → desc → null (reset), then notifies parent to re-fetch
   const handleSort = useCallback((column: SortColumn) => {
