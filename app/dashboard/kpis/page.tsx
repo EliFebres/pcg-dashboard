@@ -9,10 +9,6 @@ import HeroKPICards from '@/app/components/dashboard/kpis/HeroKPICards';
 import JourneyExplorer from '@/app/components/dashboard/kpis/JourneyExplorer';
 import GcgDeptChart from '@/app/components/dashboard/kpis/GcgDeptChart';
 import NnaConcentrationCard from '@/app/components/dashboard/kpis/NnaConcentrationCard';
-import ActivityHeatmap from '@/app/components/dashboard/kpis/ActivityHeatmap';
-import InProgressTrendChart from '@/app/components/dashboard/kpis/InProgressTrendChart';
-import IntakeYieldTable from '@/app/components/dashboard/kpis/IntakeYieldTable';
-import AdHocChannelCard from '@/app/components/dashboard/kpis/AdHocChannelCard';
 import StaleEngagementsTable from '@/app/components/dashboard/kpis/StaleEngagementsTable';
 import DormantClientsTable from '@/app/components/dashboard/kpis/DormantClientsTable';
 import { getKpiDashboardData, type KpiDashboardData, type KpiScope } from '@/app/lib/api/kpi';
@@ -132,16 +128,6 @@ export default function KpiDashboard() {
             </div>
 
             <JourneyExplorer sankey={data.journeySankey} templates={data.journeyTemplates} />
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-              <ActivityHeatmap data={data.activityHeatmap} />
-              <InProgressTrendChart data={data.inProgressTrend} />
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-              <IntakeYieldTable data={data.intakeYield} />
-              <AdHocChannelCard data={data.adHocChannels} />
-            </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
               <StaleEngagementsTable data={data.staleEngagements} />

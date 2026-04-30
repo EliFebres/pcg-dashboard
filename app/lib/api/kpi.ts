@@ -73,38 +73,6 @@ export interface NnaConcentration {
   clientsForEightyPercent: number;
 }
 
-export interface ActivityHeatmapCell {
-  date: string;
-  count: number;
-  level: 0 | 1 | 2 | 3 | 4;
-}
-
-export interface ActivityHeatmap {
-  weeks: ActivityHeatmapCell[][];
-  totalDays: number;
-  maxCount: number;
-}
-
-export interface InProgressTrendPoint {
-  weekStart: string;
-  count: number;
-}
-
-export interface IntakeYieldRow {
-  intakeType: string;
-  count: number;
-  completionRate: number;
-  avgNna: number;
-  zeroNnaRate: number;
-}
-
-export interface AdHocChannelRow {
-  channel: string;
-  count: number;
-  linkedChildPercent: number;
-  totalNna: number;
-}
-
 export interface StaleEngagement {
   id: number;
   gcgDept: string;
@@ -131,10 +99,6 @@ export interface KpiDashboardData {
   journeyTemplates: JourneyTemplate[];
   gcgDepts: GcgDeptRow[];
   nnaConcentration: NnaConcentration;
-  activityHeatmap: ActivityHeatmap;
-  inProgressTrend: InProgressTrendPoint[];
-  intakeYield: IntakeYieldRow[];
-  adHocChannels: AdHocChannelRow[];
   staleEngagements: StaleEngagement[];
   dormantClients: DormantClient[];
 }

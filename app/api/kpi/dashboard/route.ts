@@ -14,10 +14,6 @@ import {
   computeJourneyTemplates,
   computeGcgDeptBreakdown,
   computeNnaConcentration,
-  computeActivityHeatmap,
-  computeInProgressTrend,
-  computeIntakeYield,
-  computeAdHocChannelHealth,
   computeStaleEngagements,
   computeDormantClients,
 } from '@/app/lib/db/kpi-aggregations';
@@ -61,10 +57,6 @@ export async function POST(req: NextRequest) {
       journeyTemplates,
       gcgDepts,
       nnaConcentration,
-      activityHeatmap,
-      inProgressTrend,
-      intakeYield,
-      adHocChannels,
       staleEngagements,
       dormantClients,
     ] = await Promise.all([
@@ -73,10 +65,6 @@ export async function POST(req: NextRequest) {
       computeJourneyTemplates(filters, constraints),
       computeGcgDeptBreakdown(filters, constraints),
       computeNnaConcentration(filters, constraints),
-      computeActivityHeatmap(filters, constraints),
-      computeInProgressTrend(filters, constraints),
-      computeIntakeYield(filters, constraints),
-      computeAdHocChannelHealth(filters, constraints),
       computeStaleEngagements(filters, constraints),
       computeDormantClients(filters, constraints),
     ]);
@@ -91,10 +79,6 @@ export async function POST(req: NextRequest) {
       journeyTemplates,
       gcgDepts,
       nnaConcentration,
-      activityHeatmap,
-      inProgressTrend,
-      intakeYield,
-      adHocChannels,
       staleEngagements,
       dormantClients,
     });
