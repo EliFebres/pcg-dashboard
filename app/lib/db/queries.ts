@@ -1,31 +1,40 @@
 import { toDisplayDate } from './dateUtils';
 import { getPeriodStartISO } from './dateUtils';
+import { queryUsers } from './users';
 import type { Engagement } from '../types/engagements';
 import type { EngagementFilters } from '../api/client-interactions';
 
-// Team member → office mapping (mirrors app/lib/data/engagements.ts teamMemberOffices)
-const TEAM_MEMBER_OFFICES: Record<string, 'Charlotte' | 'Austin'> = {
-  'Eli F.': 'Charlotte',
-  'Sarah K.': 'Charlotte',
-  'Mike R.': 'Charlotte',
-  'Lisa M.': 'Charlotte',
-  'James T.': 'Charlotte',
-  'David L.': 'Austin',
-  'Rachel W.': 'Austin',
-  'Chris B.': 'Austin',
-  'Amanda P.': 'Austin',
-  'Kevin H.': 'Austin',
-  'Nicole S.': 'Austin',
-  'Brandon T.': 'Austin',
-};
+// Internal-only extension of EngagementFilters: when teamMember is an Office
+// pseudo-value, callers must populate this field with the live member-name list
+// (queried from the team_members table) before calling buildFilterClause.
+// See resolveOfficeMembers() below.
+export interface InternalEngagementFilters extends EngagementFilters {
+  _officeMembers?: string[];
+}
 
-const CHARLOTTE_MEMBERS = Object.entries(TEAM_MEMBER_OFFICES)
-  .filter(([, o]) => o === 'Charlotte')
-  .map(([n]) => n);
-
-const AUSTIN_MEMBERS = Object.entries(TEAM_MEMBER_OFFICES)
-  .filter(([, o]) => o === 'Austin')
-  .map(([n]) => n);
+/**
+ * Resolves an "Austin Office" / "Charlotte Office" filter to the live list of
+ * member display names. team_members lives in users.duckdb, so we can't JOIN to
+ * it from the engagements connection — caller must pre-resolve and pass the
+ * results to buildFilterClause via _officeMembers.
+ *
+ * Cross-office surfacing falls out of the OR-based match in buildFilterClause:
+ * an engagement is shown in an office's filter as long as ANY assigned team
+ * member belongs to that office.
+ */
+export async function resolveOfficeMembers(
+  filters: EngagementFilters
+): Promise<InternalEngagementFilters> {
+  if (filters.teamMember !== 'Austin Office' && filters.teamMember !== 'Charlotte Office') {
+    return filters;
+  }
+  const office = filters.teamMember === 'Austin Office' ? 'Austin' : 'Charlotte';
+  const rows = await queryUsers<{ display_name: string }>(
+    `SELECT display_name FROM team_members WHERE office = ? AND status = 'active'`,
+    [office]
+  );
+  return { ...filters, _officeMembers: rows.map(r => r.display_name) };
+}
 
 // Allowlist for ORDER BY columns to prevent SQL injection
 export const SORT_COLUMN_MAP: Record<string, string> = {
@@ -48,7 +57,7 @@ export interface ServerConstraints {
  * serverConstraints are enforced server-side and cannot be overridden by clients.
  */
 export function buildFilterClause(
-  filters: EngagementFilters,
+  filters: InternalEngagementFilters,
   tableAlias = '',
   serverConstraints: ServerConstraints = {}
 ): { whereClause: string; params: unknown[] } {
@@ -98,22 +107,29 @@ export function buildFilterClause(
     params.push(filters.status);
   }
 
-  // Team member filter: check if JSON array contains the member name(s)
-  // json_contains(col, '"Name"') checks for exact JSON string match in a JSON array
-  if (filters.teamMember && filters.teamMember !== 'All Team Members') {
-    let members: string[];
-    if (filters.teamMember === 'Charlotte Office') {
-      members = CHARLOTTE_MEMBERS;
-    } else if (filters.teamMember === 'Austin Office') {
-      members = AUSTIN_MEMBERS;
-    } else {
-      members = [filters.teamMember];
-    }
+  // Team member filter: check if the engagement's JSON team_members array contains
+  // any of the requested names. json_contains(col, '"Name"') checks for an exact
+  // JSON string match in the array.
+  // - 'All Teams' is the cross-team aggregate scope (admin/Leadership/Guest only)
+  //   and 'All Team Members' is the no-filter default — both pass through.
+  // - 'Austin Office' / 'Charlotte Office' are pseudo-values: the caller resolves
+  //   them to a live member-name list via resolveOfficeMembers() and passes it as
+  //   _officeMembers. An engagement matches an office's filter as long as ANY
+  //   assigned team member belongs to that office, so a project staffed across
+  //   offices shows up in BOTH offices' results.
+  if (filters.teamMember && filters.teamMember !== 'All Team Members' && filters.teamMember !== 'All Teams') {
+    const isOffice = filters.teamMember === 'Charlotte Office' || filters.teamMember === 'Austin Office';
+    const members = isOffice ? (filters._officeMembers ?? []) : [filters.teamMember];
 
-    const memberConditions = members.map(() => `json_contains(${col('team_members')}, ?)`);
-    // JSON-encode the member name so it matches the JSON string value in the array
-    members.forEach(m => params.push(JSON.stringify(m)));
-    conditions.push(`(${memberConditions.join(' OR ')})`);
+    if (members.length === 0) {
+      // Office had no active members — match nothing rather than fall back to
+      // an unfiltered query.
+      conditions.push('1=0');
+    } else {
+      const memberConditions = members.map(() => `json_contains(${col('team_members')}, ?)`);
+      members.forEach(m => params.push(JSON.stringify(m)));
+      conditions.push(`(${memberConditions.join(' OR ')})`);
+    }
   }
 
   // Full-text search across key string columns

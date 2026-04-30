@@ -3,7 +3,7 @@ export const runtime = 'nodejs';
 import { NextRequest, NextResponse } from 'next/server';
 import ExcelJS from 'exceljs';
 import { query } from '@/app/lib/db';
-import { buildFilterClause } from '@/app/lib/db/queries';
+import { buildFilterClause, resolveOfficeMembers } from '@/app/lib/db/queries';
 import { requireAuth, teamConstraint } from '@/app/lib/auth/require-auth';
 import type { EngagementFilters } from '@/app/lib/api/client-interactions';
 import { logActivity } from '@/app/lib/activity/log';
@@ -30,7 +30,8 @@ export async function GET(req: NextRequest) {
       projectTypes: sp.getAll('project_types').filter(Boolean),
     };
 
-    const { whereClause, params } = buildFilterClause(filters, 'e', sc);
+    const resolved = await resolveOfficeMembers(filters);
+    const { whereClause, params } = buildFilterClause(resolved, 'e', sc);
     const EXPORT_ROW_LIMIT = 10_000;
     const rows = await query<Record<string, unknown>>(
       `SELECT e.*,

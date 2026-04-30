@@ -12,7 +12,7 @@ import {
   getMockContributionData,
   getMockEngagementsList,
 } from '../api/mock-computations';
-import { buildFilterClause, rowToEngagement, SORT_COLUMN_MAP } from './queries';
+import { buildFilterClause, resolveOfficeMembers, rowToEngagement, SORT_COLUMN_MAP } from './queries';
 import type { ServerConstraints } from './queries';
 import { getPreviousPeriodDates, getPeriodStartISO } from './dateUtils';
 import type { EngagementFilters, DashboardMetrics, DepartmentBreakdown, ContributionDataResponse, EngagementsResponse, FilterOptions } from '../api/client-interactions';
@@ -38,14 +38,15 @@ export const STATIC_FILTER_OPTIONS: FilterOptions = {
 export async function computeMetrics(filters: EngagementFilters, serverConstraints: ServerConstraints = {}): Promise<DashboardMetrics> {
   if (!process.env.DUCKDB_DIR) return getMockMetrics(filters);
 
-  const period = filters.period || '1Y';
+  const resolved = await resolveOfficeMembers(filters);
+  const period = resolved.period || '1Y';
   const prevDates = getPreviousPeriodDates(period);
-  const { whereClause: currWhere, params: currParams } = buildFilterClause({ ...filters, period }, '', serverConstraints);
+  const { whereClause: currWhere, params: currParams } = buildFilterClause({ ...resolved, period }, '', serverConstraints);
 
   // ---- Build all WHERE clauses before firing queries in parallel ----
 
   // Previous period
-  const prevFilters = { ...filters, period: undefined };
+  const prevFilters = { ...resolved, period: undefined };
   const { whereClause: baseWhere, params: baseParams } = buildFilterClause(prevFilters, '', serverConstraints);
   const prevAndClause = baseWhere
     ? `${baseWhere} AND date_started >= ? AND date_started <= ?`
@@ -53,7 +54,7 @@ export async function computeMetrics(filters: EngagementFilters, serverConstrain
   const prevParams = [...baseParams, prevDates.start, prevDates.end];
 
   // In-progress count + sparkline (share the same base filter)
-  const inProgressFilters = { ...filters, status: undefined };
+  const inProgressFilters = { ...resolved, status: undefined };
   const { whereClause: ipWhere, params: ipParams } = buildFilterClause(inProgressFilters, '', serverConstraints);
   const sparklineAndClause = ipWhere
     ? `${ipWhere} AND date_started >= (CURRENT_DATE - INTERVAL '8 weeks')`
@@ -209,7 +210,8 @@ export async function computeMetrics(filters: EngagementFilters, serverConstrain
 export async function computeDepartmentBreakdown(filters: EngagementFilters, serverConstraints: ServerConstraints = {}): Promise<DepartmentBreakdown> {
   if (!process.env.DUCKDB_DIR) return getMockDepartmentBreakdown(filters);
 
-  const { whereClause, params } = buildFilterClause(filters, '', serverConstraints);
+  const resolved = await resolveOfficeMembers(filters);
+  const { whereClause, params } = buildFilterClause(resolved, '', serverConstraints);
 
   const rows = await query<Record<string, unknown>>(`
     SELECT internal_client_dept AS dept, COUNT(*) AS cnt
@@ -252,8 +254,9 @@ export async function computeDepartmentBreakdown(filters: EngagementFilters, ser
 export async function computeContributionData(filters: EngagementFilters, serverConstraints: ServerConstraints = {}): Promise<ContributionDataResponse> {
   if (!process.env.DUCKDB_DIR) return getMockContributionData(filters);
 
+  const resolved = await resolveOfficeMembers(filters);
   // Apply all filters EXCEPT period — heatmap always shows a rolling 104-week window
-  const heatmapFilters = { ...filters, period: undefined };
+  const heatmapFilters = { ...resolved, period: undefined };
   const { whereClause, params } = buildFilterClause(heatmapFilters, '', serverConstraints);
 
   const heatmapStart = new Date();
@@ -336,7 +339,8 @@ export async function computeContributionData(filters: EngagementFilters, server
 export async function computeEngagementsList(filters: EngagementFilters, serverConstraints: ServerConstraints = {}): Promise<EngagementsResponse> {
   if (!process.env.DUCKDB_DIR) return getMockEngagementsList(filters);
 
-  const { whereClause, params } = buildFilterClause(filters, '', serverConstraints);
+  const resolved = await resolveOfficeMembers(filters);
+  const { whereClause, params } = buildFilterClause(resolved, '', serverConstraints);
   const page = filters.page || 1;
   const pageSize = filters.pageSize || 50;
   const offset = (page - 1) * pageSize;

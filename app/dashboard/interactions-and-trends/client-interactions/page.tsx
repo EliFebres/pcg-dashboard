@@ -106,6 +106,9 @@ export default function EngagementsDashboard() {
   const { user } = useCurrentUser();
   const readOnly = isReadOnlyUser(user);
   const isGuest = user?.team === 'Guest';
+  // Cross-team aggregate ("All Teams") is only visible to users whose server-side
+  // constraint allows it — admins, Leadership, and Guests are not pinned to a single team.
+  const canSeeAllTeams = user?.role === 'admin' || user?.team === 'Leadership' || isGuest;
   const [isLoading, setIsLoading] = useState(true);
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -168,6 +171,15 @@ export default function EngagementsDashboard() {
     }, remaining);
   }, []);
 
+  // Guests don't have "Team Members" — their only scope is the cross-team aggregate.
+  // Switch the default once the user identity resolves.
+  useEffect(() => {
+    if (isGuest && teamMemberFilter === 'All Team Members') {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setTeamMemberFilter('All Teams');
+    }
+  }, [isGuest, teamMemberFilter]);
+
   // -------------------------------------------------------------------------
   // Data loading — fires on mount and whenever any filter/search changes
   // -------------------------------------------------------------------------
@@ -177,7 +189,7 @@ export default function EngagementsDashboard() {
     const controller = new AbortController();
     const filters: EngagementFilters = {
       period,
-      teamMember: teamMemberFilter !== 'All Team Members' ? teamMemberFilter : undefined,
+      teamMember: (teamMemberFilter === 'All Team Members' || teamMemberFilter === 'All Teams') ? undefined : teamMemberFilter,
       departments: departmentFilter.length > 0 ? departmentFilter : undefined,
       intakeTypes: intakeTypeFilter.length > 0 ? intakeTypeFilter : undefined,
       projectTypes: projectTypeFilter.length > 0 ? projectTypeFilter : undefined,
@@ -209,7 +221,7 @@ export default function EngagementsDashboard() {
   const reloadData = useCallback(async () => {
     const filters: EngagementFilters = {
       period,
-      teamMember: teamMemberFilter !== 'All Team Members' ? teamMemberFilter : undefined,
+      teamMember: (teamMemberFilter === 'All Team Members' || teamMemberFilter === 'All Teams') ? undefined : teamMemberFilter,
       departments: departmentFilter.length > 0 ? departmentFilter : undefined,
       intakeTypes: intakeTypeFilter.length > 0 ? intakeTypeFilter : undefined,
       projectTypes: projectTypeFilter.length > 0 ? projectTypeFilter : undefined,
@@ -246,7 +258,7 @@ export default function EngagementsDashboard() {
     try {
       const filters: EngagementFilters = {
         period,
-        teamMember: teamMemberFilter !== 'All Team Members' ? teamMemberFilter : undefined,
+        teamMember: (teamMemberFilter === 'All Team Members' || teamMemberFilter === 'All Teams') ? undefined : teamMemberFilter,
         departments: departmentFilter.length > 0 ? departmentFilter : undefined,
         intakeTypes: intakeTypeFilter.length > 0 ? intakeTypeFilter : undefined,
         projectTypes: projectTypeFilter.length > 0 ? projectTypeFilter : undefined,
@@ -479,19 +491,31 @@ export default function EngagementsDashboard() {
         onSearchChange={setSearchQuery}
         className="sticky top-0 z-10"
         filters={[
-          ...(!isGuest ? [{
-            id: 'teamMember',
-            icon: User,
-            label: 'Team Member',
-            options: filterOptions
-              ? [...filterOptions.teamMembers, currentUser]
-              : ['All Team Members', currentUser],
-            optionGroups: filterOptions
-              ? [...filterOptions.teamMemberGroups, { label: 'Members', options: [currentUser] }]
-              : [{ label: 'Members', options: [currentUser] }],
-            value: teamMemberFilter,
-            onChange: (v: string | string[]) => handleFilterChange(setTeamMemberFilter, v as string),
-          }] : []),
+          ...(isGuest
+            ? [{
+                id: 'teamMember',
+                icon: User,
+                label: 'Team Member',
+                options: ['All Teams'],
+                value: teamMemberFilter,
+                onChange: (v: string | string[]) => handleFilterChange(setTeamMemberFilter, v as string),
+              }]
+            : [{
+                id: 'teamMember',
+                icon: User,
+                label: 'Team Member',
+                options: filterOptions
+                  ? [...filterOptions.teamMembers, currentUser, ...(canSeeAllTeams ? ['All Teams'] : [])]
+                  : ['All Team Members', currentUser, ...(canSeeAllTeams ? ['All Teams'] : [])],
+                optionGroups: [
+                  ...(canSeeAllTeams ? [{ label: 'Scope', options: ['All Teams'] }] : []),
+                  ...(filterOptions
+                    ? [...filterOptions.teamMemberGroups, { label: 'Members', options: [currentUser] }]
+                    : [{ label: 'Members', options: [currentUser] }]),
+                ],
+                value: teamMemberFilter,
+                onChange: (v: string | string[]) => handleFilterChange(setTeamMemberFilter, v as string),
+              }]),
           {
             id: 'department',
             icon: Building2,
