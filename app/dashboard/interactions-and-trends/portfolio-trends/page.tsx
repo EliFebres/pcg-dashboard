@@ -1,25 +1,14 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import { Building2, ArrowUpRight, ArrowDownRight, PieChart, Target, User, ChevronDown, ChevronUp, Briefcase, ChevronLeft, ChevronRight, Maximize2, Minimize2 } from 'lucide-react';
-import type { LoggedPortfolio } from '@/app/lib/types/trends';
+import { Building2, PieChart, User } from 'lucide-react';
 import {
   loggedPortfolios,
   extractFilterOptions,
   filterPortfolios,
-  computePortfolioMetrics,
-  computeFixedIncomeMetrics,
   computeBenchmarkComparison,
 } from '@/app/lib/data/portfolioTrends';
 import DashboardHeader from '@/app/components/dashboard/shared/DashboardHeader';
-
-type SortColumn = keyof LoggedPortfolio | 'positionCount' | 'internalClientName' | 'department';
-
-// Sort icon component
-function SortIcon({ column, sortColumn, sortDirection }: { column: SortColumn; sortColumn: SortColumn; sortDirection: 'asc' | 'desc' }) {
-  if (sortColumn !== column) return null;
-  return sortDirection === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />;
-}
 
 export default function PortfolioTrendsDashboard() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -29,82 +18,51 @@ export default function PortfolioTrendsDashboard() {
   const [departmentFilter, setDepartmentFilter] = useState('All Departments');
   const [period, setPeriod] = useState('1Y');
 
-  // Portfolios table state
-  const [expandedPortfolioId, setExpandedPortfolioId] = useState<number | null>(null);
-  const [portfoliosSortColumn, setPortfoliosSortColumn] = useState<SortColumn>('loggedAt');
-  const [portfoliosSortDirection, setPortfoliosSortDirection] = useState<'asc' | 'desc'>('desc');
-  const [portfoliosPage, setPortfoliosPage] = useState(1);
-  const [isTableFullscreen, setIsTableFullscreen] = useState(false);
-  const portfoliosPerPage = 5;
+  // Tooltip state for chart dots (Style Map, Profitability Map)
+  const [dotTooltip, setDotTooltip] = useState<{ label: string; lines: string[]; x: number; y: number } | null>(null);
 
-  // Extract filter options from portfolio data
+  const dotHoverHandlers = (label: string, lines: string[]) => ({
+    onMouseEnter: (e: React.MouseEvent) => setDotTooltip({ label, lines, x: e.clientX, y: e.clientY }),
+    onMouseMove: (e: React.MouseEvent) => setDotTooltip(prev => (prev ? { ...prev, x: e.clientX, y: e.clientY } : prev)),
+    onMouseLeave: () => setDotTooltip(null),
+  });
+
   const filterOptions = useMemo(() => extractFilterOptions(loggedPortfolios), []);
 
-  // Apply filters to get filtered portfolios
   const filteredPortfolios = useMemo(() => {
     return filterPortfolios(loggedPortfolios, teamMemberFilter, departmentFilter, period);
   }, [teamMemberFilter, departmentFilter, period]);
 
-  // Compute all dashboard data from filtered portfolios
-  const portfolioMetrics = useMemo(() => computePortfolioMetrics(filteredPortfolios), [filteredPortfolios]);
-  const fixedIncomeMetrics = useMemo(() => computeFixedIncomeMetrics(filteredPortfolios), [filteredPortfolios]);
   const benchmarkComparison = useMemo(() => computeBenchmarkComparison(filteredPortfolios), [filteredPortfolios]);
 
-  // Sort and paginate portfolios
-  const sortedPortfolios = useMemo(() => {
-    const sorted = [...filteredPortfolios].sort((a, b) => {
-      let aVal: string | number;
-      let bVal: string | number;
+  const dataQualityStats = useMemo(() => {
+    const total = filteredPortfolios.length;
+    const totalPositions = filteredPortfolios.reduce((sum, p) => sum + p.positions.length, 0);
+    const avgPositions = total ? Math.round(totalPositions / total) : 0;
+    const uniqueClients = new Set(filteredPortfolios.map(p => p.internalClient.name)).size;
 
-      switch (portfoliosSortColumn) {
-        case 'positionCount':
-          aVal = a.positions.length;
-          bVal = b.positions.length;
-          break;
-        case 'internalClientName':
-          aVal = a.internalClient.name;
-          bVal = b.internalClient.name;
-          break;
-        case 'department':
-          aVal = a.internalClient.gcgDepartment;
-          bVal = b.internalClient.gcgDepartment;
-          break;
-        case 'loggedAt':
-          aVal = new Date(a.loggedAt).getTime();
-          bVal = new Date(b.loggedAt).getTime();
-          break;
-        case 'dataAsOf':
-          aVal = new Date(a.dataAsOf).getTime();
-          bVal = new Date(b.dataAsOf).getTime();
-          break;
-        default:
-          aVal = String(a[portfoliosSortColumn as keyof LoggedPortfolio] ?? '');
-          bVal = String(b[portfoliosSortColumn as keyof LoggedPortfolio] ?? '');
-      }
+    const equityCount = filteredPortfolios.filter(p => {
+      const c = p.characteristics;
+      return (c.usEquityAllocation + c.devExUsAllocation + c.emAllocation) >= 50;
+    }).length;
+    const fiCount = total - equityCount;
 
-      if (typeof aVal === 'string' && typeof bVal === 'string') {
-        return portfoliosSortDirection === 'asc' ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
-      }
-      return portfoliosSortDirection === 'asc' ? (aVal as number) - (bVal as number) : (bVal as number) - (aVal as number);
-    });
-    return sorted;
-  }, [filteredPortfolios, portfoliosSortColumn, portfoliosSortDirection]);
+    const now = Date.now();
+    const recent30 = filteredPortfolios.filter(p => {
+      const days = (now - new Date(p.loggedAt).getTime()) / (1000 * 60 * 60 * 24);
+      return days <= 30;
+    }).length;
+    const recentPct = total ? Math.round((recent30 / total) * 100) : 0;
 
-  const paginatedPortfolios = useMemo(() => {
-    const start = (portfoliosPage - 1) * portfoliosPerPage;
-    return sortedPortfolios.slice(start, start + portfoliosPerPage);
-  }, [sortedPortfolios, portfoliosPage]);
-
-  const totalPortfolioPages = Math.ceil(sortedPortfolios.length / portfoliosPerPage);
-
-  const handlePortfolioSort = (column: SortColumn) => {
-    if (portfoliosSortColumn === column) {
-      setPortfoliosSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
-    } else {
-      setPortfoliosSortColumn(column);
-      setPortfoliosSortDirection('desc');
-    }
-  };
+    return [
+      { label: 'Unique Clients', value: uniqueClients.toLocaleString() },
+      { label: 'Portfolios Logged', value: total.toLocaleString() },
+      { label: 'Equity Portfolios', value: equityCount.toLocaleString() },
+      { label: 'F.I. Portfolios', value: fiCount.toLocaleString() },
+      { label: 'Avg Positions', value: avgPositions.toLocaleString() },
+      { label: 'Recent Updates', value: `${recentPct}%` },
+    ];
+  }, [filteredPortfolios]);
 
   return (
     <>
@@ -140,12 +98,30 @@ export default function PortfolioTrendsDashboard() {
         />
 
         <div className="p-6 space-y-6">
+          {/* Data Strip */}
+          <div className="bg-zinc-900/40 backdrop-blur-md border border-zinc-800/50 px-5 py-3 rounded-xl">
+            <div
+              className="grid items-center gap-4"
+              style={{ gridTemplateColumns: `10% repeat(${dataQualityStats.length}, minmax(0, 1fr))` }}
+            >
+              <span className="text-[10px] uppercase tracking-wider text-muted font-medium">
+                Data Metrics
+              </span>
+              {dataQualityStats.map((s) => (
+                <div key={s.label} className="flex items-baseline justify-center gap-2 min-w-0">
+                  <span className="text-sm font-mono font-semibold text-zinc-200 flex-shrink-0">{s.value}</span>
+                  <span className="text-[11px] text-muted truncate">{s.label}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
           {/* ==================== SECTION 1: PORTFOLIO CONSTRUCTION ==================== */}
           <div>
             <div className="flex items-center gap-2 mb-4">
               <PieChart className="w-5 h-5 text-cyan-400" />
-              <h3 className="text-lg font-semibold text-white">Portfolio Construction Trends</h3>
-              <span className="text-xs text-muted ml-2">How clients are building portfolios (1YR)</span>
+              <h3 className="text-lg font-semibold text-white">Equity Portfolio Trends</h3>
+              <span className="text-xs text-muted ml-2">Style, quality, and regional positioning vs benchmark</span>
             </div>
 
             {/* Charts Row: Style Map + Asset Class + Benchmark Delta */}
@@ -156,12 +132,11 @@ export default function PortfolioTrendsDashboard() {
                 <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
 
                 <div className="relative z-10">
-                  <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center justify-between mb-4 -mt-2 -ml-2">
                     <div>
-                      <h4 className="text-sm font-medium text-white">Style Map</h4>
+                      <h4 className="text-sm font-medium text-white">Style XY</h4>
                       <p className="text-xs text-muted">Avg client vs MSCI ACWI IMI (1YR)</p>
                     </div>
-                    <Target className="w-4 h-4 text-muted" />
                   </div>
 
                   <div className="flex">
@@ -178,17 +153,17 @@ export default function PortfolioTrendsDashboard() {
                         </div>
 
                         <div className="flex-1 relative border-l border-b border-zinc-700/50 overflow-hidden" style={{ height: '140px' }}>
-                          <div className="absolute left-1/2 top-0 bottom-0 border-l border-zinc-800/30" />
-                          <div className="absolute top-1/2 left-0 right-0 border-t border-zinc-800/30" />
                           <div className="absolute left-0 right-0 border-t border-zinc-500/50" style={{ top: '35%' }} />
                           <div className="absolute top-0 bottom-0 border-l border-zinc-500/50" style={{ left: '60%' }} />
                           <div
-                            className="absolute w-4 h-4 rounded-full bg-zinc-500 border-2 border-zinc-400 z-10"
+                            className="absolute w-4 h-4 rounded-full bg-zinc-500 border-2 border-zinc-400 z-10 cursor-pointer"
                             style={{ left: '60%', top: '35%', transform: 'translate(-50%, -50%)' }}
+                            {...dotHoverHandlers('MSCI ACWI IMI', ['Mkt Cap: $460B', 'P/B: 3.2'])}
                           />
                           <div
-                            className="absolute w-4 h-4 rounded-full bg-cyan-500 border-2 border-cyan-400 shadow-lg shadow-cyan-500/30 z-10"
+                            className="absolute w-4 h-4 rounded-full bg-cyan-500 border-2 border-cyan-400 shadow-lg shadow-cyan-500/30 z-10 cursor-pointer"
                             style={{ left: '45%', top: '50%', transform: 'translate(-50%, -50%)' }}
+                            {...dotHoverHandlers('Avg Client', ['Mkt Cap: $400B', 'P/B: 2.9'])}
                           />
                         </div>
                       </div>
@@ -224,12 +199,11 @@ export default function PortfolioTrendsDashboard() {
                 <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
 
                 <div className="relative z-10">
-                  <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center justify-between mb-4 -mt-2 -ml-2">
                     <div>
-                      <h4 className="text-sm font-medium text-white">Profitability Map</h4>
+                      <h4 className="text-sm font-medium text-white">Profitability XY</h4>
                       <p className="text-xs text-muted">Avg client vs MSCI ACWI IMI (1YR)</p>
                     </div>
-                    <Target className="w-4 h-4 text-muted" />
                   </div>
 
                   <div className="flex">
@@ -246,17 +220,17 @@ export default function PortfolioTrendsDashboard() {
                         </div>
 
                         <div className="flex-1 relative border-l border-b border-zinc-700/50 overflow-hidden" style={{ height: '140px' }}>
-                          <div className="absolute left-1/2 top-0 bottom-0 border-l border-zinc-800/30" />
-                          <div className="absolute top-1/2 left-0 right-0 border-t border-zinc-800/30" />
                           <div className="absolute left-0 right-0 border-t border-zinc-500/50" style={{ top: '40%' }} />
                           <div className="absolute top-0 bottom-0 border-l border-zinc-500/50" style={{ left: '55%' }} />
                           <div
-                            className="absolute w-4 h-4 rounded-full bg-zinc-500 border-2 border-zinc-400 z-10"
+                            className="absolute w-4 h-4 rounded-full bg-zinc-500 border-2 border-zinc-400 z-10 cursor-pointer"
                             style={{ left: '55%', top: '40%', transform: 'translate(-50%, -50%)' }}
+                            {...dotHoverHandlers('MSCI ACWI IMI', ['Profitability: 0.48', 'P/B: 3.1'])}
                           />
                           <div
-                            className="absolute w-4 h-4 rounded-full bg-cyan-500 border-2 border-cyan-400 shadow-lg shadow-cyan-500/30 z-10"
+                            className="absolute w-4 h-4 rounded-full bg-cyan-500 border-2 border-cyan-400 shadow-lg shadow-cyan-500/30 z-10 cursor-pointer"
                             style={{ left: '42%', top: '35%', transform: 'translate(-50%, -50%)' }}
+                            {...dotHoverHandlers('Avg Client', ['Profitability: 0.50', 'P/B: 2.84'])}
                           />
                         </div>
                       </div>
@@ -292,12 +266,11 @@ export default function PortfolioTrendsDashboard() {
                 <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
 
                 <div className="relative z-10">
-                  <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center justify-between mb-4 -mt-2 -ml-2">
                     <div>
                       <h4 className="text-sm font-medium text-white">vs MSCI ACWI IMI</h4>
                       <p className="text-xs text-muted">Regional delta to benchmark (1YR)</p>
                     </div>
-                    <Target className="w-4 h-4 text-muted" />
                   </div>
                   <div className="space-y-3">
                     {benchmarkComparison.map((item) => (
@@ -331,640 +304,19 @@ export default function PortfolioTrendsDashboard() {
               </div>
             </div>
 
-            {/* Equity Metrics Row */}
-            <div className="grid grid-cols-4 gap-4 mt-4 mb-4">
-              {portfolioMetrics.map((metric, index) => (
-                <div
-                  key={index}
-                  className="relative overflow-hidden bg-zinc-900/60 backdrop-blur-md border border-zinc-800/50 p-4 group hover:border-zinc-700/50 transition-all"
-                >
-                  <div className="absolute inset-0 bg-gradient-to-br from-white/[0.03] via-transparent to-transparent pointer-events-none" />
-                  <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
-
-                  <div className="relative z-10">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-muted text-xs mb-1">{metric.label}</p>
-                        <p className="text-xl font-bold text-white">{metric.value}</p>
-                      </div>
-                      <div className="text-right">
-                        <span className={`flex items-center gap-1 text-xs font-medium ${metric.isPositive ? 'text-emerald-400' : 'text-red-400'}`}>
-                          {metric.isPositive ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
-                          {metric.change}
-                        </span>
-                        {metric.benchmark && (
-                          <span className="text-xs text-muted">{metric.benchmark}</span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Fixed Income Metrics Row */}
-            <div className="grid grid-cols-3 gap-4">
-              {fixedIncomeMetrics.map((metric, index) => (
-                <div
-                  key={index}
-                  className="relative overflow-hidden bg-zinc-900/60 backdrop-blur-md border border-zinc-800/50 p-4 group hover:border-zinc-700/50 transition-all"
-                >
-                  <div className="absolute inset-0 bg-gradient-to-br from-white/[0.03] via-transparent to-transparent pointer-events-none" />
-                  <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
-
-                  <div className="relative z-10">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-muted text-xs mb-1">{metric.label}</p>
-                        <p className="text-xl font-bold text-white">{metric.value}</p>
-                      </div>
-                      <div className="text-right">
-                        <span className={`flex items-center gap-1 text-xs font-medium ${metric.isPositive ? 'text-emerald-400' : 'text-red-400'}`}>
-                          {metric.change !== '—' && (metric.isPositive ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />)}
-                          {metric.change}
-                        </span>
-                        <span className="text-xs text-muted">{metric.benchmark}</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* ==================== SECTION 2: LOGGED PORTFOLIOS ==================== */}
-          <div>
-            <div className="flex items-center gap-2 mb-4 mt-8">
-              <Briefcase className="w-5 h-5 text-cyan-400" />
-              <h3 className="text-lg font-semibold text-white">Logged Portfolios</h3>
-              <span className="text-xs text-muted ml-2">Client portfolios that have been analyzed ({filteredPortfolios.length} total)</span>
-            </div>
-
-            {/* Portfolios Table */}
-            <div className="relative overflow-hidden bg-zinc-900/60 backdrop-blur-md border border-zinc-800/50 min-h-[380px] flex flex-col">
-              <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] via-transparent to-transparent pointer-events-none" />
-              <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
-
-              {/* Table Header with Fullscreen Toggle */}
-              <div className="relative z-10 px-4 py-2 flex items-center justify-between border-b border-zinc-800/50 flex-shrink-0">
-                <h4 className="text-sm font-medium text-white">Portfolios</h4>
-                <button
-                  onClick={() => setIsTableFullscreen(true)}
-                  className="p-1.5 text-muted hover:text-cyan-400 hover:bg-white/[0.05] transition-colors"
-                  title="Expand table"
-                >
-                  <Maximize2 className="w-4 h-4" />
-                </button>
-              </div>
-
-              <div className="relative z-10 overflow-x-auto flex-1">
-                <table className="w-full">
-                  <thead>
-                    <tr className="bg-zinc-800/30">
-                      <th
-                        className="text-left text-xs font-medium text-muted uppercase tracking-wider px-4 py-3 cursor-pointer hover:text-zinc-200"
-                        onClick={() => handlePortfolioSort('externalClient')}
-                      >
-                        <div className="flex items-center gap-1">
-                          External Client
-                          <SortIcon column="externalClient" sortColumn={portfoliosSortColumn} sortDirection={portfoliosSortDirection} />
-                        </div>
-                      </th>
-                      <th
-                        className="text-left text-xs font-medium text-muted uppercase tracking-wider px-4 py-3 cursor-pointer hover:text-zinc-200"
-                        onClick={() => handlePortfolioSort('internalClientName')}
-                      >
-                        <div className="flex items-center gap-1">
-                          Internal Client
-                          <SortIcon column="internalClientName" sortColumn={portfoliosSortColumn} sortDirection={portfoliosSortDirection} />
-                        </div>
-                      </th>
-                      <th
-                        className="text-left text-xs font-medium text-muted uppercase tracking-wider px-4 py-3 cursor-pointer hover:text-zinc-200"
-                        onClick={() => handlePortfolioSort('department')}
-                      >
-                        <div className="flex items-center gap-1">
-                          Department
-                          <SortIcon column="department" sortColumn={portfoliosSortColumn} sortDirection={portfoliosSortDirection} />
-                        </div>
-                      </th>
-                      <th
-                        className="text-left text-xs font-medium text-muted uppercase tracking-wider px-4 py-3 cursor-pointer hover:text-zinc-200"
-                        onClick={() => handlePortfolioSort('loggedBy')}
-                      >
-                        <div className="flex items-center gap-1">
-                          Logged By
-                          <SortIcon column="loggedBy" sortColumn={portfoliosSortColumn} sortDirection={portfoliosSortDirection} />
-                        </div>
-                      </th>
-                      <th
-                        className="text-left text-xs font-medium text-muted uppercase tracking-wider px-4 py-3 cursor-pointer hover:text-zinc-200"
-                        onClick={() => handlePortfolioSort('loggedAt')}
-                      >
-                        <div className="flex items-center gap-1">
-                          Logged At
-                          <SortIcon column="loggedAt" sortColumn={portfoliosSortColumn} sortDirection={portfoliosSortDirection} />
-                        </div>
-                      </th>
-                      <th
-                        className="text-left text-xs font-medium text-muted uppercase tracking-wider px-4 py-3 cursor-pointer hover:text-zinc-200"
-                        onClick={() => handlePortfolioSort('dataAsOf')}
-                      >
-                        <div className="flex items-center gap-1">
-                          Data As Of
-                          <SortIcon column="dataAsOf" sortColumn={portfoliosSortColumn} sortDirection={portfoliosSortDirection} />
-                        </div>
-                      </th>
-                      <th
-                        className="text-left text-xs font-medium text-muted uppercase tracking-wider px-4 py-3 cursor-pointer hover:text-zinc-200"
-                        onClick={() => handlePortfolioSort('positionCount')}
-                      >
-                        <div className="flex items-center gap-1">
-                          Positions
-                          <SortIcon column="positionCount" sortColumn={portfoliosSortColumn} sortDirection={portfoliosSortDirection} />
-                        </div>
-                      </th>
-                      <th className="text-left text-xs font-medium text-muted uppercase tracking-wider px-4 py-3">
-                        Top Holdings
-                      </th>
-                      <th className="px-4 py-3"></th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-zinc-800/50">
-                    {paginatedPortfolios.map((portfolio) => (
-                      <React.Fragment key={portfolio.id}>
-                        <tr className="hover:bg-white/[0.02] transition-colors">
-                          <td className="px-4 py-3">
-                            <span className="text-sm font-medium text-white">{portfolio.externalClient}</span>
-                          </td>
-                          <td className="px-4 py-3">
-                            <span className="text-sm text-muted">{portfolio.internalClient.name}</span>
-                          </td>
-                          <td className="px-4 py-3">
-                            <span className={`text-xs font-medium px-2 py-1 ${
-                              portfolio.internalClient.gcgDepartment === 'IAG'
-                                ? 'bg-blue-500/15 text-blue-400 border border-blue-500/30'
-                                : portfolio.internalClient.gcgDepartment === 'Broker-Dealer'
-                                  ? 'bg-purple-500/15 text-purple-400 border border-purple-500/30'
-                                  : 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
-                            }`}>
-                              {portfolio.internalClient.gcgDepartment}
-                            </span>
-                          </td>
-                          <td className="px-4 py-3">
-                            <span className="text-sm text-muted">{portfolio.loggedBy}</span>
-                          </td>
-                          <td className="px-4 py-3">
-                            <span className="text-sm text-muted">{portfolio.loggedAt}</span>
-                          </td>
-                          <td className="px-4 py-3">
-                            <span className="text-sm text-muted">{portfolio.dataAsOf}</span>
-                          </td>
-                          <td className="px-4 py-3">
-                            <span className="text-sm font-mono text-muted">{portfolio.positions.length}</span>
-                          </td>
-                          <td className="px-4 py-3">
-                            <div className="flex gap-1.5">
-                              {portfolio.positions.slice(0, 3).map((pos, i) => (
-                                <span key={i} className="text-xs px-1.5 py-0.5 bg-zinc-800 text-muted rounded">
-                                  {pos.ticker}
-                                </span>
-                              ))}
-                              {portfolio.positions.length > 3 && (
-                                <span className="text-xs text-muted">+{portfolio.positions.length - 3}</span>
-                              )}
-                            </div>
-                          </td>
-                          <td className="px-4 py-3">
-                            <button
-                              onClick={() => setExpandedPortfolioId(expandedPortfolioId === portfolio.id ? null : portfolio.id)}
-                              className="p-1.5 hover:bg-white/[0.05] text-muted hover:text-muted transition-colors"
-                            >
-                              {expandedPortfolioId === portfolio.id ? (
-                                <ChevronUp className="w-4 h-4" />
-                              ) : (
-                                <ChevronDown className="w-4 h-4" />
-                              )}
-                            </button>
-                          </td>
-                        </tr>
-                        {/* Expanded Row */}
-                        {expandedPortfolioId === portfolio.id && (
-                          <tr className="bg-zinc-900/40">
-                            <td colSpan={9} className="px-4 py-4">
-                              <div className="grid grid-cols-3 gap-6">
-                                {/* Positions List */}
-                                <div>
-                                  <h5 className="text-xs font-medium text-muted uppercase tracking-wider mb-2">All Positions</h5>
-                                  <div className="space-y-1 max-h-48 overflow-y-auto">
-                                    {portfolio.positions.map((pos, i) => (
-                                      <div key={i} className="flex items-center justify-between text-sm">
-                                        <div className="flex items-center gap-2">
-                                          <span className="font-medium text-cyan-400">{pos.ticker}</span>
-                                          <span className="text-muted text-xs truncate max-w-[120px]">{pos.name}</span>
-                                        </div>
-                                        <span className="text-muted font-mono">{(pos.weight * 100).toFixed(1)}%</span>
-                                      </div>
-                                    ))}
-                                  </div>
-                                </div>
-
-                                {/* Characteristics */}
-                                <div>
-                                  <h5 className="text-xs font-medium text-muted uppercase tracking-wider mb-2">Characteristics</h5>
-                                  <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
-                                    <div className="flex justify-between">
-                                      <span className="text-muted">Mkt Cap</span>
-                                      <span className="text-muted">${portfolio.characteristics.weightedAvgMarketCap.toFixed(0)}B</span>
-                                    </div>
-                                    <div className="flex justify-between">
-                                      <span className="text-muted">P/B</span>
-                                      <span className="text-muted">{portfolio.characteristics.weightedAvgPB.toFixed(1)}</span>
-                                    </div>
-                                    <div className="flex justify-between">
-                                      <span className="text-muted">Value</span>
-                                      <span className="text-muted">{portfolio.characteristics.valueAllocation}%</span>
-                                    </div>
-                                    <div className="flex justify-between">
-                                      <span className="text-muted">Growth</span>
-                                      <span className="text-muted">{portfolio.characteristics.growthAllocation}%</span>
-                                    </div>
-                                    <div className="flex justify-between">
-                                      <span className="text-muted">US</span>
-                                      <span className="text-muted">{portfolio.characteristics.usEquityAllocation}%</span>
-                                    </div>
-                                    <div className="flex justify-between">
-                                      <span className="text-muted">Dev ex-US</span>
-                                      <span className="text-muted">{portfolio.characteristics.devExUsAllocation}%</span>
-                                    </div>
-                                    <div className="flex justify-between">
-                                      <span className="text-muted">EM</span>
-                                      <span className="text-muted">{portfolio.characteristics.emAllocation}%</span>
-                                    </div>
-                                    <div className="flex justify-between">
-                                      <span className="text-muted">Duration</span>
-                                      <span className="text-muted">{portfolio.characteristics.duration.toFixed(1)} yrs</span>
-                                    </div>
-                                  </div>
-                                </div>
-
-                                {/* Returns */}
-                                <div>
-                                  <h5 className="text-xs font-medium text-muted uppercase tracking-wider mb-2">Returns</h5>
-                                  <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
-                                    <div className="flex justify-between">
-                                      <span className="text-muted">1 Year</span>
-                                      <span className={portfolio.returns.oneYear !== null ? (portfolio.returns.oneYear >= 0 ? 'text-emerald-400' : 'text-red-400') : 'text-muted'}>
-                                        {portfolio.returns.oneYear !== null ? `${portfolio.returns.oneYear.toFixed(1)}%` : '—'}
-                                      </span>
-                                    </div>
-                                    <div className="flex justify-between">
-                                      <span className="text-muted">3 Year</span>
-                                      <span className={portfolio.returns.threeYear !== null ? (portfolio.returns.threeYear >= 0 ? 'text-emerald-400' : 'text-red-400') : 'text-muted'}>
-                                        {portfolio.returns.threeYear !== null ? `${portfolio.returns.threeYear.toFixed(1)}%` : '—'}
-                                      </span>
-                                    </div>
-                                    <div className="flex justify-between">
-                                      <span className="text-muted">5 Year</span>
-                                      <span className={portfolio.returns.fiveYear !== null ? (portfolio.returns.fiveYear >= 0 ? 'text-emerald-400' : 'text-red-400') : 'text-muted'}>
-                                        {portfolio.returns.fiveYear !== null ? `${portfolio.returns.fiveYear.toFixed(1)}%` : '—'}
-                                      </span>
-                                    </div>
-                                    <div className="flex justify-between">
-                                      <span className="text-muted">10 Year</span>
-                                      <span className={portfolio.returns.tenYear !== null ? (portfolio.returns.tenYear >= 0 ? 'text-emerald-400' : 'text-red-400') : 'text-muted'}>
-                                        {portfolio.returns.tenYear !== null ? `${portfolio.returns.tenYear.toFixed(1)}%` : '—'}
-                                      </span>
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
-                            </td>
-                          </tr>
-                        )}
-                      </React.Fragment>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-
-              {/* Pagination */}
-              {totalPortfolioPages > 1 && (
-                <div className="relative z-10 flex items-center justify-between px-4 py-3 border-t border-zinc-800/50">
-                  <div className="text-xs text-muted">
-                    Showing {((portfoliosPage - 1) * portfoliosPerPage) + 1} to {Math.min(portfoliosPage * portfoliosPerPage, sortedPortfolios.length)} of {sortedPortfolios.length} portfolios
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => setPortfoliosPage(prev => Math.max(1, prev - 1))}
-                      disabled={portfoliosPage === 1}
-                      className="p-1.5 text-muted hover:text-white disabled:text-muted disabled:cursor-not-allowed transition-colors"
-                    >
-                      <ChevronLeft className="w-4 h-4" />
-                    </button>
-                    <span className="text-xs text-muted">
-                      Page {portfoliosPage} of {totalPortfolioPages}
-                    </span>
-                    <button
-                      onClick={() => setPortfoliosPage(prev => Math.min(totalPortfolioPages, prev + 1))}
-                      disabled={portfoliosPage === totalPortfolioPages}
-                      className="p-1.5 text-muted hover:text-white disabled:text-muted disabled:cursor-not-allowed transition-colors"
-                    >
-                      <ChevronRight className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
           </div>
         </div>
 
-        {/* Fullscreen Table Overlay */}
-        {isTableFullscreen && (
-          <div className="absolute inset-0 z-50 flex items-center justify-center p-16">
-            {/* Dimmed backdrop */}
-            <div
-              className="absolute inset-0 bg-black/80"
-              onClick={() => setIsTableFullscreen(false)}
-            />
-
-            {/* Fullscreen table container */}
-            <div className="relative w-full h-full bg-zinc-900 border border-zinc-700/50 flex flex-col shadow-2xl">
-              <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] via-transparent to-transparent pointer-events-none" />
-              <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-cyan-500/30 to-transparent" />
-
-              {/* Header with close button */}
-              <div className="relative z-10 px-4 py-3 flex items-center justify-between border-b border-zinc-800/50 flex-shrink-0">
-                <h3 className="text-sm font-medium text-white">Logged Portfolios</h3>
-                <button
-                  onClick={() => setIsTableFullscreen(false)}
-                  className="p-1.5 text-muted hover:text-cyan-400 hover:bg-white/[0.05] transition-colors"
-                  title="Exit fullscreen"
-                >
-                  <Minimize2 className="w-4 h-4" />
-                </button>
-              </div>
-
-              {/* Table content */}
-              <div className="relative z-10 flex-1 overflow-auto min-h-0">
-                <table className="w-full">
-                  <thead className="sticky top-0 bg-zinc-800 z-10">
-                    <tr>
-                      <th
-                        className="text-left text-xs font-medium text-muted uppercase tracking-wider px-4 py-3 cursor-pointer hover:text-zinc-200"
-                        onClick={() => handlePortfolioSort('externalClient')}
-                      >
-                        <div className="flex items-center gap-1">
-                          External Client
-                          <SortIcon column="externalClient" sortColumn={portfoliosSortColumn} sortDirection={portfoliosSortDirection} />
-                        </div>
-                      </th>
-                      <th
-                        className="text-left text-xs font-medium text-muted uppercase tracking-wider px-4 py-3 cursor-pointer hover:text-zinc-200"
-                        onClick={() => handlePortfolioSort('internalClientName')}
-                      >
-                        <div className="flex items-center gap-1">
-                          Internal Client
-                          <SortIcon column="internalClientName" sortColumn={portfoliosSortColumn} sortDirection={portfoliosSortDirection} />
-                        </div>
-                      </th>
-                      <th
-                        className="text-left text-xs font-medium text-muted uppercase tracking-wider px-4 py-3 cursor-pointer hover:text-zinc-200"
-                        onClick={() => handlePortfolioSort('department')}
-                      >
-                        <div className="flex items-center gap-1">
-                          Department
-                          <SortIcon column="department" sortColumn={portfoliosSortColumn} sortDirection={portfoliosSortDirection} />
-                        </div>
-                      </th>
-                      <th
-                        className="text-left text-xs font-medium text-muted uppercase tracking-wider px-4 py-3 cursor-pointer hover:text-zinc-200"
-                        onClick={() => handlePortfolioSort('loggedBy')}
-                      >
-                        <div className="flex items-center gap-1">
-                          Logged By
-                          <SortIcon column="loggedBy" sortColumn={portfoliosSortColumn} sortDirection={portfoliosSortDirection} />
-                        </div>
-                      </th>
-                      <th
-                        className="text-left text-xs font-medium text-muted uppercase tracking-wider px-4 py-3 cursor-pointer hover:text-zinc-200"
-                        onClick={() => handlePortfolioSort('loggedAt')}
-                      >
-                        <div className="flex items-center gap-1">
-                          Logged At
-                          <SortIcon column="loggedAt" sortColumn={portfoliosSortColumn} sortDirection={portfoliosSortDirection} />
-                        </div>
-                      </th>
-                      <th
-                        className="text-left text-xs font-medium text-muted uppercase tracking-wider px-4 py-3 cursor-pointer hover:text-zinc-200"
-                        onClick={() => handlePortfolioSort('dataAsOf')}
-                      >
-                        <div className="flex items-center gap-1">
-                          Data As Of
-                          <SortIcon column="dataAsOf" sortColumn={portfoliosSortColumn} sortDirection={portfoliosSortDirection} />
-                        </div>
-                      </th>
-                      <th
-                        className="text-left text-xs font-medium text-muted uppercase tracking-wider px-4 py-3 cursor-pointer hover:text-zinc-200"
-                        onClick={() => handlePortfolioSort('positionCount')}
-                      >
-                        <div className="flex items-center gap-1">
-                          Positions
-                          <SortIcon column="positionCount" sortColumn={portfoliosSortColumn} sortDirection={portfoliosSortDirection} />
-                        </div>
-                      </th>
-                      <th className="text-left text-xs font-medium text-muted uppercase tracking-wider px-4 py-3">
-                        Top Holdings
-                      </th>
-                      <th className="px-4 py-3"></th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-zinc-800/50">
-                    {paginatedPortfolios.map((portfolio) => (
-                      <React.Fragment key={`fs-${portfolio.id}`}>
-                        <tr className="hover:bg-white/[0.02] transition-colors">
-                          <td className="px-4 py-3">
-                            <span className="text-sm font-medium text-white">{portfolio.externalClient}</span>
-                          </td>
-                          <td className="px-4 py-3">
-                            <span className="text-sm text-muted">{portfolio.internalClient.name}</span>
-                          </td>
-                          <td className="px-4 py-3">
-                            <span className={`text-xs font-medium px-2 py-1 ${
-                              portfolio.internalClient.gcgDepartment === 'IAG'
-                                ? 'bg-blue-500/15 text-blue-400 border border-blue-500/30'
-                                : portfolio.internalClient.gcgDepartment === 'Broker-Dealer'
-                                  ? 'bg-purple-500/15 text-purple-400 border border-purple-500/30'
-                                  : 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
-                            }`}>
-                              {portfolio.internalClient.gcgDepartment}
-                            </span>
-                          </td>
-                          <td className="px-4 py-3">
-                            <span className="text-sm text-muted">{portfolio.loggedBy}</span>
-                          </td>
-                          <td className="px-4 py-3">
-                            <span className="text-sm text-muted">{portfolio.loggedAt}</span>
-                          </td>
-                          <td className="px-4 py-3">
-                            <span className="text-sm text-muted">{portfolio.dataAsOf}</span>
-                          </td>
-                          <td className="px-4 py-3">
-                            <span className="text-sm font-mono text-muted">{portfolio.positions.length}</span>
-                          </td>
-                          <td className="px-4 py-3">
-                            <div className="flex gap-1.5">
-                              {portfolio.positions.slice(0, 3).map((pos, i) => (
-                                <span key={i} className="text-xs px-1.5 py-0.5 bg-zinc-800 text-muted rounded">
-                                  {pos.ticker}
-                                </span>
-                              ))}
-                              {portfolio.positions.length > 3 && (
-                                <span className="text-xs text-muted">+{portfolio.positions.length - 3}</span>
-                              )}
-                            </div>
-                          </td>
-                          <td className="px-4 py-3">
-                            <button
-                              onClick={() => setExpandedPortfolioId(expandedPortfolioId === portfolio.id ? null : portfolio.id)}
-                              className="p-1.5 hover:bg-white/[0.05] text-muted hover:text-muted transition-colors"
-                            >
-                              {expandedPortfolioId === portfolio.id ? (
-                                <ChevronUp className="w-4 h-4" />
-                              ) : (
-                                <ChevronDown className="w-4 h-4" />
-                              )}
-                            </button>
-                          </td>
-                        </tr>
-                        {/* Expanded Row */}
-                        {expandedPortfolioId === portfolio.id && (
-                          <tr className="bg-zinc-900/40">
-                            <td colSpan={9} className="px-4 py-4">
-                              <div className="grid grid-cols-3 gap-6">
-                                {/* Positions List */}
-                                <div>
-                                  <h5 className="text-xs font-medium text-muted uppercase tracking-wider mb-2">All Positions</h5>
-                                  <div className="space-y-1 max-h-48 overflow-y-auto">
-                                    {portfolio.positions.map((pos, i) => (
-                                      <div key={i} className="flex items-center justify-between text-sm">
-                                        <div className="flex items-center gap-2">
-                                          <span className="font-medium text-cyan-400">{pos.ticker}</span>
-                                          <span className="text-muted text-xs truncate max-w-[120px]">{pos.name}</span>
-                                        </div>
-                                        <span className="text-muted font-mono">{(pos.weight * 100).toFixed(1)}%</span>
-                                      </div>
-                                    ))}
-                                  </div>
-                                </div>
-
-                                {/* Characteristics */}
-                                <div>
-                                  <h5 className="text-xs font-medium text-muted uppercase tracking-wider mb-2">Characteristics</h5>
-                                  <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
-                                    <div className="flex justify-between">
-                                      <span className="text-muted">Mkt Cap</span>
-                                      <span className="text-muted">${portfolio.characteristics.weightedAvgMarketCap.toFixed(0)}B</span>
-                                    </div>
-                                    <div className="flex justify-between">
-                                      <span className="text-muted">P/B</span>
-                                      <span className="text-muted">{portfolio.characteristics.weightedAvgPB.toFixed(1)}</span>
-                                    </div>
-                                    <div className="flex justify-between">
-                                      <span className="text-muted">Value</span>
-                                      <span className="text-muted">{portfolio.characteristics.valueAllocation}%</span>
-                                    </div>
-                                    <div className="flex justify-between">
-                                      <span className="text-muted">Growth</span>
-                                      <span className="text-muted">{portfolio.characteristics.growthAllocation}%</span>
-                                    </div>
-                                    <div className="flex justify-between">
-                                      <span className="text-muted">US</span>
-                                      <span className="text-muted">{portfolio.characteristics.usEquityAllocation}%</span>
-                                    </div>
-                                    <div className="flex justify-between">
-                                      <span className="text-muted">Dev ex-US</span>
-                                      <span className="text-muted">{portfolio.characteristics.devExUsAllocation}%</span>
-                                    </div>
-                                    <div className="flex justify-between">
-                                      <span className="text-muted">EM</span>
-                                      <span className="text-muted">{portfolio.characteristics.emAllocation}%</span>
-                                    </div>
-                                    <div className="flex justify-between">
-                                      <span className="text-muted">Duration</span>
-                                      <span className="text-muted">{portfolio.characteristics.duration.toFixed(1)} yrs</span>
-                                    </div>
-                                  </div>
-                                </div>
-
-                                {/* Returns */}
-                                <div>
-                                  <h5 className="text-xs font-medium text-muted uppercase tracking-wider mb-2">Returns</h5>
-                                  <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
-                                    <div className="flex justify-between">
-                                      <span className="text-muted">1 Year</span>
-                                      <span className={portfolio.returns.oneYear !== null ? (portfolio.returns.oneYear >= 0 ? 'text-emerald-400' : 'text-red-400') : 'text-muted'}>
-                                        {portfolio.returns.oneYear !== null ? `${portfolio.returns.oneYear.toFixed(1)}%` : '—'}
-                                      </span>
-                                    </div>
-                                    <div className="flex justify-between">
-                                      <span className="text-muted">3 Year</span>
-                                      <span className={portfolio.returns.threeYear !== null ? (portfolio.returns.threeYear >= 0 ? 'text-emerald-400' : 'text-red-400') : 'text-muted'}>
-                                        {portfolio.returns.threeYear !== null ? `${portfolio.returns.threeYear.toFixed(1)}%` : '—'}
-                                      </span>
-                                    </div>
-                                    <div className="flex justify-between">
-                                      <span className="text-muted">5 Year</span>
-                                      <span className={portfolio.returns.fiveYear !== null ? (portfolio.returns.fiveYear >= 0 ? 'text-emerald-400' : 'text-red-400') : 'text-muted'}>
-                                        {portfolio.returns.fiveYear !== null ? `${portfolio.returns.fiveYear.toFixed(1)}%` : '—'}
-                                      </span>
-                                    </div>
-                                    <div className="flex justify-between">
-                                      <span className="text-muted">10 Year</span>
-                                      <span className={portfolio.returns.tenYear !== null ? (portfolio.returns.tenYear >= 0 ? 'text-emerald-400' : 'text-red-400') : 'text-muted'}>
-                                        {portfolio.returns.tenYear !== null ? `${portfolio.returns.tenYear.toFixed(1)}%` : '—'}
-                                      </span>
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
-                            </td>
-                          </tr>
-                        )}
-                      </React.Fragment>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-
-              {/* Pagination - Fixed at bottom */}
-              {totalPortfolioPages > 1 && (
-                <div className="relative z-10 flex items-center justify-between px-4 py-3 border-t border-zinc-800/50 flex-shrink-0 bg-zinc-900">
-                  <div className="text-xs text-muted">
-                    Showing {((portfoliosPage - 1) * portfoliosPerPage) + 1} to {Math.min(portfoliosPage * portfoliosPerPage, sortedPortfolios.length)} of {sortedPortfolios.length} portfolios
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => setPortfoliosPage(prev => Math.max(1, prev - 1))}
-                      disabled={portfoliosPage === 1}
-                      className="p-1.5 text-muted hover:text-white disabled:text-muted disabled:cursor-not-allowed transition-colors"
-                    >
-                      <ChevronLeft className="w-4 h-4" />
-                    </button>
-                    <span className="text-xs text-muted">
-                      Page {portfoliosPage} of {totalPortfolioPages}
-                    </span>
-                    <button
-                      onClick={() => setPortfoliosPage(prev => Math.min(totalPortfolioPages, prev + 1))}
-                      disabled={portfoliosPage === totalPortfolioPages}
-                      className="p-1.5 text-muted hover:text-white disabled:text-muted disabled:cursor-not-allowed transition-colors"
-                    >
-                      <ChevronRight className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
+        {/* Hover tooltip for Style Map / Profitability Map dots */}
+        {dotTooltip && (
+          <div
+            className="fixed px-2.5 py-1.5 bg-zinc-800 border border-zinc-700 text-zinc-200 text-xs rounded-md whitespace-nowrap pointer-events-none z-50 shadow-lg"
+            style={{ left: dotTooltip.x + 14, top: dotTooltip.y + 4 }}
+          >
+            <div className="font-medium text-white">{dotTooltip.label}</div>
+            {dotTooltip.lines.map(line => (
+              <div key={line} className="text-muted font-mono">{line}</div>
+            ))}
           </div>
         )}
     </>

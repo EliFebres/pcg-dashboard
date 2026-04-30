@@ -32,7 +32,7 @@ const navSections: NavSection[] = [
         href: '#',
         icon: TrendingUp,
         children: [
-          { label: 'Portfolio Trends', href: '/dashboard/interactions-and-trends/portfolio-trends', icon: PieChart, disabled: true },
+          { label: 'Portfolio Trends', href: '/dashboard/interactions-and-trends/portfolio-trends', icon: PieChart },
           { label: 'Ticker Trends', href: '/dashboard/interactions-and-trends/ticker-trends', icon: Flame, disabled: true },
         ],
       },
