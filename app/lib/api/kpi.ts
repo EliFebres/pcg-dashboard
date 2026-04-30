@@ -123,13 +123,6 @@ export interface DormantClient {
   daysSinceLast: number;
 }
 
-export interface DataQuality {
-  interactions: number;
-  nnaCoveragePercent: number;
-  portfoliosRecordedPercent: number;
-  notesCoveragePercent: number;
-}
-
 export interface KpiDashboardData {
   scope: { kind: 'all' | 'team'; team?: string };
   periodLabel: string;
@@ -144,7 +137,6 @@ export interface KpiDashboardData {
   adHocChannels: AdHocChannelRow[];
   staleEngagements: StaleEngagement[];
   dormantClients: DormantClient[];
-  dataQuality: DataQuality;
 }
 
 // =============================================================================

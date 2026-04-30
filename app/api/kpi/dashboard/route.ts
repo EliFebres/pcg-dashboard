@@ -20,7 +20,6 @@ import {
   computeAdHocChannelHealth,
   computeStaleEngagements,
   computeDormantClients,
-  computeDataQuality,
 } from '@/app/lib/db/kpi-aggregations';
 import type { KpiFilters } from '@/app/lib/api/kpi';
 
@@ -68,7 +67,6 @@ export async function POST(req: NextRequest) {
       adHocChannels,
       staleEngagements,
       dormantClients,
-      dataQuality,
     ] = await Promise.all([
       computeHeroKpis(filters, constraints),
       computeJourneySankey(filters, constraints),
@@ -81,7 +79,6 @@ export async function POST(req: NextRequest) {
       computeAdHocChannelHealth(filters, constraints),
       computeStaleEngagements(filters, constraints),
       computeDormantClients(filters, constraints),
-      computeDataQuality(filters, constraints),
     ]);
 
     return NextResponse.json({
@@ -100,7 +97,6 @@ export async function POST(req: NextRequest) {
       adHocChannels,
       staleEngagements,
       dormantClients,
-      dataQuality,
     });
   } catch (err) {
     console.error('POST /api/kpi/dashboard error:', err);

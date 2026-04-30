@@ -27,7 +27,6 @@ import type {
   AdHocChannelRow,
   StaleEngagement,
   DormantClient,
-  DataQuality,
 } from '../api/kpi';
 
 // =============================================================================
@@ -721,46 +720,4 @@ export async function computeDormantClients(
     lastEngagedDate: String(r.last_started ?? '').split('T')[0],
     daysSinceLast: Number(r.days_since ?? 0),
   }));
-}
-
-// =============================================================================
-// 8. DATA QUALITY (footer strip)
-// =============================================================================
-
-export async function computeDataQuality(
-  filters: KpiFilters,
-  constraints: ServerConstraints
-): Promise<DataQuality> {
-  if (!hasDb()) {
-    return { interactions: 0, nnaCoveragePercent: 0, portfoliosRecordedPercent: 0, notesCoveragePercent: 0 };
-  }
-  const { whereClause, params } = buildKpiWhere(filters, constraints);
-
-  const coverageRows = await query<Record<string, unknown>>(
-    `
-      SELECT
-        COUNT(*) AS total,
-        COUNT(*) FILTER (WHERE nna IS NOT NULL) AS with_nna,
-        COUNT(*) FILTER (WHERE type IN ('Meeting', 'Follow-up Meeting')) AS meetings,
-        COUNT(*) FILTER (
-          WHERE type IN ('Meeting', 'Follow-up Meeting') AND portfolio_logged = TRUE
-        ) AS meetings_with_portfolio,
-        COUNT(*) FILTER (
-          WHERE EXISTS (SELECT 1 FROM engagement_notes n WHERE n.engagement_id = engagements.id)
-        ) AS with_notes
-      FROM engagements
-      ${whereClause}
-    `,
-    params
-  );
-
-  const r = coverageRows[0] ?? {};
-  const total = Number(r.total ?? 0);
-  const meetings = Number(r.meetings ?? 0);
-  return {
-    interactions: total,
-    nnaCoveragePercent: pct(Number(r.with_nna ?? 0), total),
-    portfoliosRecordedPercent: pct(Number(r.meetings_with_portfolio ?? 0), meetings),
-    notesCoveragePercent: pct(Number(r.with_notes ?? 0), total),
-  };
 }

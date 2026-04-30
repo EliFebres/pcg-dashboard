@@ -15,7 +15,6 @@ import IntakeYieldTable from '@/app/components/dashboard/kpis/IntakeYieldTable';
 import AdHocChannelCard from '@/app/components/dashboard/kpis/AdHocChannelCard';
 import StaleEngagementsTable from '@/app/components/dashboard/kpis/StaleEngagementsTable';
 import DormantClientsTable from '@/app/components/dashboard/kpis/DormantClientsTable';
-import DataQualityStrip from '@/app/components/dashboard/kpis/DataQualityStrip';
 import { getKpiDashboardData, type KpiDashboardData, type KpiScope } from '@/app/lib/api/kpi';
 
 const GCG_DEPT_OPTIONS = ['All Departments', 'IAG', 'Broker-Dealer', 'Institutional', 'Retirement Group'];
@@ -125,8 +124,6 @@ export default function KpiDashboard() {
       <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
         {data ? (
           <>
-            <DataQualityStrip data={data.dataQuality} />
-
             <HeroKPICards heroKpis={data.heroKpis} />
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
