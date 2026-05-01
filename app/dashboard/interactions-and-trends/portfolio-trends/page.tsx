@@ -17,6 +17,13 @@ import { toDisplayName } from '@/app/lib/auth/types';
 const OFFICE_GROUP = { label: 'Office', options: ['Austin Office', 'Charlotte Office'] };
 const DEPARTMENTS = ['Broker-Dealer', 'IAG', 'Institutional', 'Retirement Group'];
 
+// Maps a value on a [min, max] axis to a CSS percentage offset.
+// Use invert=true for the Y axis: top:0% is the top of the container, but the axis max sits at the top.
+const pct = (value: number, min: number, max: number, invert = false) => {
+  const ratio = (value - min) / (max - min);
+  return `${(invert ? 1 - ratio : ratio) * 100}%`;
+};
+
 // Returns the N most recent completed quarter-end labels (e.g. "Q1 2026", "Q4 2025", ...).
 function getRecentQuarterEnds(count: number): string[] {
   const now = new Date();
@@ -53,6 +60,20 @@ export default function PortfolioTrendsDashboard() {
       setTeamMemberFilter('All Teams');
     }
   }, [isGuest, teamMemberFilter]);
+
+  // XY chart data — drives dot positions, crosshair positions, and tooltip text.
+  const styleXY = {
+    x: { min: 2.0, max: 4.0, format: (v: number) => v.toFixed(1) },
+    y: { min: 200, max: 600, format: (v: number) => `$${v}B` },
+    benchmark: { name: 'MSCI ACWI IMI', x: 3.2, y: 460 },
+    client:    { name: 'Avg Client',    x: 2.9, y: 400 },
+  };
+  const profitabilityXY = {
+    x: { min: 2.0, max: 4.0, format: (v: number) => v.toFixed(2) },
+    y: { min: 0.30, max: 0.60, format: (v: number) => v.toFixed(2) },
+    benchmark: { name: 'MSCI ACWI IMI', x: 3.10, y: 0.48 },
+    client:    { name: 'Avg Client',    x: 2.84, y: 0.50 },
+  };
 
   // Tooltip state for chart dots (Style Map, Profitability Map)
   const [dotTooltip, setDotTooltip] = useState<{ label: string; lines: string[]; x: number; y: number } | null>(null);
@@ -210,17 +231,31 @@ export default function PortfolioTrendsDashboard() {
                         </div>
 
                         <div className="flex-1 relative border-l border-b border-zinc-700/50 overflow-hidden" style={{ height: '140px' }}>
-                          <div className="data-pop absolute left-0 right-0 border-t border-zinc-500/50" style={{ top: '35%' }} />
-                          <div className="data-pop absolute top-0 bottom-0 border-l border-zinc-500/50" style={{ left: '60%' }} />
+                          <div className="data-pop absolute left-0 right-0 border-t border-zinc-500/50" style={{ top: pct(styleXY.benchmark.y, styleXY.y.min, styleXY.y.max, true) }} />
+                          <div className="data-pop absolute top-0 bottom-0 border-l border-zinc-500/50" style={{ left: pct(styleXY.benchmark.x, styleXY.x.min, styleXY.x.max) }} />
                           <div
                             className="data-pop absolute w-4 h-4 rounded-full bg-zinc-500 border-2 border-zinc-400 z-10 cursor-pointer"
-                            style={{ left: '60%', top: '35%', transform: 'translate(-50%, -50%)' }}
-                            {...dotHoverHandlers('MSCI ACWI IMI', ['Mkt Cap: $460B', 'P/B: 3.2'])}
+                            style={{
+                              left: pct(styleXY.benchmark.x, styleXY.x.min, styleXY.x.max),
+                              top: pct(styleXY.benchmark.y, styleXY.y.min, styleXY.y.max, true),
+                              transform: 'translate(-50%, -50%)',
+                            }}
+                            {...dotHoverHandlers(styleXY.benchmark.name, [
+                              `Mkt Cap: ${styleXY.y.format(styleXY.benchmark.y)}`,
+                              `P/B: ${styleXY.x.format(styleXY.benchmark.x)}`,
+                            ])}
                           />
                           <div
                             className="data-pop-d2 absolute w-4 h-4 rounded-full bg-cyan-500 border-2 border-cyan-400 shadow-lg shadow-cyan-500/30 z-10 cursor-pointer"
-                            style={{ left: '45%', top: '50%', transform: 'translate(-50%, -50%)' }}
-                            {...dotHoverHandlers('Avg Client', ['Mkt Cap: $400B', 'P/B: 2.9'])}
+                            style={{
+                              left: pct(styleXY.client.x, styleXY.x.min, styleXY.x.max),
+                              top: pct(styleXY.client.y, styleXY.y.min, styleXY.y.max, true),
+                              transform: 'translate(-50%, -50%)',
+                            }}
+                            {...dotHoverHandlers(styleXY.client.name, [
+                              `Mkt Cap: ${styleXY.y.format(styleXY.client.y)}`,
+                              `P/B: ${styleXY.x.format(styleXY.client.x)}`,
+                            ])}
                           />
                         </div>
                       </div>
@@ -277,17 +312,31 @@ export default function PortfolioTrendsDashboard() {
                         </div>
 
                         <div className="flex-1 relative border-l border-b border-zinc-700/50 overflow-hidden" style={{ height: '140px' }}>
-                          <div className="data-pop absolute left-0 right-0 border-t border-zinc-500/50" style={{ top: '40%' }} />
-                          <div className="data-pop absolute top-0 bottom-0 border-l border-zinc-500/50" style={{ left: '55%' }} />
+                          <div className="data-pop absolute left-0 right-0 border-t border-zinc-500/50" style={{ top: pct(profitabilityXY.benchmark.y, profitabilityXY.y.min, profitabilityXY.y.max, true) }} />
+                          <div className="data-pop absolute top-0 bottom-0 border-l border-zinc-500/50" style={{ left: pct(profitabilityXY.benchmark.x, profitabilityXY.x.min, profitabilityXY.x.max) }} />
                           <div
                             className="data-pop absolute w-4 h-4 rounded-full bg-zinc-500 border-2 border-zinc-400 z-10 cursor-pointer"
-                            style={{ left: '55%', top: '40%', transform: 'translate(-50%, -50%)' }}
-                            {...dotHoverHandlers('MSCI ACWI IMI', ['Profitability: 0.48', 'P/B: 3.1'])}
+                            style={{
+                              left: pct(profitabilityXY.benchmark.x, profitabilityXY.x.min, profitabilityXY.x.max),
+                              top: pct(profitabilityXY.benchmark.y, profitabilityXY.y.min, profitabilityXY.y.max, true),
+                              transform: 'translate(-50%, -50%)',
+                            }}
+                            {...dotHoverHandlers(profitabilityXY.benchmark.name, [
+                              `Profitability: ${profitabilityXY.y.format(profitabilityXY.benchmark.y)}`,
+                              `P/B: ${profitabilityXY.x.format(profitabilityXY.benchmark.x)}`,
+                            ])}
                           />
                           <div
                             className="data-pop-d2 absolute w-4 h-4 rounded-full bg-cyan-500 border-2 border-cyan-400 shadow-lg shadow-cyan-500/30 z-10 cursor-pointer"
-                            style={{ left: '42%', top: '35%', transform: 'translate(-50%, -50%)' }}
-                            {...dotHoverHandlers('Avg Client', ['Profitability: 0.50', 'P/B: 2.84'])}
+                            style={{
+                              left: pct(profitabilityXY.client.x, profitabilityXY.x.min, profitabilityXY.x.max),
+                              top: pct(profitabilityXY.client.y, profitabilityXY.y.min, profitabilityXY.y.max, true),
+                              transform: 'translate(-50%, -50%)',
+                            }}
+                            {...dotHoverHandlers(profitabilityXY.client.name, [
+                              `Profitability: ${profitabilityXY.y.format(profitabilityXY.client.y)}`,
+                              `P/B: ${profitabilityXY.x.format(profitabilityXY.client.x)}`,
+                            ])}
                           />
                         </div>
                       </div>
