@@ -19,17 +19,16 @@ const OFFICE_GROUP = { label: 'Office', options: ['Austin Office', 'Charlotte Of
 const DEPARTMENTS = ['Broker-Dealer', 'IAG', 'Institutional', 'Retirement Group'];
 
 // Portfolios selector — drives which series render on the cards. Avg. Client is the
-// default; Core Model and Core+ Model are firm-defined model portfolios.
-const PORTFOLIO_OPTIONS = ['Avg. Client', 'Core Model', 'Core+ Model'] as const;
+// default; Core+ Model is a firm-defined model portfolio.
+const PORTFOLIO_OPTIONS = ['Avg. Client', 'Core+ Model'] as const;
 type PortfolioName = typeof PORTFOLIO_OPTIONS[number];
 
 // Color is tied to selection order, not portfolio name. Whichever portfolio is selected
-// first gets palette[0], the next selection gets palette[1], and so on. Avg. Client is the
-// default first selection so it lands on palette[0] until the user reshuffles selections.
+// first gets palette[0], the next selection gets palette[1]. Avg. Client is the default
+// first selection so it lands on palette[0] until the user reshuffles selections.
 const PORTFOLIO_PALETTE: ReadonlyArray<{ hex: string; glow: string }> = [
   { hex: '#1398A4', glow: 'rgba(19, 152, 164, 0.45)' },
-  { hex: '#BFD22B', glow: 'rgba(191, 210, 43, 0.45)' },
-  { hex: '#7ECDC3', glow: 'rgba(126, 205, 195, 0.45)' },
+  { hex: '#BFD22B', glow: 'rgba(191, 210, 43, 0.3)' },
 ];
 
 // Maps a value on a [min, max] axis to a CSS percentage offset.
@@ -89,7 +88,6 @@ export default function PortfolioTrendsDashboard() {
     benchmark: { name: 'MSCI ACWI IMI', x: 3.2, y: 460 },
     portfolios: {
       'Avg. Client': { x: 2.90, y: 400 },
-      'Core Model':  { x: 3.05, y: 380 },
       'Core+ Model': { x: 2.75, y: 425 },
     } as Record<PortfolioName, { x: number; y: number }>,
   };
@@ -99,7 +97,6 @@ export default function PortfolioTrendsDashboard() {
     benchmark: { name: 'MSCI ACWI IMI', x: 3.10, y: 0.48 },
     portfolios: {
       'Avg. Client': { x: 2.84, y: 0.50 },
-      'Core Model':  { x: 3.00, y: 0.52 },
       'Core+ Model': { x: 2.70, y: 0.46 },
     } as Record<PortfolioName, { x: number; y: number }>,
   };
@@ -122,8 +119,8 @@ export default function PortfolioTrendsDashboard() {
   const benchmarkComparison = useMemo(() => computeBenchmarkComparison(filteredPortfolios), [filteredPortfolios]);
 
   // Per-portfolio variants of the regional benchmark comparison. Avg. Client uses the
-  // computed average; Core Model and Core+ Model are hardcoded mock values that share
-  // the same metric ordering and ACWI baseline.
+  // computed average; Core+ Model is a hardcoded mock variant that shares the same metric
+  // ordering and ACWI baseline.
   const benchmarkComparisonByPortfolio = useMemo<Record<PortfolioName, BenchmarkComparison[]>>(() => {
     const acwiByMetric = benchmarkComparison.reduce<Record<string, number>>((acc, row) => {
       acc[row.metric] = row.acwi;
@@ -137,7 +134,6 @@ export default function PortfolioTrendsDashboard() {
       });
     return {
       'Avg. Client': benchmarkComparison,
-      'Core Model':  buildVariant({ 'US Equity': 68, 'Intl Dev': 22, 'EM': 8 }),
       'Core+ Model': buildVariant({ 'US Equity': 58, 'Intl Dev': 30, 'EM': 12 }),
     };
   }, [benchmarkComparison]);
