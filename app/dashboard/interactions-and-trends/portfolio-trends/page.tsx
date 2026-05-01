@@ -213,7 +213,7 @@ export default function PortfolioTrendsDashboard() {
                   <div className="flex items-center justify-between mb-4 -mt-2 -ml-2">
                     <div>
                       <h4 className="text-sm font-medium text-white">Style XY</h4>
-                      <p className="text-xs text-muted">Avg client vs MSCI ACWI IMI (1YR)</p>
+                      <p className="text-xs text-muted">Avg client vs MSCI ACWI IMI ({period})</p>
                     </div>
                   </div>
 
@@ -294,7 +294,7 @@ export default function PortfolioTrendsDashboard() {
                   <div className="flex items-center justify-between mb-4 -mt-2 -ml-2">
                     <div>
                       <h4 className="text-sm font-medium text-white">Profitability XY</h4>
-                      <p className="text-xs text-muted">Avg client vs MSCI ACWI IMI (1YR)</p>
+                      <p className="text-xs text-muted">Avg client vs MSCI ACWI IMI ({period})</p>
                     </div>
                   </div>
 
