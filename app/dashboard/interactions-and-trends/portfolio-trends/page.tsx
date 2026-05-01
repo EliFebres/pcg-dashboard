@@ -1,22 +1,58 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Building2, PieChart, User } from 'lucide-react';
 import {
   loggedPortfolios,
-  extractFilterOptions,
   filterPortfolios,
   computeBenchmarkComparison,
 } from '@/app/lib/data/portfolioTrends';
 import DashboardHeader from '@/app/components/dashboard/shared/DashboardHeader';
+import { useCurrentUser } from '@/app/lib/auth/context';
+import { toDisplayName } from '@/app/lib/auth/types';
+
+// Static filter options — mirrors the Client Interactions dashboard's structure.
+// Filter selection is purely cosmetic on this dashboard for now; the underlying
+// portfolio data is dummy and not yet wired up.
+const OFFICE_GROUP = { label: 'Office', options: ['Austin Office', 'Charlotte Office'] };
+const DEPARTMENTS = ['Broker-Dealer', 'IAG', 'Institutional', 'Retirement Group'];
+
+// Returns the N most recent completed quarter-end labels (e.g. "Q1 2026", "Q4 2025", ...).
+function getRecentQuarterEnds(count: number): string[] {
+  const now = new Date();
+  let q = Math.floor(now.getMonth() / 3) + 1; // 1-4 for current (in-progress) quarter
+  let y = now.getFullYear();
+  // Step back to the most recent completed quarter
+  q -= 1;
+  if (q === 0) { q = 4; y -= 1; }
+
+  const result: string[] = [];
+  for (let i = 0; i < count; i++) {
+    result.push(`Q${q} ${y}`);
+    q -= 1;
+    if (q === 0) { q = 4; y -= 1; }
+  }
+  return result;
+}
 
 export default function PortfolioTrendsDashboard() {
-  const [searchQuery, setSearchQuery] = useState('');
+  const { user } = useCurrentUser();
+  const isGuest = user?.team === 'Guest';
+  const canSeeAllTeams = user?.role === 'admin' || user?.team === 'Leadership' || isGuest;
+  const currentUser = user ? toDisplayName(user.firstName, user.lastName) : 'All Team Members';
 
   // Filter state
   const [teamMemberFilter, setTeamMemberFilter] = useState('All Team Members');
-  const [departmentFilter, setDepartmentFilter] = useState('All Departments');
-  const [period, setPeriod] = useState('1Y');
+  const [departmentFilter, setDepartmentFilter] = useState<string[]>([]);
+  const quarterEndOptions = useMemo(() => getRecentQuarterEnds(8), []);
+  const [period, setPeriod] = useState(quarterEndOptions[0]);
+
+  // Guests don't have "Team Members" — their only scope is the cross-team aggregate.
+  useEffect(() => {
+    if (isGuest && teamMemberFilter === 'All Team Members') {
+      setTeamMemberFilter('All Teams');
+    }
+  }, [isGuest, teamMemberFilter]);
 
   // Tooltip state for chart dots (Style Map, Profitability Map)
   const [dotTooltip, setDotTooltip] = useState<{ label: string; lines: string[]; x: number; y: number } | null>(null);
@@ -27,11 +63,11 @@ export default function PortfolioTrendsDashboard() {
     onMouseLeave: () => setDotTooltip(null),
   });
 
-  const filterOptions = useMemo(() => extractFilterOptions(loggedPortfolios), []);
-
   const filteredPortfolios = useMemo(() => {
-    return filterPortfolios(loggedPortfolios, teamMemberFilter, departmentFilter, period);
-  }, [teamMemberFilter, departmentFilter, period]);
+    // All filters are cosmetic for now — pass the "all" sentinels so dummy data
+    // isn't filtered out when a user makes a selection.
+    return filterPortfolios(loggedPortfolios, 'All Team Members', 'All Departments', 'ALL');
+  }, []);
 
   const benchmarkComparison = useMemo(() => computeBenchmarkComparison(filteredPortfolios), [filteredPortfolios]);
 
@@ -70,31 +106,52 @@ export default function PortfolioTrendsDashboard() {
         <DashboardHeader
           title="Portfolio Trends"
           subtitle="Portfolio construction insights and client analytics"
-          searchPlaceholder="Search clients, portfolios..."
-          searchValue={searchQuery}
-          onSearchChange={setSearchQuery}
+          searchPlaceholder=""
+          searchValue=""
+          onSearchChange={() => {}}
           filters={[
-            {
-              id: 'teamMember',
-              icon: User,
-              label: 'Team Member',
-              options: filterOptions.teamMembers,
-              value: teamMemberFilter,
-              onChange: (v: string | string[]) => setTeamMemberFilter(v as string),
-            },
+            ...(isGuest
+              ? [{
+                  id: 'teamMember',
+                  icon: User,
+                  label: 'Team Member',
+                  options: ['All Teams'],
+                  value: teamMemberFilter,
+                  onChange: (v: string | string[]) => setTeamMemberFilter(v as string),
+                }]
+              : [{
+                  id: 'teamMember',
+                  icon: User,
+                  label: 'Team Member',
+                  options: [
+                    'All Team Members',
+                    ...OFFICE_GROUP.options,
+                    currentUser,
+                    ...(canSeeAllTeams ? ['All Teams'] : []),
+                  ],
+                  optionGroups: [
+                    ...(canSeeAllTeams ? [{ label: 'Scope', options: ['All Teams'] }] : []),
+                    OFFICE_GROUP,
+                    { label: 'Members', options: [currentUser] },
+                  ],
+                  value: teamMemberFilter,
+                  onChange: (v: string | string[]) => setTeamMemberFilter(v as string),
+                }]),
             {
               id: 'department',
               icon: Building2,
               label: 'Department',
-              options: filterOptions.departments,
+              options: ['All Departments', ...DEPARTMENTS],
               value: departmentFilter,
-              onChange: (v: string | string[]) => setDepartmentFilter(v as string),
+              onChange: (v: string | string[]) => setDepartmentFilter(v as string[]),
+              multiSelect: true,
             },
           ]}
           period={period}
           onPeriodChange={setPeriod}
-          periodOptions={filterOptions.periods}
+          periodOptions={quarterEndOptions}
           className="sticky top-0 z-10"
+          alwaysShowFilters
         />
 
         <div className="p-6 space-y-6">
