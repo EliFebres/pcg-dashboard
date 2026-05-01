@@ -20,6 +20,10 @@ export interface FilterDropdown {
   value: string | string[];
   onChange: (value: string | string[]) => void;
   multiSelect?: boolean; // Enable multi-select mode
+  // When true, the multi-select has no "All X" sentinel: every option is a normal toggle.
+  // The trigger label falls back to `label` while nothing is selected. Pair with caller-side
+  // logic if you want to enforce a minimum selection.
+  noAllOption?: boolean;
 }
 
 export interface PeriodOption {
@@ -71,10 +75,11 @@ function FilterDropdownButton({ filter }: { filter: FilterDropdown }) {
   const IconComponent = filter.icon;
 
   const isMultiSelect = filter.multiSelect ?? false;
+  const noAllOption = isMultiSelect && (filter.noAllOption ?? false);
   const selectedValues = isMultiSelect
     ? (Array.isArray(filter.value) ? filter.value : [])
     : [];
-  const allOption = filter.options[0]; // First option is "All"
+  const allOption = filter.options[0]; // First option is "All" (unless noAllOption)
 
   const isFiltered = isMultiSelect
     ? selectedValues.length > 0
@@ -82,7 +87,7 @@ function FilterDropdownButton({ filter }: { filter: FilterDropdown }) {
 
   const getDisplayText = () => {
     if (isMultiSelect) {
-      if (selectedValues.length === 0) return allOption;
+      if (selectedValues.length === 0) return noAllOption ? filter.label : allOption;
       if (selectedValues.length === 1) return selectedValues[0];
       return `${selectedValues.length} selected`;
     }
@@ -90,7 +95,7 @@ function FilterDropdownButton({ filter }: { filter: FilterDropdown }) {
   };
 
   const handleMultiSelectClick = (option: string) => {
-    if (option === allOption) {
+    if (!noAllOption && option === allOption) {
       filter.onChange([]);
       return;
     }
@@ -101,7 +106,7 @@ function FilterDropdownButton({ filter }: { filter: FilterDropdown }) {
   };
 
   const isOptionSelected = (option: string) => {
-    if (option === allOption) return selectedValues.length === 0;
+    if (!noAllOption && option === allOption) return selectedValues.length === 0;
     return selectedValues.includes(option);
   };
 

@@ -1,12 +1,13 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { Building2, PieChart, User } from 'lucide-react';
+import { Building2, Layers, PieChart, User } from 'lucide-react';
 import {
   loggedPortfolios,
   filterPortfolios,
   computeBenchmarkComparison,
 } from '@/app/lib/data/portfolioTrends';
+import type { BenchmarkComparison } from '@/app/lib/types/trends';
 import DashboardHeader from '@/app/components/dashboard/shared/DashboardHeader';
 import { useCurrentUser } from '@/app/lib/auth/context';
 import { toDisplayName } from '@/app/lib/auth/types';
@@ -16,6 +17,20 @@ import { toDisplayName } from '@/app/lib/auth/types';
 // portfolio data is dummy and not yet wired up.
 const OFFICE_GROUP = { label: 'Office', options: ['Austin Office', 'Charlotte Office'] };
 const DEPARTMENTS = ['Broker-Dealer', 'IAG', 'Institutional', 'Retirement Group'];
+
+// Portfolios selector — drives which series render on the cards. Avg. Client is the
+// default; Core Model and Core+ Model are firm-defined model portfolios.
+const PORTFOLIO_OPTIONS = ['Avg. Client', 'Core Model', 'Core+ Model'] as const;
+type PortfolioName = typeof PORTFOLIO_OPTIONS[number];
+
+// Color is tied to selection order, not portfolio name. Whichever portfolio is selected
+// first gets palette[0], the next selection gets palette[1], and so on. Avg. Client is the
+// default first selection so it lands on palette[0] until the user reshuffles selections.
+const PORTFOLIO_PALETTE: ReadonlyArray<{ hex: string; glow: string }> = [
+  { hex: '#1398A4', glow: 'rgba(19, 152, 164, 0.45)' },
+  { hex: '#BFD22B', glow: 'rgba(191, 210, 43, 0.45)' },
+  { hex: '#7ECDC3', glow: 'rgba(126, 205, 195, 0.45)' },
+];
 
 // Maps a value on a [min, max] axis to a CSS percentage offset.
 // Use invert=true for the Y axis: top:0% is the top of the container, but the axis max sits at the top.
@@ -51,8 +66,14 @@ export default function PortfolioTrendsDashboard() {
   // Filter state
   const [teamMemberFilter, setTeamMemberFilter] = useState('All Team Members');
   const [departmentFilter, setDepartmentFilter] = useState<string[]>([]);
+  const [portfolioFilter, setPortfolioFilterRaw] = useState<PortfolioName[]>(['Avg. Client']);
   const quarterEndOptions = useMemo(() => getRecentQuarterEnds(8), []);
   const [period, setPeriod] = useState(quarterEndOptions[0]);
+
+  // Always keep at least one portfolio selected — snap back to Avg. Client on empty.
+  const setPortfolioFilter = (next: string[]) => {
+    setPortfolioFilterRaw(next.length === 0 ? ['Avg. Client'] : (next as PortfolioName[]));
+  };
 
   // Guests don't have "Team Members" — their only scope is the cross-team aggregate.
   useEffect(() => {
@@ -66,13 +87,21 @@ export default function PortfolioTrendsDashboard() {
     x: { min: 2.0, max: 4.0, format: (v: number) => v.toFixed(1) },
     y: { min: 200, max: 600, format: (v: number) => `$${v}B` },
     benchmark: { name: 'MSCI ACWI IMI', x: 3.2, y: 460 },
-    client:    { name: 'Avg Client',    x: 2.9, y: 400 },
+    portfolios: {
+      'Avg. Client': { x: 2.90, y: 400 },
+      'Core Model':  { x: 3.05, y: 380 },
+      'Core+ Model': { x: 2.75, y: 425 },
+    } as Record<PortfolioName, { x: number; y: number }>,
   };
   const profitabilityXY = {
     x: { min: 2.0, max: 4.0, format: (v: number) => v.toFixed(2) },
     y: { min: 0.30, max: 0.60, format: (v: number) => v.toFixed(2) },
     benchmark: { name: 'MSCI ACWI IMI', x: 3.10, y: 0.48 },
-    client:    { name: 'Avg Client',    x: 2.84, y: 0.50 },
+    portfolios: {
+      'Avg. Client': { x: 2.84, y: 0.50 },
+      'Core Model':  { x: 3.00, y: 0.52 },
+      'Core+ Model': { x: 2.70, y: 0.46 },
+    } as Record<PortfolioName, { x: number; y: number }>,
   };
 
   // Tooltip state for chart dots (Style Map, Profitability Map)
@@ -91,6 +120,27 @@ export default function PortfolioTrendsDashboard() {
   }, []);
 
   const benchmarkComparison = useMemo(() => computeBenchmarkComparison(filteredPortfolios), [filteredPortfolios]);
+
+  // Per-portfolio variants of the regional benchmark comparison. Avg. Client uses the
+  // computed average; Core Model and Core+ Model are hardcoded mock values that share
+  // the same metric ordering and ACWI baseline.
+  const benchmarkComparisonByPortfolio = useMemo<Record<PortfolioName, BenchmarkComparison[]>>(() => {
+    const acwiByMetric = benchmarkComparison.reduce<Record<string, number>>((acc, row) => {
+      acc[row.metric] = row.acwi;
+      return acc;
+    }, {});
+    const buildVariant = (clients: Record<string, number>): BenchmarkComparison[] =>
+      benchmarkComparison.map(row => {
+        const client = clients[row.metric] ?? row.client;
+        const acwi = acwiByMetric[row.metric] ?? row.acwi;
+        return { metric: row.metric, client, acwi, delta: Math.round((client - acwi) * 10) / 10 };
+      });
+    return {
+      'Avg. Client': benchmarkComparison,
+      'Core Model':  buildVariant({ 'US Equity': 68, 'Intl Dev': 22, 'EM': 8 }),
+      'Core+ Model': buildVariant({ 'US Equity': 58, 'Intl Dev': 30, 'EM': 12 }),
+    };
+  }, [benchmarkComparison]);
 
   const dataQualityStats = useMemo(() => {
     const total = filteredPortfolios.length;
@@ -167,6 +217,16 @@ export default function PortfolioTrendsDashboard() {
               onChange: (v: string | string[]) => setDepartmentFilter(v as string[]),
               multiSelect: true,
             },
+            {
+              id: 'portfolios',
+              icon: Layers,
+              label: 'Portfolios',
+              options: [...PORTFOLIO_OPTIONS],
+              value: portfolioFilter,
+              onChange: (v: string | string[]) => setPortfolioFilter(v as string[]),
+              multiSelect: true,
+              noAllOption: true,
+            },
           ]}
           period={period}
           onPeriodChange={setPeriod}
@@ -205,32 +265,32 @@ export default function PortfolioTrendsDashboard() {
             {/* Charts Row: Style Map + Asset Class + Benchmark Delta */}
             <div className="grid grid-cols-3 gap-4 mb-4">
               {/* Style Map - Market Cap vs P/B */}
-              <div className="relative overflow-hidden bg-zinc-900/60 backdrop-blur-md border border-zinc-800/50 p-5 rounded-xl">
+              <div className="relative overflow-hidden bg-zinc-900/60 backdrop-blur-md border border-zinc-800/50 p-5 rounded-xl flex flex-col">
                 <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] via-transparent to-transparent pointer-events-none" />
                 <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
 
-                <div className="relative z-10">
+                <div className="relative z-10 flex flex-col flex-1">
                   <div className="flex items-center justify-between mb-4 -mt-2 -ml-2">
                     <div>
                       <h4 className="text-sm font-medium text-white">Style XY</h4>
-                      <p className="text-xs text-muted">Avg client vs MSCI ACWI IMI ({period})</p>
+                      <p className="text-xs text-muted">vs MSCI ACWI IMI ({period})</p>
                     </div>
                   </div>
 
-                  <div className="flex">
+                  <div className="flex flex-1 min-h-[140px]">
                     <div className="flex items-center justify-center" style={{ width: '20px' }}>
                       <span className="-rotate-90 text-xs text-muted whitespace-nowrap">Wtd Avg Mkt Cap ($B)</span>
                     </div>
 
-                    <div className="flex-1">
-                      <div className="flex">
-                        <div className="flex flex-col justify-between text-right pr-2" style={{ width: '28px', height: '140px' }}>
+                    <div className="flex-1 flex flex-col">
+                      <div className="flex flex-1">
+                        <div className="flex flex-col justify-between text-right pr-2" style={{ width: '28px' }}>
                           <span className="text-xs text-muted">600</span>
                           <span className="text-xs text-muted">400</span>
                           <span className="text-xs text-muted">200</span>
                         </div>
 
-                        <div className="flex-1 relative border-l border-b border-zinc-700/50 overflow-hidden" style={{ height: '140px' }}>
+                        <div className="flex-1 relative border-l border-b border-zinc-700/50 overflow-hidden">
                           <div className="data-pop absolute left-0 right-0 border-t border-zinc-500/50" style={{ top: pct(styleXY.benchmark.y, styleXY.y.min, styleXY.y.max, true) }} />
                           <div className="data-pop absolute top-0 bottom-0 border-l border-zinc-500/50" style={{ left: pct(styleXY.benchmark.x, styleXY.x.min, styleXY.x.max) }} />
                           <div
@@ -245,18 +305,28 @@ export default function PortfolioTrendsDashboard() {
                               `P/B: ${styleXY.x.format(styleXY.benchmark.x)}`,
                             ])}
                           />
-                          <div
-                            className="data-pop-d2 absolute w-4 h-4 rounded-full bg-cyan-500 border-2 border-cyan-400 shadow-lg shadow-cyan-500/30 z-10 cursor-pointer"
-                            style={{
-                              left: pct(styleXY.client.x, styleXY.x.min, styleXY.x.max),
-                              top: pct(styleXY.client.y, styleXY.y.min, styleXY.y.max, true),
-                              transform: 'translate(-50%, -50%)',
-                            }}
-                            {...dotHoverHandlers(styleXY.client.name, [
-                              `Mkt Cap: ${styleXY.y.format(styleXY.client.y)}`,
-                              `P/B: ${styleXY.x.format(styleXY.client.x)}`,
-                            ])}
-                          />
+                          {portfolioFilter.map((name, idx) => {
+                            const point = styleXY.portfolios[name];
+                            const color = PORTFOLIO_PALETTE[idx] ?? PORTFOLIO_PALETTE[0];
+                            return (
+                              <div
+                                key={name}
+                                className="data-pop absolute w-4 h-4 rounded-full border-2 z-10 cursor-pointer"
+                                style={{
+                                  left: pct(point.x, styleXY.x.min, styleXY.x.max),
+                                  top: pct(point.y, styleXY.y.min, styleXY.y.max, true),
+                                  transform: 'translate(-50%, -50%)',
+                                  backgroundColor: color.hex,
+                                  borderColor: color.hex,
+                                  boxShadow: `0 0 14px ${color.glow}`,
+                                }}
+                                {...dotHoverHandlers(name, [
+                                  `Mkt Cap: ${styleXY.y.format(point.y)}`,
+                                  `P/B: ${styleXY.x.format(point.x)}`,
+                                ])}
+                              />
+                            );
+                          })}
                         </div>
                       </div>
 
@@ -272,46 +342,54 @@ export default function PortfolioTrendsDashboard() {
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-center gap-6 mt-3">
+                  <div className="flex items-center justify-center flex-wrap gap-x-6 gap-y-2 mt-3">
                     <div className="flex items-center gap-2">
                       <div className="w-3 h-3 rounded-full bg-zinc-500 border border-zinc-400" />
                       <span className="text-xs text-muted">MSCI ACWI IMI</span>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 rounded-full bg-cyan-500 border border-cyan-400" />
-                      <span className="text-xs text-muted">Avg Client</span>
-                    </div>
+                    {portfolioFilter.map((name, idx) => {
+                      const color = PORTFOLIO_PALETTE[idx] ?? PORTFOLIO_PALETTE[0];
+                      return (
+                        <div key={name} className="flex items-center gap-2">
+                          <div
+                            className="w-3 h-3 rounded-full border"
+                            style={{ backgroundColor: color.hex, borderColor: color.hex }}
+                          />
+                          <span className="text-xs text-muted">{name}</span>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               </div>
 
               {/* Profitability Map */}
-              <div className="relative overflow-hidden bg-zinc-900/60 backdrop-blur-md border border-zinc-800/50 p-5 rounded-xl">
+              <div className="relative overflow-hidden bg-zinc-900/60 backdrop-blur-md border border-zinc-800/50 p-5 rounded-xl flex flex-col">
                 <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] via-transparent to-transparent pointer-events-none" />
                 <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
 
-                <div className="relative z-10">
+                <div className="relative z-10 flex flex-col flex-1">
                   <div className="flex items-center justify-between mb-4 -mt-2 -ml-2">
                     <div>
                       <h4 className="text-sm font-medium text-white">Profitability XY</h4>
-                      <p className="text-xs text-muted">Avg client vs MSCI ACWI IMI ({period})</p>
+                      <p className="text-xs text-muted">vs MSCI ACWI IMI ({period})</p>
                     </div>
                   </div>
 
-                  <div className="flex">
+                  <div className="flex flex-1 min-h-[140px]">
                     <div className="flex items-center justify-center" style={{ width: '20px' }}>
                       <span className="-rotate-90 text-xs text-muted whitespace-nowrap">Wtd Avg Profitability</span>
                     </div>
 
-                    <div className="flex-1">
-                      <div className="flex">
-                        <div className="flex flex-col justify-between text-right pr-2" style={{ width: '28px', height: '140px' }}>
+                    <div className="flex-1 flex flex-col">
+                      <div className="flex flex-1">
+                        <div className="flex flex-col justify-between text-right pr-2" style={{ width: '28px' }}>
                           <span className="text-xs text-muted">.60</span>
                           <span className="text-xs text-muted">.45</span>
                           <span className="text-xs text-muted">.30</span>
                         </div>
 
-                        <div className="flex-1 relative border-l border-b border-zinc-700/50 overflow-hidden" style={{ height: '140px' }}>
+                        <div className="flex-1 relative border-l border-b border-zinc-700/50 overflow-hidden">
                           <div className="data-pop absolute left-0 right-0 border-t border-zinc-500/50" style={{ top: pct(profitabilityXY.benchmark.y, profitabilityXY.y.min, profitabilityXY.y.max, true) }} />
                           <div className="data-pop absolute top-0 bottom-0 border-l border-zinc-500/50" style={{ left: pct(profitabilityXY.benchmark.x, profitabilityXY.x.min, profitabilityXY.x.max) }} />
                           <div
@@ -326,18 +404,28 @@ export default function PortfolioTrendsDashboard() {
                               `P/B: ${profitabilityXY.x.format(profitabilityXY.benchmark.x)}`,
                             ])}
                           />
-                          <div
-                            className="data-pop-d2 absolute w-4 h-4 rounded-full bg-cyan-500 border-2 border-cyan-400 shadow-lg shadow-cyan-500/30 z-10 cursor-pointer"
-                            style={{
-                              left: pct(profitabilityXY.client.x, profitabilityXY.x.min, profitabilityXY.x.max),
-                              top: pct(profitabilityXY.client.y, profitabilityXY.y.min, profitabilityXY.y.max, true),
-                              transform: 'translate(-50%, -50%)',
-                            }}
-                            {...dotHoverHandlers(profitabilityXY.client.name, [
-                              `Profitability: ${profitabilityXY.y.format(profitabilityXY.client.y)}`,
-                              `P/B: ${profitabilityXY.x.format(profitabilityXY.client.x)}`,
-                            ])}
-                          />
+                          {portfolioFilter.map((name, idx) => {
+                            const point = profitabilityXY.portfolios[name];
+                            const color = PORTFOLIO_PALETTE[idx] ?? PORTFOLIO_PALETTE[0];
+                            return (
+                              <div
+                                key={name}
+                                className="data-pop absolute w-4 h-4 rounded-full border-2 z-10 cursor-pointer"
+                                style={{
+                                  left: pct(point.x, profitabilityXY.x.min, profitabilityXY.x.max),
+                                  top: pct(point.y, profitabilityXY.y.min, profitabilityXY.y.max, true),
+                                  transform: 'translate(-50%, -50%)',
+                                  backgroundColor: color.hex,
+                                  borderColor: color.hex,
+                                  boxShadow: `0 0 14px ${color.glow}`,
+                                }}
+                                {...dotHoverHandlers(name, [
+                                  `Profitability: ${profitabilityXY.y.format(point.y)}`,
+                                  `P/B: ${profitabilityXY.x.format(point.x)}`,
+                                ])}
+                              />
+                            );
+                          })}
                         </div>
                       </div>
 
@@ -353,15 +441,23 @@ export default function PortfolioTrendsDashboard() {
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-center gap-6 mt-3">
+                  <div className="flex items-center justify-center flex-wrap gap-x-6 gap-y-2 mt-3">
                     <div className="flex items-center gap-2">
                       <div className="w-3 h-3 rounded-full bg-zinc-500 border border-zinc-400" />
                       <span className="text-xs text-muted">MSCI ACWI IMI</span>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 rounded-full bg-cyan-500 border border-cyan-400" />
-                      <span className="text-xs text-muted">Avg Client</span>
-                    </div>
+                    {portfolioFilter.map((name, idx) => {
+                      const color = PORTFOLIO_PALETTE[idx] ?? PORTFOLIO_PALETTE[0];
+                      return (
+                        <div key={name} className="flex items-center gap-2">
+                          <div
+                            className="w-3 h-3 rounded-full border"
+                            style={{ backgroundColor: color.hex, borderColor: color.hex }}
+                          />
+                          <span className="text-xs text-muted">{name}</span>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               </div>
@@ -379,32 +475,56 @@ export default function PortfolioTrendsDashboard() {
                     </div>
                   </div>
                   <div className="space-y-3">
-                    {benchmarkComparison.map((item) => (
-                      <div key={item.metric} className="space-y-1">
-                        <div className="flex items-center justify-between text-xs">
-                          <span className="text-muted">{item.metric}</span>
-                          <span className={`font-medium font-mono ${item.delta >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                            {item.delta >= 0 ? '+' : ''}{item.delta}%
-                          </span>
+                    {benchmarkComparison.map((item, metricIdx) => {
+                      const primary = portfolioFilter[0];
+                      const headerDelta = benchmarkComparisonByPortfolio[primary][metricIdx].delta;
+                      return (
+                        <div key={item.metric} className="space-y-1">
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="text-muted">{item.metric}</span>
+                            <span className={`font-medium font-mono ${headerDelta >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                              {headerDelta >= 0 ? '+' : ''}{headerDelta}%
+                            </span>
+                          </div>
+                          <div className="space-y-1">
+                            {portfolioFilter.map((name, idx) => {
+                              const row = benchmarkComparisonByPortfolio[name][metricIdx];
+                              const color = PORTFOLIO_PALETTE[idx] ?? PORTFOLIO_PALETTE[0];
+                              return (
+                                <div key={name} className="flex gap-1 h-4">
+                                  <div
+                                    className="bar-grow-x rounded-sm border-2"
+                                    style={{
+                                      width: `${row.client}%`,
+                                      backgroundColor: color.hex,
+                                      borderColor: color.hex,
+                                      boxShadow: `0 0 8px ${color.glow}`,
+                                    }}
+                                    title={`${name}: ${row.client}%`}
+                                  />
+                                  <div
+                                    className="bar-grow-x bg-zinc-600/50 rounded-sm"
+                                    style={{ width: `${item.acwi}%` }}
+                                    title={`ACWI: ${item.acwi}%`}
+                                  />
+                                </div>
+                              );
+                            })}
+                          </div>
+                          <div className="flex items-center flex-wrap gap-x-2 gap-y-0.5 text-xs text-muted">
+                            {portfolioFilter.map((name, i) => {
+                              const row = benchmarkComparisonByPortfolio[name][metricIdx];
+                              return (
+                                <span key={name}>
+                                  {name}: {row.client}%{i < portfolioFilter.length - 1 ? ' ·' : ''}
+                                </span>
+                              );
+                            })}
+                            <span>· ACWI: {item.acwi}%</span>
+                          </div>
                         </div>
-                        <div className="flex gap-1 h-4">
-                          <div
-                            className="bar-grow-x bg-cyan-500 border-2 border-cyan-400 shadow-md shadow-cyan-500/15 rounded-sm"
-                            style={{ width: `${item.client}%` }}
-                            title={`Client: ${item.client}%`}
-                          />
-                          <div
-                            className="bar-grow-x bg-zinc-600/50 rounded-sm"
-                            style={{ width: `${item.acwi}%` }}
-                            title={`ACWI: ${item.acwi}%`}
-                          />
-                        </div>
-                        <div className="flex items-center justify-between text-xs text-muted">
-                          <span>Client: {item.client}%</span>
-                          <span>ACWI: {item.acwi}%</span>
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               </div>

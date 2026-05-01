@@ -116,6 +116,7 @@ body {
 .data-pop      { animation: dataPop 0.9s ease-out both; }
 .data-pop-d1   { animation: dataPop 0.9s ease-out 0.3s both; }
 .data-pop-d2   { animation: dataPop 0.9s ease-out 0.55s both; }
+.data-pop-d3   { animation: dataPop 0.9s ease-out 0.8s both; }
 
 @keyframes barGrowX {
   from { transform: scaleX(0); }
