@@ -108,6 +108,21 @@ body {
 .fade-in-d3   { animation: landingFadeIn 1s ease-out 0.35s both; }
 .fade-in-d4   { animation: landingFadeIn 1s ease-out 0.5s both; }
 
+/* Chart data entrance — used by Portfolio Trends XY dots/crosshairs and benchmark bars */
+@keyframes dataPop {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.data-pop      { animation: dataPop 0.9s ease-out both; }
+.data-pop-d1   { animation: dataPop 0.9s ease-out 0.3s both; }
+.data-pop-d2   { animation: dataPop 0.9s ease-out 0.55s both; }
+
+@keyframes barGrowX {
+  from { transform: scaleX(0); }
+  to   { transform: scaleX(1); }
+}
+.bar-grow-x { animation: barGrowX 1.5s cubic-bezier(0.4, 0, 0.2, 1) both; transform-origin: left; }
+
 /* Scroll-triggered fade-in */
 .scroll-fade-in {
   opacity: 0;

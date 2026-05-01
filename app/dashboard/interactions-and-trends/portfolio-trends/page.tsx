@@ -127,7 +127,7 @@ export default function PortfolioTrendsDashboard() {
             {/* Charts Row: Style Map + Asset Class + Benchmark Delta */}
             <div className="grid grid-cols-3 gap-4 mb-4">
               {/* Style Map - Market Cap vs P/B */}
-              <div className="relative overflow-hidden bg-zinc-900/60 backdrop-blur-md border border-zinc-800/50 p-5">
+              <div className="relative overflow-hidden bg-zinc-900/60 backdrop-blur-md border border-zinc-800/50 p-5 rounded-xl">
                 <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] via-transparent to-transparent pointer-events-none" />
                 <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
 
@@ -153,15 +153,15 @@ export default function PortfolioTrendsDashboard() {
                         </div>
 
                         <div className="flex-1 relative border-l border-b border-zinc-700/50 overflow-hidden" style={{ height: '140px' }}>
-                          <div className="absolute left-0 right-0 border-t border-zinc-500/50" style={{ top: '35%' }} />
-                          <div className="absolute top-0 bottom-0 border-l border-zinc-500/50" style={{ left: '60%' }} />
+                          <div className="data-pop absolute left-0 right-0 border-t border-zinc-500/50" style={{ top: '35%' }} />
+                          <div className="data-pop absolute top-0 bottom-0 border-l border-zinc-500/50" style={{ left: '60%' }} />
                           <div
-                            className="absolute w-4 h-4 rounded-full bg-zinc-500 border-2 border-zinc-400 z-10 cursor-pointer"
+                            className="data-pop absolute w-4 h-4 rounded-full bg-zinc-500 border-2 border-zinc-400 z-10 cursor-pointer"
                             style={{ left: '60%', top: '35%', transform: 'translate(-50%, -50%)' }}
                             {...dotHoverHandlers('MSCI ACWI IMI', ['Mkt Cap: $460B', 'P/B: 3.2'])}
                           />
                           <div
-                            className="absolute w-4 h-4 rounded-full bg-cyan-500 border-2 border-cyan-400 shadow-lg shadow-cyan-500/30 z-10 cursor-pointer"
+                            className="data-pop-d2 absolute w-4 h-4 rounded-full bg-cyan-500 border-2 border-cyan-400 shadow-lg shadow-cyan-500/30 z-10 cursor-pointer"
                             style={{ left: '45%', top: '50%', transform: 'translate(-50%, -50%)' }}
                             {...dotHoverHandlers('Avg Client', ['Mkt Cap: $400B', 'P/B: 2.9'])}
                           />
@@ -194,7 +194,7 @@ export default function PortfolioTrendsDashboard() {
               </div>
 
               {/* Profitability Map */}
-              <div className="relative overflow-hidden bg-zinc-900/60 backdrop-blur-md border border-zinc-800/50 p-5">
+              <div className="relative overflow-hidden bg-zinc-900/60 backdrop-blur-md border border-zinc-800/50 p-5 rounded-xl">
                 <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] via-transparent to-transparent pointer-events-none" />
                 <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
 
@@ -220,15 +220,15 @@ export default function PortfolioTrendsDashboard() {
                         </div>
 
                         <div className="flex-1 relative border-l border-b border-zinc-700/50 overflow-hidden" style={{ height: '140px' }}>
-                          <div className="absolute left-0 right-0 border-t border-zinc-500/50" style={{ top: '40%' }} />
-                          <div className="absolute top-0 bottom-0 border-l border-zinc-500/50" style={{ left: '55%' }} />
+                          <div className="data-pop absolute left-0 right-0 border-t border-zinc-500/50" style={{ top: '40%' }} />
+                          <div className="data-pop absolute top-0 bottom-0 border-l border-zinc-500/50" style={{ left: '55%' }} />
                           <div
-                            className="absolute w-4 h-4 rounded-full bg-zinc-500 border-2 border-zinc-400 z-10 cursor-pointer"
+                            className="data-pop absolute w-4 h-4 rounded-full bg-zinc-500 border-2 border-zinc-400 z-10 cursor-pointer"
                             style={{ left: '55%', top: '40%', transform: 'translate(-50%, -50%)' }}
                             {...dotHoverHandlers('MSCI ACWI IMI', ['Profitability: 0.48', 'P/B: 3.1'])}
                           />
                           <div
-                            className="absolute w-4 h-4 rounded-full bg-cyan-500 border-2 border-cyan-400 shadow-lg shadow-cyan-500/30 z-10 cursor-pointer"
+                            className="data-pop-d2 absolute w-4 h-4 rounded-full bg-cyan-500 border-2 border-cyan-400 shadow-lg shadow-cyan-500/30 z-10 cursor-pointer"
                             style={{ left: '42%', top: '35%', transform: 'translate(-50%, -50%)' }}
                             {...dotHoverHandlers('Avg Client', ['Profitability: 0.50', 'P/B: 2.84'])}
                           />
@@ -261,7 +261,7 @@ export default function PortfolioTrendsDashboard() {
               </div>
 
               {/* Benchmark Comparison */}
-              <div className="relative overflow-hidden bg-zinc-900/60 backdrop-blur-md border border-zinc-800/50 p-5">
+              <div className="relative overflow-hidden bg-zinc-900/60 backdrop-blur-md border border-zinc-800/50 p-5 rounded-xl">
                 <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] via-transparent to-transparent pointer-events-none" />
                 <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
 
@@ -283,12 +283,12 @@ export default function PortfolioTrendsDashboard() {
                         </div>
                         <div className="flex gap-1 h-4">
                           <div
-                            className="bg-cyan-500/80 rounded-sm"
+                            className="bar-grow-x bg-cyan-500 border-2 border-cyan-400 shadow-md shadow-cyan-500/15 rounded-sm"
                             style={{ width: `${item.client}%` }}
                             title={`Client: ${item.client}%`}
                           />
                           <div
-                            className="bg-zinc-600/50 rounded-sm"
+                            className="bar-grow-x bg-zinc-600/50 rounded-sm"
                             style={{ width: `${item.acwi}%` }}
                             title={`ACWI: ${item.acwi}%`}
                           />
