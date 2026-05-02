@@ -171,7 +171,7 @@ export default function BenchmarkBarChart({ data, displayedPortfolios, palette, 
                     value = region.acwi;
                     color = ACWI_COLOR;
                     labelText = `${value}%`;
-                    labelColor = '#a1a1aa';
+                    labelColor = '#d4d4d8';
                   } else {
                     const p = region.portfolios[bar.name];
                     value = p?.client ?? 0;

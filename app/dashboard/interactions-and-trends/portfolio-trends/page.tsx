@@ -312,6 +312,12 @@ export default function PortfolioTrendsDashboard() {
     onMouseLeave: () => setDotTooltip(null),
   });
 
+  // Style Box width scales with the card cell width via a container query: take the cell
+  // width (100cqi), subtract the y-label strip + a little breathing room, then clamp.
+  // Height stays fixed so the box visibly stretches horizontally on wider screens.
+  const styleBoxWidth = 'clamp(200px, calc(100cqi - 56px), 480px)';
+  const styleBoxHeight = '280px';
+
   const filteredPortfolios = useMemo(() => {
     // All filters are cosmetic for now — pass the "all" sentinels so dummy data
     // isn't filtered out when a user makes a selection.
@@ -837,19 +843,19 @@ export default function PortfolioTrendsDashboard() {
                         weights (Large=top, Small=bottom); X is driven by Growth-vs-Value
                         weights (Value=left, Growth=right). The Core column is purely visual:
                         a balanced Growth/Value mix lands there naturally. */}
-                    <div className="relative flex items-center justify-center">
+                    <div className="relative flex items-center justify-center" style={{ containerType: 'inline-size' }}>
                       <div className="flex flex-col items-start">
                         <div className="flex">
-                          <div className="flex flex-col justify-around text-right pr-2" style={{ width: '40px', height: '280px', maxHeight: '100%' }}>
+                          <div className="flex flex-col justify-around text-right pr-2" style={{ width: '40px', height: styleBoxHeight, maxHeight: '100%' }}>
                             <span className="text-xs text-muted leading-none">Large</span>
                             <span className="text-xs text-muted leading-none">Mid</span>
                             <span className="text-xs text-muted leading-none">Small</span>
                           </div>
-                          <div className="relative border-2 border-zinc-600/70 rounded-sm" style={{ width: '280px', height: '280px', maxWidth: '100%', maxHeight: '100%' }}>
-                            <div className="data-pop absolute left-0 right-0 border-t-2 border-zinc-700/60" style={{ top: '33.333%' }} />
-                            <div className="data-pop absolute left-0 right-0 border-t-2 border-zinc-700/60" style={{ top: '66.667%' }} />
-                            <div className="data-pop absolute top-0 bottom-0 border-l-2 border-zinc-700/60" style={{ left: '33.333%' }} />
-                            <div className="data-pop absolute top-0 bottom-0 border-l-2 border-zinc-700/60" style={{ left: '66.667%' }} />
+                          <div className="relative border-4 border-zinc-600/80 rounded-sm" style={{ width: styleBoxWidth, height: styleBoxHeight, maxWidth: '100%', maxHeight: '100%' }}>
+                            <div className="data-pop absolute left-0 right-0 border-t-[3px] border-zinc-700/70" style={{ top: '33.333%' }} />
+                            <div className="data-pop absolute left-0 right-0 border-t-[3px] border-zinc-700/70" style={{ top: '66.667%' }} />
+                            <div className="data-pop absolute top-0 bottom-0 border-l-[3px] border-zinc-700/70" style={{ left: '33.333%' }} />
+                            <div className="data-pop absolute top-0 bottom-0 border-l-[3px] border-zinc-700/70" style={{ left: '66.667%' }} />
 
                             {/* Index dot — drawn first so portfolio dots layer on top */}
                             {(() => {
@@ -902,7 +908,7 @@ export default function PortfolioTrendsDashboard() {
                             })}
                           </div>
                         </div>
-                        <div className="flex mt-1" style={{ width: '280px', maxWidth: 'calc(100% - 40px)', marginLeft: '40px' }}>
+                        <div className="flex mt-1" style={{ width: styleBoxWidth, maxWidth: 'calc(100% - 40px)', marginLeft: '40px' }}>
                           <span className="flex-1 text-center text-xs text-muted leading-none">Value</span>
                           <span className="flex-1 text-center text-xs text-muted leading-none">Core</span>
                           <span className="flex-1 text-center text-xs text-muted leading-none">Growth</span>
