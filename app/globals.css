@@ -117,11 +117,20 @@ body {
 .data-pop-d1   { animation: dataPop 0.9s ease-out 0.3s both; }
 .data-pop-d2   { animation: dataPop 0.9s ease-out 0.55s both; }
 
+/* Exit fade — applied to portfolio-keyed elements (XY dots, bars, table cells, legend chips, etc.)
+   while their portfolio is being deselected, before deferred unmount. Mirrors data-pop. */
+@keyframes dataFade {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+.data-fade { animation: dataFade 0.4s ease-out both; }
+
 @keyframes barGrowX {
   from { transform: scaleX(0); }
   to   { transform: scaleX(1); }
 }
 .bar-grow-x { animation: barGrowX 1.5s cubic-bezier(0.4, 0, 0.2, 1) both; transform-origin: left; }
+.bar-grow-x-left { animation: barGrowX 1.5s cubic-bezier(0.4, 0, 0.2, 1) both; transform-origin: right; }
 
 /* Scroll-triggered fade-in */
 .scroll-fade-in {
