@@ -125,6 +125,30 @@ body {
 }
 .data-fade { animation: dataFade 0.4s ease-out both; }
 
+/* Table column entrance / exit — used by the Metrics vs Index card so portfolio-keyed
+   columns slide in/out instead of snapping. The animation has to live on an inline-block
+   wrapper inside the cell because <td>/<th> (display: table-cell) ignore max-width during
+   table layout in most browsers. The cell itself has px-0; the wrapper carries the
+   padding that grows alongside max-width so the column track shrinks to genuinely 0
+   when collapsed. The 'to' padding (0.5rem) matches Tailwind's pl-2. */
+@keyframes colExpand {
+  from { max-width: 0;     padding-left: 0;      opacity: 0; }
+  to   { max-width: 240px; padding-left: 0.5rem; opacity: 1; }
+}
+@keyframes colCollapse {
+  from { max-width: 240px; padding-left: 0.5rem; opacity: 1; }
+  to   { max-width: 0;     padding-left: 0;      opacity: 0; }
+}
+.col-expand,
+.col-collapse {
+  display: inline-block;
+  overflow: hidden;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+.col-expand   { animation: colExpand   1.2s cubic-bezier(0.4, 0, 0.2, 1) both; }
+.col-collapse { animation: colCollapse 1.2s cubic-bezier(0.4, 0, 0.2, 1) both; }
+
 @keyframes barGrowX {
   from { transform: scaleX(0); }
   to   { transform: scaleX(1); }

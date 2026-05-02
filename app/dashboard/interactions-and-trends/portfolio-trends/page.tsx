@@ -25,6 +25,13 @@ const DEPARTMENTS = ['Broker-Dealer', 'IAG', 'Institutional', 'Retirement Group'
 // default; Core+ Model is a firm-defined model portfolio.
 const PORTFOLIO_OPTIONS = ['Avg. Client', 'Core+ Model'] as const;
 type PortfolioName = typeof PORTFOLIO_OPTIONS[number];
+type DisplayedPortfolio = { name: PortfolioName; idx: number; exiting: boolean };
+type DeltaState = 'visible' | 'exiting' | 'hidden';
+
+// Duration of the col-collapse / data-fade exit animations + the deferred React unmount that
+// follows. Kept in sync with the 1.2s timing in globals.css so cells finish animating out
+// before they're swept from the DOM.
+const PORTFOLIO_EXIT_MS = 1200;
 
 // Color is tied to selection order, not portfolio name. Whichever portfolio is selected
 // first gets palette[0], the next selection gets palette[1]. Avg. Client is the default
@@ -59,6 +66,58 @@ function getRecentQuarterEnds(count: number): string[] {
   return result;
 }
 
+// Delta-column visibility for the Metrics vs Index and Style × Profitability cards. Both
+// want delta columns when there's room and drop them (with col-collapse animation) when
+// the viewport is too narrow to fit a 2nd portfolio + 2 delta columns alongside everything
+// else in the row. Driven off viewport width (not card content width) because the Style ×
+// Profitability card shares its row with a radar chart whose layout would otherwise muddy
+// the "is there room?" signal.
+//
+// Hand-off sequencing in compact mode (mirrors PORTFOLIO_EXIT_MS):
+//   add 2nd portfolio   → delta columns col-collapse (1.2s) → 2nd portfolio col-expands (1.2s)
+//   remove 2nd portfolio → 2nd portfolio col-collapses (1.2s) → delta columns col-expand (1.2s)
+function useDeltaColumns(
+  viewportThreshold: number,
+  displayedPortfolios: DisplayedPortfolio[],
+  portfolioFilter: readonly PortfolioName[],
+) {
+  const [isCompact, setIsCompact] = useState(false);
+  useEffect(() => {
+    const mql = window.matchMedia(`(max-width: ${viewportThreshold - 1}px)`);
+    setIsCompact(mql.matches);
+    const handler = (e: MediaQueryListEvent) => setIsCompact(e.matches);
+    mql.addEventListener('change', handler);
+    return () => mql.removeEventListener('change', handler);
+  }, [viewportThreshold]);
+
+  const wantHidden = isCompact && portfolioFilter.length > 1;
+  const [deltaState, setDeltaState] = useState<DeltaState>(wantHidden ? 'hidden' : 'visible');
+  useEffect(() => {
+    if (wantHidden) {
+      setDeltaState(prev => (prev === 'visible' ? 'exiting' : prev));
+    } else {
+      // Wait until the dying portfolio column has fully unmounted before showing deltas back,
+      // so it col-collapses alone before the deltas col-expand into the freed space.
+      if (displayedPortfolios.some(p => p.exiting)) return;
+      setDeltaState(prev => (prev === 'visible' ? prev : 'visible'));
+    }
+  }, [wantHidden, displayedPortfolios]);
+  useEffect(() => {
+    if (deltaState !== 'exiting') return;
+    const t = setTimeout(() => setDeltaState('hidden'), PORTFOLIO_EXIT_MS);
+    return () => clearTimeout(t);
+  }, [deltaState]);
+
+  // While the card is compact and a hand-off is in flight (deltas visible or exiting), keep
+  // newly-added portfolios out of *this* card's render so the deltas finish col-collapsing
+  // before the 2nd portfolio's column mounts and col-expands.
+  const visiblePortfolios = (isCompact && deltaState !== 'hidden' && portfolioFilter[0])
+    ? displayedPortfolios.filter(p => p.name === portfolioFilter[0])
+    : displayedPortfolios;
+
+  return { deltaState, visiblePortfolios };
+}
+
 export default function PortfolioTrendsDashboard() {
   const { user } = useCurrentUser();
   const isGuest = user?.team === 'Guest';
@@ -80,8 +139,6 @@ export default function PortfolioTrendsDashboard() {
   // Deferred-unmount list driving every portfolio-keyed render (dots, bars, polygons, table cells).
   // When a portfolio is deselected we keep its row here with `exiting: true` for the duration of the
   // fade-out, then sweep it out, so visuals animate away instead of disappearing on the next render.
-  const PORTFOLIO_EXIT_MS = 400;
-  type DisplayedPortfolio = { name: PortfolioName; idx: number; exiting: boolean };
   const [displayedPortfolios, setDisplayedPortfolios] = useState<DisplayedPortfolio[]>(
     () => portfolioFilter.map((name, idx) => ({ name, idx, exiting: false }))
   );
@@ -116,6 +173,12 @@ export default function PortfolioTrendsDashboard() {
     }, PORTFOLIO_EXIT_MS);
     return () => clearTimeout(t);
   }, [displayedPortfolios]);
+
+  // Shared delta-column hand-off — both the Metrics vs Index and Style × Profitability cards
+  // switch on the same viewport breakpoint, so a single hook call drives both renderings.
+  const { deltaState, visiblePortfolios } = useDeltaColumns(
+    1600, displayedPortfolios, portfolioFilter
+  );
 
 
   // Guests don't have "Team Members" — their only scope is the cross-team aggregate.
@@ -184,6 +247,70 @@ export default function PortfolioTrendsDashboard() {
     'Value High-Prof':  'V-HP',
     'Value Low-Prof':   'V-LP',
   };
+
+  // Holdings-count mock data for the metrics-vs-index table (the other rows reuse the
+  // values already powering the XY / Cap Tilt / Style × Profitability cards).
+  const companyCounts: { index: number; portfolios: Record<PortfolioName, number> } = {
+    index: 8800,
+    portfolios: { 'Avg. Client': 245, 'Core+ Model': 78 },
+  };
+
+  // Row schema for the metrics-vs-index table. Each row pulls portfolio + index values
+  // from the same data sources that drive the visual cards above, plus a formatter for
+  // the cell value and the delta. `indent` marks Style × Profitability sub-rows.
+  type MetricRow = {
+    id: string;
+    label: string;
+    // For some metrics a lower-than-index reading is the favorable direction (e.g. cheaper P/B,
+    // less mega-cap concentration). Flip the green/red mapping on those rows so the color
+    // reflects "good vs bad" rather than literal "above vs below".
+    invertColor?: boolean;
+    index: number;
+    getPortfolio: (name: PortfolioName) => number;
+    format: (v: number) => string;
+    formatDelta: (v: number) => string;
+  };
+  const fmtPct        = (v: number) => `${v.toFixed(0)}%`;
+  const fmtPctDelta   = (v: number) => `${v >= 0 ? '+' : '−'}${Math.abs(v).toFixed(1)}%`;
+  const fmtRatio      = (v: number) => v.toFixed(2);
+  const fmtRatioDelta = (v: number) => `${v >= 0 ? '+' : '−'}${Math.abs(v).toFixed(2)}`;
+  const fmtMktCap     = (v: number) => `$${v}B`;
+  const fmtMktCapDel  = (v: number) => `${v >= 0 ? '+' : '−'}$${Math.abs(Math.round(v))}B`;
+  const fmtCount      = (v: number) => v.toLocaleString();
+  const fmtCountDelta = (v: number) => `${v >= 0 ? '+' : '−'}${Math.abs(v).toLocaleString()}`;
+  const metricsTableRows: MetricRow[] = [
+    {
+      id: 'companies', label: '# of Companies',
+      index: companyCounts.index,
+      getPortfolio: (name) => companyCounts.portfolios[name],
+      format: fmtCount, formatDelta: fmtCountDelta,
+    },
+    {
+      id: 'mktCap', label: 'Wtd Avg Mkt Cap', invertColor: true,
+      index: styleXY.benchmark.y,
+      getPortfolio: (name) => styleXY.portfolios[name].y,
+      format: fmtMktCap, formatDelta: fmtMktCapDel,
+    },
+    {
+      id: 'pb', label: 'P/B', invertColor: true,
+      index: styleXY.benchmark.x,
+      getPortfolio: (name) => styleXY.portfolios[name].x,
+      format: fmtRatio, formatDelta: fmtRatioDelta,
+    },
+    {
+      id: 'profitability', label: 'Profitability',
+      index: profitabilityXY.benchmark.y,
+      getPortfolio: (name) => profitabilityXY.portfolios[name].y,
+      format: fmtRatio, formatDelta: fmtRatioDelta,
+    },
+    ...CAP_BUCKETS.map<MetricRow>(bucket => ({
+      id: `cap-${bucket}`, label: bucket,
+      invertColor: bucket === 'Large Cap',
+      index: capAllocation.index[bucket],
+      getPortfolio: (name) => capAllocation.portfolios[name][bucket],
+      format: fmtPct, formatDelta: fmtPctDelta,
+    })),
+  ];
 
   // Tooltip state for chart dots (Style Map, Profitability Map)
   const [dotTooltip, setDotTooltip] = useState<{ label: string; lines: string[]; x: number; y: number } | null>(null);
@@ -762,64 +889,242 @@ export default function PortfolioTrendsDashboard() {
                     <div className="h-[80%] self-start w-full flex flex-col">
                       <table className="w-full h-full text-xs">
                         <thead>
-                          <tr className="border-b border-zinc-700/60">
+                          <tr className="data-pop border-b border-zinc-700/60">
                             <th className="text-left font-normal py-1.5 pr-2 text-muted">Category</th>
-                            {displayedPortfolios.map(({ name, idx, exiting }) => {
+                            {visiblePortfolios.map(({ name, idx, exiting }) => {
                               const color = PORTFOLIO_PALETTE[idx] ?? PORTFOLIO_PALETTE[0];
                               return (
-                                <th
-                                  key={name}
-                                  className={`text-right font-medium py-1.5 pl-2 ${exiting ? 'data-fade' : ''}`}
-                                  style={{ color: color.hex }}
-                                >
-                                  {name}
+                                <th key={name} className="text-right font-medium py-1.5 px-0">
+                                  <span className={exiting ? 'col-collapse' : 'col-expand'} style={{ color: color.hex }}>
+                                    {name}
+                                  </span>
                                 </th>
                               );
                             })}
                             <th className="text-right font-medium py-1.5 pl-2" style={{ color: '#a1a1aa' }}>
                               Index
                             </th>
+                            {deltaState !== 'hidden' && visiblePortfolios.filter(p => !p.exiting).map(({ name, idx }) => {
+                              const color = PORTFOLIO_PALETTE[idx] ?? PORTFOLIO_PALETTE[0];
+                              return (
+                                <th key={`${name}-delta`} className="text-right font-medium py-1.5 px-0">
+                                  <span className={deltaState === 'exiting' ? 'col-collapse' : 'col-expand'} style={{ color: color.hex }}>
+                                    Δ
+                                  </span>
+                                </th>
+                              );
+                            })}
                           </tr>
                         </thead>
                         <tbody>
                           {([
-                            { total: 'Growth' as const, subs: ['Growth High-Prof', 'Growth Low-Prof'] as const },
-                            { total: 'Value' as const,  subs: ['Value High-Prof',  'Value Low-Prof']  as const },
-                          ]).map(group => (
+                            { total: 'Growth' as const, subs: ['Growth High-Prof', 'Growth Low-Prof'] as const, invert: true },
+                            { total: 'Value' as const,  subs: ['Value High-Prof',  'Value Low-Prof']  as const, invert: false },
+                          ]).map((group, groupIdxN) => {
+                            const groupIdx = styleProfitability.index[group.subs[0]] + styleProfitability.index[group.subs[1]];
+                            // Flat row index across both groups for the staggered entrance:
+                            // group 0 → rows 0,1,2; group 1 → rows 3,4,5. Same 80ms + 120ms·n
+                            // formula as the Metrics vs Index card so the cascade feels uniform.
+                            const totalRowIdx = groupIdxN * 3;
+                            return (
                             <React.Fragment key={group.total}>
-                              <tr className="border-b border-zinc-800/40">
+                              <tr
+                                className="data-pop border-b border-zinc-800/40"
+                                style={{ animationDelay: `${80 + totalRowIdx * 120}ms` }}
+                              >
                                 <td className="py-1.5 pr-2 text-white font-medium">{group.total}</td>
-                                {displayedPortfolios.map(({ name, exiting }) => {
+                                {visiblePortfolios.map(({ name, exiting }) => {
                                   const a = styleProfitability.portfolios[name];
                                   return (
-                                    <td key={name} className={`text-right font-mono tabular-nums py-1.5 pl-2 text-white font-medium ${exiting ? 'data-fade' : ''}`}>
-                                      {a[group.subs[0]] + a[group.subs[1]]}%
+                                    <td key={name} className="text-right font-mono tabular-nums py-1.5 px-0 text-white font-medium">
+                                      <span className={exiting ? 'col-collapse' : 'col-expand'}>
+                                        {a[group.subs[0]] + a[group.subs[1]]}%
+                                      </span>
                                     </td>
                                   );
                                 })}
                                 <td className="text-right font-mono tabular-nums py-1.5 pl-2 text-white font-medium">
-                                  {styleProfitability.index[group.subs[0]] + styleProfitability.index[group.subs[1]]}%
+                                  {groupIdx}%
                                 </td>
+                                {deltaState !== 'hidden' && visiblePortfolios.filter(p => !p.exiting).map(({ name, idx }) => {
+                                  const color = PORTFOLIO_PALETTE[idx] ?? PORTFOLIO_PALETTE[0];
+                                  const a = styleProfitability.portfolios[name];
+                                  const delta = (a[group.subs[0]] + a[group.subs[1]]) - groupIdx;
+                                  const positive = delta > 0;
+                                  const zero = delta === 0;
+                                  const favorable = group.invert ? !positive : positive;
+                                  const valueColor = zero ? '#a1a1aa' : favorable ? '#4ade80' : '#f87171';
+                                  return (
+                                    <td key={`${name}-delta`} className="text-right font-mono tabular-nums py-1.5 px-0">
+                                      <span className={deltaState === 'exiting' ? 'col-collapse' : 'col-expand'}>
+                                        <span className="inline-flex items-center justify-end gap-1">
+                                          <span style={{ fontSize: '8px', lineHeight: 1, color: zero ? '#a1a1aa' : color.hex }}>
+                                            {zero ? '—' : positive ? '▲' : '▼'}
+                                          </span>
+                                          <span style={{ color: valueColor }}>
+                                            {zero ? '0' : fmtPctDelta(delta)}
+                                          </span>
+                                        </span>
+                                      </span>
+                                    </td>
+                                  );
+                                })}
                               </tr>
-                              {group.subs.map(cat => (
-                                <tr key={cat} className="border-b border-zinc-800/40 last:border-b-0">
+                              {group.subs.map((cat, subIdx) => {
+                                // Growth Low-Prof is the only sub-row that gets inverted coloring (matches the metrics-vs-index card).
+                                const subInvert = cat === 'Growth Low-Prof';
+                                const subRowIdx = totalRowIdx + 1 + subIdx;
+                                return (
+                                <tr
+                                  key={cat}
+                                  className="data-pop border-b border-zinc-800/40 last:border-b-0"
+                                  style={{ animationDelay: `${80 + subRowIdx * 120}ms` }}
+                                >
                                   <td className="py-1.5 pl-4 pr-2 text-muted">{cat}</td>
-                                  {displayedPortfolios.map(({ name, exiting }) => (
-                                    <td key={name} className={`text-right font-mono tabular-nums py-1.5 pl-2 text-muted ${exiting ? 'data-fade' : ''}`}>
-                                      {styleProfitability.portfolios[name][cat]}%
+                                  {visiblePortfolios.map(({ name, exiting }) => (
+                                    <td key={name} className="text-right font-mono tabular-nums py-1.5 px-0 text-muted">
+                                      <span className={exiting ? 'col-collapse' : 'col-expand'}>
+                                        {styleProfitability.portfolios[name][cat]}%
+                                      </span>
                                     </td>
                                   ))}
                                   <td className="text-right font-mono tabular-nums py-1.5 pl-2 text-muted">
                                     {styleProfitability.index[cat]}%
                                   </td>
+                                  {deltaState !== 'hidden' && visiblePortfolios.filter(p => !p.exiting).map(({ name, idx }) => {
+                                    const color = PORTFOLIO_PALETTE[idx] ?? PORTFOLIO_PALETTE[0];
+                                    const delta = styleProfitability.portfolios[name][cat] - styleProfitability.index[cat];
+                                    const positive = delta > 0;
+                                    const zero = delta === 0;
+                                    const favorable = subInvert ? !positive : positive;
+                                    const valueColor = zero ? '#a1a1aa' : favorable ? '#4ade80' : '#f87171';
+                                    return (
+                                      <td key={`${name}-delta`} className="text-right font-mono tabular-nums py-1.5 px-0">
+                                        <span className={deltaState === 'exiting' ? 'col-collapse' : 'col-expand'}>
+                                          <span className="inline-flex items-center justify-end gap-1">
+                                            <span style={{ fontSize: '8px', lineHeight: 1, color: zero ? '#a1a1aa' : color.hex }}>
+                                              {zero ? '—' : positive ? '▲' : '▼'}
+                                            </span>
+                                            <span style={{ color: valueColor }}>
+                                              {zero ? '0' : fmtPctDelta(delta)}
+                                            </span>
+                                          </span>
+                                        </span>
+                                      </td>
+                                    );
+                                  })}
                                 </tr>
-                              ))}
+                                );
+                              })}
                             </React.Fragment>
-                          ))}
+                            );
+                          })}
                         </tbody>
                       </table>
                     </div>
                   </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Charts Row 3: Metrics vs Index — narrow card matching the 'vs MSCI ACWI IMI' width */}
+            <div className="grid grid-cols-3 gap-4 mb-4">
+              <div className="col-span-1 relative overflow-hidden bg-zinc-900/60 backdrop-blur-md border border-zinc-800/50 p-5 rounded-xl flex flex-col">
+                <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] via-transparent to-transparent pointer-events-none" />
+                <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+
+                <div className="relative z-10 flex flex-col flex-1">
+                  <div className="flex items-center justify-between mb-4 -mt-2 -ml-2">
+                    <div>
+                      <h4 className="text-sm font-medium text-white">Metrics vs Index</h4>
+                      <p className="text-xs text-muted">vs MSCI ACWI IMI ({period})</p>
+                    </div>
+                  </div>
+
+                  <table className="w-full text-xs">
+                    <thead>
+                      <tr className="data-pop border-b border-zinc-700/60">
+                        <th className="text-left font-normal py-1.5 pr-2 text-muted">Metric</th>
+                        {visiblePortfolios.map(({ name, idx, exiting }) => {
+                          const color = PORTFOLIO_PALETTE[idx] ?? PORTFOLIO_PALETTE[0];
+                          return (
+                            <th key={name} className="text-right font-medium py-1.5 px-0">
+                              <span className={exiting ? 'col-collapse' : 'col-expand'} style={{ color: color.hex }}>
+                                {name}
+                              </span>
+                            </th>
+                          );
+                        })}
+                        <th className="text-right font-medium py-1.5 pl-2" style={{ color: '#a1a1aa' }}>
+                          Index
+                        </th>
+                        {deltaState !== 'hidden' && visiblePortfolios.filter(p => !p.exiting).map(({ name, idx }) => {
+                          const color = PORTFOLIO_PALETTE[idx] ?? PORTFOLIO_PALETTE[0];
+                          return (
+                            <th key={`${name}-delta`} className="text-right font-medium py-1.5 px-0">
+                              <span className={deltaState === 'exiting' ? 'col-collapse' : 'col-expand'} style={{ color: color.hex }}>
+                                Δ
+                              </span>
+                            </th>
+                          );
+                        })}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {metricsTableRows.map((row, rowIdx) => (
+                        <tr
+                          key={row.id}
+                          className="data-pop border-b border-zinc-800/40 last:border-b-0"
+                          style={{ animationDelay: `${80 + rowIdx * 120}ms` }}
+                        >
+                          <td className="py-1.5 pr-2 text-white font-medium">
+                            {row.label}
+                          </td>
+                          {visiblePortfolios.map(({ name, exiting }) => (
+                            <td
+                              key={name}
+                              className="text-right font-mono tabular-nums py-1.5 px-0 text-white font-medium"
+                            >
+                              <span className={exiting ? 'col-collapse' : 'col-expand'}>
+                                {row.format(row.getPortfolio(name))}
+                              </span>
+                            </td>
+                          ))}
+                          <td className="text-right font-mono tabular-nums py-1.5 pl-2 text-white font-medium">
+                            {row.format(row.index)}
+                          </td>
+                          {deltaState !== 'hidden' && visiblePortfolios.filter(p => !p.exiting).map(({ name, idx }) => {
+                            const color = PORTFOLIO_PALETTE[idx] ?? PORTFOLIO_PALETTE[0];
+                            const delta = row.getPortfolio(name) - row.index;
+                            const positive = delta > 0;
+                            const zero = delta === 0;
+                            // Triangle stays portfolio-colored; the number itself goes green/red.
+                            // For inverted rows (e.g. P/B, Large Cap), being below the index is
+                            // the favorable direction so green/red are flipped.
+                            const favorable = row.invertColor ? !positive : positive;
+                            const valueColor = zero ? '#a1a1aa' : favorable ? '#4ade80' : '#f87171';
+                            return (
+                              <td
+                                key={`${name}-delta`}
+                                className="text-right font-mono tabular-nums py-1.5 px-0"
+                              >
+                                <span className={deltaState === 'exiting' ? 'col-collapse' : 'col-expand'}>
+                                  <span className="inline-flex items-center justify-end gap-1">
+                                    <span style={{ fontSize: '8px', lineHeight: 1, color: zero ? '#a1a1aa' : color.hex }}>
+                                      {zero ? '—' : positive ? '▲' : '▼'}
+                                    </span>
+                                    <span style={{ color: valueColor }}>
+                                      {zero ? '0' : row.formatDelta(delta)}
+                                    </span>
+                                  </span>
+                                </span>
+                              </td>
+                            );
+                          })}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               </div>
             </div>
