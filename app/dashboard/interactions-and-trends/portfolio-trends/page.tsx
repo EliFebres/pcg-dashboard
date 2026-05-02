@@ -373,7 +373,7 @@ export default function PortfolioTrendsDashboard() {
                   </div>
 
                   <div className="flex flex-1 min-h-[140px]">
-                    <div className="flex items-center justify-center" style={{ width: '20px' }}>
+                    <div className="flex items-center justify-center mr-1" style={{ width: '20px' }}>
                       <span className="-rotate-90 text-xs text-muted whitespace-nowrap">Wtd Avg Mkt Cap ($B)</span>
                     </div>
 
@@ -472,7 +472,7 @@ export default function PortfolioTrendsDashboard() {
                   </div>
 
                   <div className="flex flex-1 min-h-[140px]">
-                    <div className="flex items-center justify-center" style={{ width: '20px' }}>
+                    <div className="flex items-center justify-center mr-1" style={{ width: '20px' }}>
                       <span className="-rotate-90 text-xs text-muted whitespace-nowrap">Wtd Avg Profitability</span>
                     </div>
 
