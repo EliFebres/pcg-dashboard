@@ -172,6 +172,22 @@ body {
 }
 .benchmark-label--rising { animation: benchmarkLabelRise 330ms 990ms ease-out both; }
 
+/* Benchmark vertical-bar shrink: applied to a <rect> whose portfolio was just deselected.
+   Uses a keyframe (rather than inline transition) so it cleanly overrides the rising
+   animation's fill state. transformOrigin is set per-bar inline so the bar collapses to
+   its baseline. Duration matches SHRINK_MS in BenchmarkBarChart.tsx. */
+@keyframes benchmarkBarShrink {
+  0%   { transform: scaleY(1); opacity: 1; }
+  100% { transform: scaleY(0); opacity: 0; }
+}
+.benchmark-bar--shrinking { animation: benchmarkBarShrink 550ms ease-out forwards; }
+
+@keyframes benchmarkLabelShrink {
+  0%   { opacity: 1; }
+  100% { opacity: 0; }
+}
+.benchmark-label--shrinking { animation: benchmarkLabelShrink 350ms ease-out forwards; }
+
 /* Scroll-triggered fade-in */
 .scroll-fade-in {
   opacity: 0;

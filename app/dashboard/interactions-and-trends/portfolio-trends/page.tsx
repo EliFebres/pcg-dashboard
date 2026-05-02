@@ -208,13 +208,9 @@ export default function PortfolioTrendsDashboard() {
     } as Record<PortfolioName, { x: number; y: number }>,
   };
 
-  // Cap Tilt — index ("0 line") and per-portfolio Large/Mid/Small Cap allocations in %.
-  // Bars in the diverging chart are anchored at the index value: positive deltas grow right,
-  // negative deltas grow left. MAX_DELTA scales the half-track so a ±MAX_DELTA pp move uses
-  // 100% of the half-width.
+  // Cap allocations — index and per-portfolio Large/Mid/Small Cap weights in %.
   const CAP_BUCKETS = ['Large Cap', 'Mid Cap', 'Small Cap'] as const;
   type CapBucket = typeof CAP_BUCKETS[number];
-  const CAP_MAX_DELTA = 10;
   const capAllocation: {
     index: Record<CapBucket, number>;
     portfolios: Record<PortfolioName, Record<CapBucket, number>>;
@@ -249,7 +245,7 @@ export default function PortfolioTrendsDashboard() {
   };
 
   // Holdings-count mock data for the metrics-vs-index table (the other rows reuse the
-  // values already powering the XY / Cap Tilt / Style × Profitability cards).
+  // values already powering the XY / Style × Profitability cards).
   const companyCounts: { index: number; portfolios: Record<PortfolioName, number> } = {
     index: 8800,
     portfolios: { 'Avg. Client': 245, 'Core+ Model': 78 },
@@ -484,7 +480,7 @@ export default function PortfolioTrendsDashboard() {
               <span className="text-xs text-muted ml-2">Style, quality, and regional positioning vs benchmark</span>
             </div>
 
-            {/* Charts Row: Style Map + Asset Class + Benchmark Delta */}
+            {/* Charts Row 1: Style XY + Profitability XY + Metrics vs Index */}
             <div className="grid grid-cols-3 gap-4 mb-4">
               {/* Style Map - Market Cap vs P/B */}
               <div className="relative overflow-hidden bg-zinc-900/60 backdrop-blur-md border border-zinc-800/50 p-5 rounded-xl flex flex-col min-h-[340px]">
@@ -684,8 +680,111 @@ export default function PortfolioTrendsDashboard() {
                 </div>
               </div>
 
-              {/* Benchmark Comparison */}
+              {/* Metrics vs Index */}
               <div className="relative overflow-hidden bg-zinc-900/60 backdrop-blur-md border border-zinc-800/50 p-5 rounded-xl min-h-[340px] flex flex-col">
+                <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] via-transparent to-transparent pointer-events-none" />
+                <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+
+                <div className="relative z-10 flex flex-col flex-1">
+                  <div className="flex items-center justify-between mb-4 -mt-2 -ml-2">
+                    <div>
+                      <h4 className="text-sm font-medium text-white">Metrics vs Index</h4>
+                      <p className="text-xs text-muted">vs MSCI ACWI IMI ({period})</p>
+                    </div>
+                  </div>
+
+                  <table className="w-full text-xs">
+                    <thead>
+                      <tr className="data-pop border-b border-zinc-700/60">
+                        <th className="text-left font-normal py-1.5 pr-2 text-muted">Metric</th>
+                        {visiblePortfolios.map(({ name, idx, exiting }) => {
+                          const color = PORTFOLIO_PALETTE[idx] ?? PORTFOLIO_PALETTE[0];
+                          return (
+                            <th key={name} className="text-right font-medium py-1.5 px-0">
+                              <span className={exiting ? 'col-collapse' : 'col-expand'} style={{ color: color.hex }}>
+                                {name}
+                              </span>
+                            </th>
+                          );
+                        })}
+                        <th className="text-right font-medium py-1.5 pl-2" style={{ color: '#a1a1aa' }}>
+                          Index
+                        </th>
+                        {deltaState !== 'hidden' && visiblePortfolios.filter(p => !p.exiting).map(({ name, idx }) => {
+                          const color = PORTFOLIO_PALETTE[idx] ?? PORTFOLIO_PALETTE[0];
+                          return (
+                            <th key={`${name}-delta`} className="text-right font-medium py-1.5 px-0">
+                              <span className={deltaState === 'exiting' ? 'col-collapse' : 'col-expand'} style={{ color: color.hex }}>
+                                Δ
+                              </span>
+                            </th>
+                          );
+                        })}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {metricsTableRows.map((row, rowIdx) => (
+                        <tr
+                          key={row.id}
+                          className="data-pop border-b border-zinc-800/40 last:border-b-0"
+                          style={{ animationDelay: `${80 + rowIdx * 120}ms` }}
+                        >
+                          <td className="py-1.5 pr-2 text-white font-medium">
+                            {row.label}
+                          </td>
+                          {visiblePortfolios.map(({ name, exiting }) => (
+                            <td
+                              key={name}
+                              className="text-right font-mono tabular-nums py-1.5 px-0 text-white font-medium"
+                            >
+                              <span className={exiting ? 'col-collapse' : 'col-expand'}>
+                                {row.format(row.getPortfolio(name))}
+                              </span>
+                            </td>
+                          ))}
+                          <td className="text-right font-mono tabular-nums py-1.5 pl-2 text-white font-medium">
+                            {row.format(row.index)}
+                          </td>
+                          {deltaState !== 'hidden' && visiblePortfolios.filter(p => !p.exiting).map(({ name, idx }) => {
+                            const color = PORTFOLIO_PALETTE[idx] ?? PORTFOLIO_PALETTE[0];
+                            const delta = row.getPortfolio(name) - row.index;
+                            const positive = delta > 0;
+                            const zero = delta === 0;
+                            // Triangle stays portfolio-colored; the number itself goes green/red.
+                            // For inverted rows (e.g. P/B, Large Cap), being below the index is
+                            // the favorable direction so green/red are flipped.
+                            const favorable = row.invertColor ? !positive : positive;
+                            const valueColor = zero ? '#a1a1aa' : favorable ? '#4ade80' : '#f87171';
+                            return (
+                              <td
+                                key={`${name}-delta`}
+                                className="text-right font-mono tabular-nums py-1.5 px-0"
+                              >
+                                <span className={deltaState === 'exiting' ? 'col-collapse' : 'col-expand'}>
+                                  <span className="inline-flex items-center justify-end gap-1">
+                                    <span style={{ fontSize: '8px', lineHeight: 1, color: zero ? '#a1a1aa' : color.hex }}>
+                                      {zero ? '—' : positive ? '▲' : '▼'}
+                                    </span>
+                                    <span style={{ color: valueColor }}>
+                                      {zero ? '0' : row.formatDelta(delta)}
+                                    </span>
+                                  </span>
+                                </span>
+                              </td>
+                            );
+                          })}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            {/* Charts Row 2: vs MSCI ACWI IMI + Style x Profitability */}
+            <div className="grid grid-cols-3 gap-4 mb-4">
+              {/* Benchmark Comparison */}
+              <div className="col-span-1 relative overflow-hidden bg-zinc-900/60 backdrop-blur-md border border-zinc-800/50 p-5 rounded-xl min-h-[380px] flex flex-col">
                 <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] via-transparent to-transparent pointer-events-none" />
                 <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
 
@@ -702,7 +801,6 @@ export default function PortfolioTrendsDashboard() {
                         data={benchmarkRegions}
                         displayedPortfolios={displayedPortfolios}
                         palette={PORTFOLIO_PALETTE}
-                        exitMs={PORTFOLIO_EXIT_MS}
                       />
                     </div>
 
@@ -724,87 +822,9 @@ export default function PortfolioTrendsDashboard() {
                   </div>
                 </div>
               </div>
-            </div>
-
-            {/* Charts Row 2: Cap Tilt + Style x Profitability */}
-            <div className="grid grid-cols-3 gap-4 mb-4">
-              {/* Cap Tilt vs Index — diverging bars anchored at the index */}
-              <div className="col-span-1 relative overflow-hidden bg-zinc-900/60 backdrop-blur-md border border-zinc-800/50 p-5 rounded-xl flex flex-col">
-                <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] via-transparent to-transparent pointer-events-none" />
-                <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
-
-                <div className="relative z-10 flex flex-col flex-1">
-                  <div className="flex items-center justify-between mb-4 -mt-2 -ml-2">
-                    <div>
-                      <h4 className="text-sm font-medium text-white">Cap Tilt vs Index</h4>
-                      <p className="text-xs text-muted">vs MSCI ACWI IMI ({period})</p>
-                    </div>
-                  </div>
-
-                  <div className="flex-1 flex flex-col justify-around min-h-[220px] py-2">
-                    {CAP_BUCKETS.map(bucket => (
-                      <div key={bucket} className="flex flex-col gap-1.5">
-                        <span className="text-xs text-muted">{bucket}</span>
-                        <div className="relative">
-                          <div className="absolute left-1/2 top-0 bottom-0 w-px bg-zinc-500/70 z-10" />
-                          <div className="flex flex-col gap-1.5 py-1">
-                            {displayedPortfolios.map(({ name, idx, exiting }) => {
-                              const color = PORTFOLIO_PALETTE[idx] ?? PORTFOLIO_PALETTE[0];
-                              const delta = Math.round((capAllocation.portfolios[name][bucket] - capAllocation.index[bucket]) * 10) / 10;
-                              const positive = delta >= 0;
-                              const barWidth = Math.min(Math.abs(delta) / CAP_MAX_DELTA, 1) * 50;
-                              return (
-                                <div key={name} className={`relative h-3.5 ${exiting ? 'data-fade' : ''}`}>
-                                  <div
-                                    className={`${positive ? 'bar-grow-x' : 'bar-grow-x-left'} absolute top-0 h-full rounded-sm`}
-                                    style={{
-                                      width: `${barWidth}%`,
-                                      left: positive ? '50%' : `${50 - barWidth}%`,
-                                      backgroundColor: color.hex,
-                                      boxShadow: `0 0 8px ${color.glow}`,
-                                    }}
-                                    title={`${name}: ${positive ? '+' : ''}${delta}%`}
-                                  />
-                                  <span
-                                    className="absolute top-1/2 -translate-y-1/2 text-[10px] font-mono tabular-nums whitespace-nowrap"
-                                    style={{
-                                      color: color.hex,
-                                      ...(positive
-                                        ? { left: `calc(50% + ${barWidth}% + 4px)` }
-                                        : { right: `calc(50% + ${barWidth}% + 4px)` }),
-                                    }}
-                                  >
-                                    {positive ? '+' : ''}{delta}%
-                                  </span>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="flex items-center justify-center flex-wrap gap-x-6 gap-y-2 mt-3">
-                    <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 rounded-sm bg-zinc-500/70" />
-                      <span className="text-xs text-muted">MSCI ACWI IMI</span>
-                    </div>
-                    {displayedPortfolios.map(({ name, idx, exiting }) => {
-                      const color = PORTFOLIO_PALETTE[idx] ?? PORTFOLIO_PALETTE[0];
-                      return (
-                        <div key={name} className={`flex items-center gap-2 ${exiting ? 'data-fade' : ''}`}>
-                          <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: color.hex }} />
-                          <span className="text-xs text-muted">{name}</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              </div>
 
               {/* Style x Profitability — concentric radial + allocation table */}
-              <div className="col-span-2 relative overflow-hidden bg-zinc-900/60 backdrop-blur-md border border-zinc-800/50 p-5 rounded-xl flex flex-col">
+              <div className="col-span-2 relative overflow-hidden bg-zinc-900/60 backdrop-blur-md border border-zinc-800/50 p-5 rounded-xl min-h-[380px] flex flex-col">
                 <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] via-transparent to-transparent pointer-events-none" />
                 <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
 
@@ -1023,108 +1043,6 @@ export default function PortfolioTrendsDashboard() {
                       </table>
                     </div>
                   </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Charts Row 3: Metrics vs Index — narrow card matching the 'vs MSCI ACWI IMI' width */}
-            <div className="grid grid-cols-3 gap-4 mb-4">
-              <div className="col-span-1 relative overflow-hidden bg-zinc-900/60 backdrop-blur-md border border-zinc-800/50 p-5 rounded-xl flex flex-col">
-                <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] via-transparent to-transparent pointer-events-none" />
-                <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
-
-                <div className="relative z-10 flex flex-col flex-1">
-                  <div className="flex items-center justify-between mb-4 -mt-2 -ml-2">
-                    <div>
-                      <h4 className="text-sm font-medium text-white">Metrics vs Index</h4>
-                      <p className="text-xs text-muted">vs MSCI ACWI IMI ({period})</p>
-                    </div>
-                  </div>
-
-                  <table className="w-full text-xs">
-                    <thead>
-                      <tr className="data-pop border-b border-zinc-700/60">
-                        <th className="text-left font-normal py-1.5 pr-2 text-muted">Metric</th>
-                        {visiblePortfolios.map(({ name, idx, exiting }) => {
-                          const color = PORTFOLIO_PALETTE[idx] ?? PORTFOLIO_PALETTE[0];
-                          return (
-                            <th key={name} className="text-right font-medium py-1.5 px-0">
-                              <span className={exiting ? 'col-collapse' : 'col-expand'} style={{ color: color.hex }}>
-                                {name}
-                              </span>
-                            </th>
-                          );
-                        })}
-                        <th className="text-right font-medium py-1.5 pl-2" style={{ color: '#a1a1aa' }}>
-                          Index
-                        </th>
-                        {deltaState !== 'hidden' && visiblePortfolios.filter(p => !p.exiting).map(({ name, idx }) => {
-                          const color = PORTFOLIO_PALETTE[idx] ?? PORTFOLIO_PALETTE[0];
-                          return (
-                            <th key={`${name}-delta`} className="text-right font-medium py-1.5 px-0">
-                              <span className={deltaState === 'exiting' ? 'col-collapse' : 'col-expand'} style={{ color: color.hex }}>
-                                Δ
-                              </span>
-                            </th>
-                          );
-                        })}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {metricsTableRows.map((row, rowIdx) => (
-                        <tr
-                          key={row.id}
-                          className="data-pop border-b border-zinc-800/40 last:border-b-0"
-                          style={{ animationDelay: `${80 + rowIdx * 120}ms` }}
-                        >
-                          <td className="py-1.5 pr-2 text-white font-medium">
-                            {row.label}
-                          </td>
-                          {visiblePortfolios.map(({ name, exiting }) => (
-                            <td
-                              key={name}
-                              className="text-right font-mono tabular-nums py-1.5 px-0 text-white font-medium"
-                            >
-                              <span className={exiting ? 'col-collapse' : 'col-expand'}>
-                                {row.format(row.getPortfolio(name))}
-                              </span>
-                            </td>
-                          ))}
-                          <td className="text-right font-mono tabular-nums py-1.5 pl-2 text-white font-medium">
-                            {row.format(row.index)}
-                          </td>
-                          {deltaState !== 'hidden' && visiblePortfolios.filter(p => !p.exiting).map(({ name, idx }) => {
-                            const color = PORTFOLIO_PALETTE[idx] ?? PORTFOLIO_PALETTE[0];
-                            const delta = row.getPortfolio(name) - row.index;
-                            const positive = delta > 0;
-                            const zero = delta === 0;
-                            // Triangle stays portfolio-colored; the number itself goes green/red.
-                            // For inverted rows (e.g. P/B, Large Cap), being below the index is
-                            // the favorable direction so green/red are flipped.
-                            const favorable = row.invertColor ? !positive : positive;
-                            const valueColor = zero ? '#a1a1aa' : favorable ? '#4ade80' : '#f87171';
-                            return (
-                              <td
-                                key={`${name}-delta`}
-                                className="text-right font-mono tabular-nums py-1.5 px-0"
-                              >
-                                <span className={deltaState === 'exiting' ? 'col-collapse' : 'col-expand'}>
-                                  <span className="inline-flex items-center justify-end gap-1">
-                                    <span style={{ fontSize: '8px', lineHeight: 1, color: zero ? '#a1a1aa' : color.hex }}>
-                                      {zero ? '—' : positive ? '▲' : '▼'}
-                                    </span>
-                                    <span style={{ color: valueColor }}>
-                                      {zero ? '0' : row.formatDelta(delta)}
-                                    </span>
-                                  </span>
-                                </span>
-                              </td>
-                            );
-                          })}
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
                 </div>
               </div>
             </div>
