@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { Building2, Layers, PieChart, User } from 'lucide-react';
-import { RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer } from 'recharts';
 import BenchmarkBarChart from '@/app/components/dashboard/interactions-and-trends/portfolio-trends/BenchmarkBarChart';
 import {
   loggedPortfolios,
@@ -11,7 +10,6 @@ import {
 } from '@/app/lib/data/portfolioTrends';
 import type { BenchmarkComparison } from '@/app/lib/types/trends';
 import DashboardHeader from '@/app/components/dashboard/shared/DashboardHeader';
-import ClientOnlyChart from '@/app/components/dashboard/shared/ClientOnlyChart';
 import { useCurrentUser } from '@/app/lib/auth/context';
 import { toDisplayName } from '@/app/lib/auth/types';
 
@@ -241,14 +239,6 @@ export default function PortfolioTrendsDashboard() {
       'Core+ Model': { 'Growth High-Prof': 35, 'Growth Low-Prof': 12, 'Value High-Prof': 35, 'Value Low-Prof': 18 },
     },
   };
-  // Short labels rendered onto each ring of the radial chart (full names live in the table).
-  const STYLE_PROF_SHORT: Record<StyleProfCategory, string> = {
-    'Growth High-Prof': 'G-HP',
-    'Growth Low-Prof':  'G-LP',
-    'Value High-Prof':  'V-HP',
-    'Value Low-Prof':   'V-LP',
-  };
-
   // Holdings-count mock data for the metrics-vs-index table (the other rows reuse the
   // values already powering the XY / Style × Profitability cards).
   const companyCounts: { index: number; portfolios: Record<PortfolioName, number> } = {
@@ -829,7 +819,7 @@ export default function PortfolioTrendsDashboard() {
                 </div>
               </div>
 
-              {/* Style x Profitability — concentric radial + allocation table */}
+              {/* Style x Profitability — Morningstar Style Box + allocation table */}
               <div className="col-span-2 relative overflow-hidden bg-zinc-900/60 backdrop-blur-md border border-zinc-800/50 p-5 rounded-xl min-h-[380px] flex flex-col">
                 <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] via-transparent to-transparent pointer-events-none" />
                 <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
@@ -843,78 +833,85 @@ export default function PortfolioTrendsDashboard() {
                   </div>
 
                   <div className="grid grid-cols-2 gap-4 flex-1 min-h-[220px]">
-                    {/* Radar chart — 4 axes (one per category) radiating from center. Each
-                        selected portfolio is a filled polygon connecting its category values. */}
+                    {/* Morningstar Style Box — 3×3 grid. Y is driven by Large/Mid/Small cap
+                        weights (Large=top, Small=bottom); X is driven by Growth-vs-Value
+                        weights (Value=left, Growth=right). The Core column is purely visual:
+                        a balanced Growth/Value mix lands there naturally. */}
                     <div className="relative flex items-center justify-center">
-                      <ClientOnlyChart>
-                        <ResponsiveContainer width="100%" height="100%" minHeight={200}>
-                          <RadarChart
-                            data={STYLE_PROF_CATEGORIES.map(cat => {
-                              const row: Record<string, string | number> = {
-                                category: STYLE_PROF_SHORT[cat],
-                                index: styleProfitability.index[cat],
-                              };
-                              displayedPortfolios.forEach(p => {
-                                // Slug name as dataKey so kept + exiting portfolios never collide.
-                                row[p.name.replace(/\W/g, '_')] = styleProfitability.portfolios[p.name][cat];
-                              });
-                              return row;
-                            })}
-                            outerRadius="78%"
-                          >
-                            <PolarGrid stroke="rgba(82, 82, 91, 0.45)" />
-                            <PolarAngleAxis
-                              dataKey="category"
-                              tick={{ fill: '#a5a5b2', fontSize: 11 }}
-                            />
-                            <PolarRadiusAxis
-                              angle={90}
-                              domain={[0, 40]}
-                              tick={false}
-                              axisLine={false}
-                            />
-                            {/* Index polygon — drawn first so portfolios layer on top.
-                                Fill matches the zinc-500 benchmark dot used in the XY charts. */}
-                            <Radar
-                              name="MSCI ACWI IMI"
-                              dataKey="index"
-                              stroke="#a1a1aa"
-                              strokeWidth={1.5}
-                              fill="#71717a"
-                              fillOpacity={0.35}
-                              isAnimationActive
-                              animationBegin={ROW_2_STAGGER_MS}
-                              animationDuration={1320}
-                            />
+                      <div className="flex flex-col items-start">
+                        <div className="flex">
+                          <div className="flex flex-col justify-around text-right pr-2" style={{ width: '40px', height: '280px', maxHeight: '100%' }}>
+                            <span className="text-xs text-muted leading-none">Large</span>
+                            <span className="text-xs text-muted leading-none">Mid</span>
+                            <span className="text-xs text-muted leading-none">Small</span>
+                          </div>
+                          <div className="relative border-2 border-zinc-600/70 rounded-sm" style={{ width: '280px', height: '280px', maxWidth: '100%', maxHeight: '100%' }}>
+                            <div className="data-pop absolute left-0 right-0 border-t-2 border-zinc-700/60" style={{ top: '33.333%' }} />
+                            <div className="data-pop absolute left-0 right-0 border-t-2 border-zinc-700/60" style={{ top: '66.667%' }} />
+                            <div className="data-pop absolute top-0 bottom-0 border-l-2 border-zinc-700/60" style={{ left: '33.333%' }} />
+                            <div className="data-pop absolute top-0 bottom-0 border-l-2 border-zinc-700/60" style={{ left: '66.667%' }} />
+
+                            {/* Index dot — drawn first so portfolio dots layer on top */}
+                            {(() => {
+                              const cap = capAllocation.index;
+                              const sty = styleProfitability.index;
+                              const x = (sty['Growth High-Prof'] + sty['Growth Low-Prof']) / 100;
+                              const y = (cap['Mid Cap'] * 0.5 + cap['Small Cap']) / 100;
+                              const growthPct = Math.round(x * 100);
+                              return (
+                                <div
+                                  className="data-pop absolute w-4 h-4 rounded-full bg-zinc-500 border-2 border-zinc-400 z-10 cursor-pointer"
+                                  style={{
+                                    left: `${x * 100}%`,
+                                    top: `${y * 100}%`,
+                                    transform: 'translate(-50%, -50%)',
+                                  }}
+                                  {...dotHoverHandlers('MSCI ACWI IMI', [
+                                    `Large/Mid/Small: ${cap['Large Cap']}/${cap['Mid Cap']}/${cap['Small Cap']}%`,
+                                    `Growth/Value: ${growthPct}/${100 - growthPct}%`,
+                                  ])}
+                                />
+                              );
+                            })()}
+
                             {displayedPortfolios.map(({ name, idx, exiting }) => {
+                              const cap = capAllocation.portfolios[name];
+                              const sty = styleProfitability.portfolios[name];
+                              const x = (sty['Growth High-Prof'] + sty['Growth Low-Prof']) / 100;
+                              const y = (cap['Mid Cap'] * 0.5 + cap['Small Cap']) / 100;
+                              const growthPct = Math.round(x * 100);
                               const color = PORTFOLIO_PALETTE[idx] ?? PORTFOLIO_PALETTE[0];
                               return (
-                                <Radar
+                                <div
                                   key={name}
-                                  name={name}
-                                  dataKey={name.replace(/\W/g, '_')}
-                                  stroke={color.hex}
-                                  strokeWidth={2}
-                                  fill={color.hex}
-                                  fillOpacity={0.18}
-                                  isAnimationActive
-                                  animationBegin={ROW_2_STAGGER_MS}
-                                  animationDuration={1320}
+                                  className={`${exiting ? 'data-fade' : 'data-pop'} absolute w-4 h-4 rounded-full border-2 z-10 cursor-pointer`}
                                   style={{
-                                    filter: `drop-shadow(0 0 6px ${color.glow})`,
-                                    opacity: exiting ? 0 : 1,
-                                    transition: `opacity ${PORTFOLIO_EXIT_MS}ms ease-out ${ROW_2_STAGGER_MS}ms`,
+                                    left: `${x * 100}%`,
+                                    top: `${y * 100}%`,
+                                    transform: 'translate(-50%, -50%)',
+                                    backgroundColor: color.hex,
+                                    borderColor: color.hex,
+                                    boxShadow: `0 0 14px ${color.glow}`,
                                   }}
+                                  {...dotHoverHandlers(name, [
+                                    `Large/Mid/Small: ${cap['Large Cap']}/${cap['Mid Cap']}/${cap['Small Cap']}%`,
+                                    `Growth/Value: ${growthPct}/${100 - growthPct}%`,
+                                  ])}
                                 />
                               );
                             })}
-                          </RadarChart>
-                        </ResponsiveContainer>
-                      </ClientOnlyChart>
+                          </div>
+                        </div>
+                        <div className="flex mt-1" style={{ width: '280px', maxWidth: 'calc(100% - 40px)', marginLeft: '40px' }}>
+                          <span className="flex-1 text-center text-xs text-muted leading-none">Value</span>
+                          <span className="flex-1 text-center text-xs text-muted leading-none">Core</span>
+                          <span className="flex-1 text-center text-xs text-muted leading-none">Growth</span>
+                        </div>
+                      </div>
                     </div>
 
-                    {/* Allocation table — sized to 80% of the card height, anchored to the top */}
-                    <div className="h-[80%] self-start w-full flex flex-col">
+                    {/* Allocation table — fills the cell so its row heights match the style box on the left */}
+                    <div className="h-full w-full flex flex-col">
                       <table className="w-full h-full text-xs">
                         <thead>
                           <tr className="data-pop border-b border-zinc-700/60">
