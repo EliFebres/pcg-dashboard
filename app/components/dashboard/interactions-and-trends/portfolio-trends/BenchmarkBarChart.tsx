@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 export type BenchmarkRegion = {
   region: string;
@@ -15,6 +15,10 @@ type Props = {
   displayedPortfolios: DisplayedPortfolio[];
   palette: ReadonlyArray<{ hex: string; glow: string }>;
   yMax?: number;
+  // Extra delay (ms) applied to the shrink-cleanup timer so layout doesn't snap before
+  // the visually-delayed shrink keyframe finishes. Pair with .row-stagger-2 in CSS, which
+  // delays the rise/shrink keyframes themselves. Defaults to 0 (no stagger).
+  staggerDelayMs?: number;
 };
 
 const MARGIN = { top: 16, right: 8, left: 42, bottom: 28 };
@@ -33,7 +37,7 @@ const ACWI_COLOR = { hex: '#71717a', glow: 'rgba(113,113,122,0.4)' };
 //   out of the layout calculation and the remaining bars slide together over SLIDE_MS to
 //   close the gap. The parent keeps the entry mounted for its full exit window so legend chips
 //   etc. stay in sync.
-export default function BenchmarkBarChart({ data, displayedPortfolios, palette, yMax = 80 }: Props) {
+export default function BenchmarkBarChart({ data, displayedPortfolios, palette, yMax = 80, staggerDelayMs = 0 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ w: 0, h: 0 });
 
@@ -50,22 +54,10 @@ export default function BenchmarkBarChart({ data, displayedPortfolios, palette, 
     return () => ro.disconnect();
   }, []);
 
-  // Track which bar keys were rendered last frame so we can apply the rise animation only to new ones.
-  const currentBarKeys = useMemo(
-    () => new Set<string>([ACWI_KEY, ...displayedPortfolios.map(p => p.name)]),
-    [displayedPortfolios]
-  );
-  const prevBarKeysRef = useRef<Set<string>>(currentBarKeys);
-  const newBarNames = useMemo(() => {
-    const news = new Set<string>();
-    currentBarKeys.forEach(k => {
-      if (!prevBarKeysRef.current.has(k)) news.add(k);
-    });
-    return news;
-  }, [currentBarKeys]);
-  useEffect(() => {
-    prevBarKeysRef.current = currentBarKeys;
-  }, [currentBarKeys]);
+  // The rising class is applied to every non-exiting bar/label. CSS keyframe animations only
+  // play on first DOM mount of an element with the class — re-renders that don't change the
+  // class string don't replay, so existing bars stay put while a freshly mounted bar (initial
+  // page load OR newly-added portfolio) rises into view.
 
   // Bars whose shrink animation has finished. Once a name lands here we drop it from the layout
   // calculation so the remaining bars slide together to close the gap.
@@ -82,11 +74,11 @@ export default function BenchmarkBarChart({ data, displayedPortfolios, palette, 
             next.add(p.name);
             return next;
           });
-        }, SHRINK_MS));
+        }, SHRINK_MS + staggerDelayMs));
       }
     });
     return () => timers.forEach(clearTimeout);
-  }, [displayedPortfolios, shrunkBars]);
+  }, [displayedPortfolios, shrunkBars, staggerDelayMs]);
 
   // Drop names from shrunkBars once the parent has unmounted them, so a re-selection of the same
   // portfolio is treated as a fresh entry.
@@ -190,7 +182,6 @@ export default function BenchmarkBarChart({ data, displayedPortfolios, palette, 
                   }
                   const h = (value / yMax) * chartH;
                   const y = yToPx(value);
-                  const isNew = newBarNames.has(bar.name) && !bar.exiting;
 
                   return (
                     <BarSlot
@@ -200,7 +191,6 @@ export default function BenchmarkBarChart({ data, displayedPortfolios, palette, 
                       width={layoutBarWidth}
                       height={h}
                       color={color}
-                      isNew={isNew}
                       isExiting={bar.exiting}
                       labelText={labelText}
                       labelColor={labelColor}
@@ -222,31 +212,24 @@ type BarSlotProps = {
   width: number;
   height: number;
   color: { hex: string; glow: string };
-  isNew: boolean;
   isExiting: boolean;
   labelText: string;
   labelColor: string;
 };
 
-function BarSlot({ x, y, width, height, color, isNew, isExiting, labelText, labelColor }: BarSlotProps) {
+function BarSlot({ x, y, width, height, color, isExiting, labelText, labelColor }: BarSlotProps) {
   const transformOrigin = `${x + width / 2}px ${y + height}px`;
   // Layout (x/y/width/height) animates via CSS transition. Enter (rise) and exit (shrink) use
   // CSS keyframe animations applied via class — keyframes win over the inline scaleY/opacity
-  // values so we don't have to fight the rising animation's fill state.
+  // values so we don't have to fight the rising animation's fill state. The rising class is
+  // applied to every non-exiting bar; the keyframe only plays on first DOM mount, so re-renders
+  // that don't toggle the class don't replay it.
   const rectTransition =
     `x ${SLIDE_MS}ms ease-out, width ${SLIDE_MS}ms ease-out, ` +
     `y ${SLIDE_MS}ms ease-out, height ${SLIDE_MS}ms ease-out`;
 
-  const rectClass = isExiting
-    ? 'benchmark-bar--shrinking'
-    : isNew
-    ? 'benchmark-bar--rising'
-    : undefined;
-  const labelClass = isExiting
-    ? 'benchmark-label--shrinking'
-    : isNew
-    ? 'benchmark-label--rising'
-    : undefined;
+  const rectClass = isExiting ? 'benchmark-bar--shrinking' : 'benchmark-bar--rising';
+  const labelClass = isExiting ? 'benchmark-label--shrinking' : 'benchmark-label--rising';
 
   return (
     <g>

@@ -188,6 +188,21 @@ body {
 }
 .benchmark-label--shrinking { animation: benchmarkLabelShrink 350ms ease-out forwards; }
 
+/* Row stagger — when applied to a container, every animation primitive used by Portfolio
+   Trends cards inside it starts ~667ms (2/3s) later than its default. Used to cascade
+   row 2 of the Portfolio Trends grid behind row 1 (initial mount, portfolio add, portfolio
+   remove). For elements with inline animationDelay (e.g. table rows that already cascade
+   internally), bump the inline value by ROW_2_STAGGER_MS in TSX — inline styles win
+   over class rules. */
+.row-stagger-2 .data-pop                  { animation-delay: 0.667s; }
+.row-stagger-2 .data-fade                 { animation-delay: 0.667s; }
+.row-stagger-2 .col-expand                { animation-delay: 0.667s; }
+.row-stagger-2 .col-collapse              { animation-delay: 0.667s; }
+.row-stagger-2 .benchmark-bar--rising     { animation-delay: 1.217s; } /* 0.55s built-in + 0.667s */
+.row-stagger-2 .benchmark-label--rising   { animation-delay: 1.657s; } /* 0.99s built-in + 0.667s */
+.row-stagger-2 .benchmark-bar--shrinking  { animation-delay: 0.667s; }
+.row-stagger-2 .benchmark-label--shrinking { animation-delay: 0.667s; }
+
 /* Scroll-triggered fade-in */
 .scroll-fade-in {
   opacity: 0;

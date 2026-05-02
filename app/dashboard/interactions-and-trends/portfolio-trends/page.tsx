@@ -33,6 +33,11 @@ type DeltaState = 'visible' | 'exiting' | 'hidden';
 // before they're swept from the DOM.
 const PORTFOLIO_EXIT_MS = 1200;
 
+// Row-to-row stagger for the Portfolio Trends grid: row 2's animations (col-expand,
+// data-pop, data-fade, benchmark bar rise/shrink, radar polygon) all start this many ms
+// after row 1's. Must match the 0.667s in the .row-stagger-2 rules in globals.css.
+const ROW_2_STAGGER_MS = 667;
+
 // Color is tied to selection order, not portfolio name. Whichever portfolio is selected
 // first gets palette[0], the next selection gets palette[1]. Avg. Client is the default
 // first selection so it lands on palette[0] until the user reshuffles selections.
@@ -782,7 +787,7 @@ export default function PortfolioTrendsDashboard() {
             </div>
 
             {/* Charts Row 2: vs MSCI ACWI IMI + Style x Profitability */}
-            <div className="grid grid-cols-3 gap-4 mb-4">
+            <div className="grid grid-cols-3 gap-4 mb-4 row-stagger-2">
               {/* Benchmark Comparison */}
               <div className="col-span-1 relative overflow-hidden bg-zinc-900/60 backdrop-blur-md border border-zinc-800/50 p-5 rounded-xl min-h-[380px] flex flex-col">
                 <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] via-transparent to-transparent pointer-events-none" />
@@ -801,6 +806,7 @@ export default function PortfolioTrendsDashboard() {
                         data={benchmarkRegions}
                         displayedPortfolios={displayedPortfolios}
                         palette={PORTFOLIO_PALETTE}
+                        staggerDelayMs={ROW_2_STAGGER_MS}
                       />
                     </div>
 
@@ -877,6 +883,7 @@ export default function PortfolioTrendsDashboard() {
                               fill="#71717a"
                               fillOpacity={0.35}
                               isAnimationActive
+                              animationBegin={ROW_2_STAGGER_MS}
                               animationDuration={1320}
                             />
                             {displayedPortfolios.map(({ name, idx, exiting }) => {
@@ -891,11 +898,12 @@ export default function PortfolioTrendsDashboard() {
                                   fill={color.hex}
                                   fillOpacity={0.18}
                                   isAnimationActive
+                                  animationBegin={ROW_2_STAGGER_MS}
                                   animationDuration={1320}
                                   style={{
                                     filter: `drop-shadow(0 0 6px ${color.glow})`,
                                     opacity: exiting ? 0 : 1,
-                                    transition: `opacity ${PORTFOLIO_EXIT_MS}ms ease-out`,
+                                    transition: `opacity ${PORTFOLIO_EXIT_MS}ms ease-out ${ROW_2_STAGGER_MS}ms`,
                                   }}
                                 />
                               );
@@ -950,7 +958,7 @@ export default function PortfolioTrendsDashboard() {
                             <React.Fragment key={group.total}>
                               <tr
                                 className="data-pop border-b border-zinc-800/40"
-                                style={{ animationDelay: `${80 + totalRowIdx * 120}ms` }}
+                                style={{ animationDelay: `${ROW_2_STAGGER_MS + 80 + totalRowIdx * 120}ms` }}
                               >
                                 <td className="py-1.5 pr-2 text-white font-medium">{group.total}</td>
                                 {visiblePortfolios.map(({ name, exiting }) => {
@@ -998,7 +1006,7 @@ export default function PortfolioTrendsDashboard() {
                                 <tr
                                   key={cat}
                                   className="data-pop border-b border-zinc-800/40 last:border-b-0"
-                                  style={{ animationDelay: `${80 + subRowIdx * 120}ms` }}
+                                  style={{ animationDelay: `${ROW_2_STAGGER_MS + 80 + subRowIdx * 120}ms` }}
                                 >
                                   <td className="py-1.5 pl-4 pr-2 text-muted">{cat}</td>
                                   {visiblePortfolios.map(({ name, exiting }) => (
