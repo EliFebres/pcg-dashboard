@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Building2, Layers, PieChart, User } from 'lucide-react';
 import { RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer } from 'recharts';
+import BenchmarkBarChart from '@/app/components/dashboard/interactions-and-trends/portfolio-trends/BenchmarkBarChart';
 import {
   loggedPortfolios,
   filterPortfolios,
@@ -116,6 +117,7 @@ export default function PortfolioTrendsDashboard() {
     return () => clearTimeout(t);
   }, [displayedPortfolios]);
 
+
   // Guests don't have "Team Members" — their only scope is the cross-team aggregate.
   useEffect(() => {
     if (isGuest && teamMemberFilter === 'All Team Members') {
@@ -219,6 +221,21 @@ export default function PortfolioTrendsDashboard() {
       'Core+ Model': buildVariant({ 'US Equity': 58, 'Intl Dev': 30, 'EM': 12 }),
     };
   }, [benchmarkComparison]);
+
+  // Region/portfolio matrix the BenchmarkBarChart consumes. Always includes both portfolios
+  // (the chart picks which to draw based on displayedPortfolios) so the data reference is
+  // stable across selection changes.
+  const benchmarkRegions = useMemo(() => {
+    return benchmarkComparison.map((row, metricIdx) => ({
+      region: row.metric,
+      acwi: row.acwi,
+      portfolios: PORTFOLIO_OPTIONS.reduce((acc, name) => {
+        const p = benchmarkComparisonByPortfolio[name][metricIdx];
+        acc[name] = { client: p.client, delta: p.delta };
+        return acc;
+      }, {} as Record<string, { client: number; delta: number }>),
+    }));
+  }, [benchmarkComparison, benchmarkComparisonByPortfolio]);
 
   const dataQualityStats = useMemo(() => {
     const total = filteredPortfolios.length;
@@ -549,60 +566,34 @@ export default function PortfolioTrendsDashboard() {
                   <div className="flex items-center justify-between mb-4 -mt-2 -ml-2">
                     <div>
                       <h4 className="text-sm font-medium text-white">vs MSCI ACWI IMI</h4>
-                      <p className="text-xs text-muted">Regional delta to benchmark (1YR)</p>
+                      <p className="text-xs text-muted">Regional delta to benchmark ({period})</p>
                     </div>
                   </div>
-                  <div className="flex-1 flex flex-col justify-around">
-                    {benchmarkComparison.map((item, metricIdx) => {
-                      const primary = portfolioFilter[0];
-                      const headerDelta = benchmarkComparisonByPortfolio[primary][metricIdx].delta;
-                      return (
-                        <div key={item.metric} className="space-y-1">
-                          <div className="flex items-center justify-between text-xs">
-                            <span className="text-muted">{item.metric}</span>
-                            <span className={`font-medium font-mono ${headerDelta >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                              {headerDelta >= 0 ? '+' : ''}{headerDelta}%
-                            </span>
+                  <div className="flex-1 flex flex-col">
+                    <div className="flex-1 min-h-[200px]">
+                      <BenchmarkBarChart
+                        data={benchmarkRegions}
+                        displayedPortfolios={displayedPortfolios}
+                        palette={PORTFOLIO_PALETTE}
+                        exitMs={PORTFOLIO_EXIT_MS}
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-center flex-wrap gap-x-6 gap-y-2 mt-3">
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 rounded-sm bg-zinc-500/70" />
+                        <span className="text-xs text-muted">MSCI ACWI IMI</span>
+                      </div>
+                      {displayedPortfolios.map(({ name, idx, exiting }) => {
+                        const color = PORTFOLIO_PALETTE[idx] ?? PORTFOLIO_PALETTE[0];
+                        return (
+                          <div key={name} className={`flex items-center gap-2 ${exiting ? 'data-fade' : ''}`}>
+                            <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: color.hex }} />
+                            <span className="text-xs text-muted">{name}</span>
                           </div>
-                          <div className="space-y-1">
-                            {displayedPortfolios.map(({ name, idx, exiting }) => {
-                              const row = benchmarkComparisonByPortfolio[name][metricIdx];
-                              const color = PORTFOLIO_PALETTE[idx] ?? PORTFOLIO_PALETTE[0];
-                              return (
-                                <div key={name} className={`flex gap-1 h-4 ${exiting ? 'data-fade' : ''}`}>
-                                  <div
-                                    className="bar-grow-x rounded-sm border-2"
-                                    style={{
-                                      width: `${row.client}%`,
-                                      backgroundColor: color.hex,
-                                      borderColor: color.hex,
-                                      boxShadow: `0 0 8px ${color.glow}`,
-                                    }}
-                                    title={`${name}: ${row.client}%`}
-                                  />
-                                  <div
-                                    className="bar-grow-x bg-zinc-600/50 rounded-sm"
-                                    style={{ width: `${item.acwi}%` }}
-                                    title={`ACWI: ${item.acwi}%`}
-                                  />
-                                </div>
-                              );
-                            })}
-                          </div>
-                          <div className="flex items-center flex-wrap gap-x-2 gap-y-0.5 text-xs text-muted">
-                            {displayedPortfolios.map(({ name, exiting }, i) => {
-                              const row = benchmarkComparisonByPortfolio[name][metricIdx];
-                              return (
-                                <span key={name} className={exiting ? 'data-fade' : ''}>
-                                  {name}: {row.client}%{i < displayedPortfolios.length - 1 ? ' ·' : ''}
-                                </span>
-                              );
-                            })}
-                            <span>· ACWI: {item.acwi}%</span>
-                          </div>
-                        </div>
-                      );
-                    })}
+                        );
+                      })}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -623,11 +614,11 @@ export default function PortfolioTrendsDashboard() {
                     </div>
                   </div>
 
-                  <div className="flex-1 flex flex-col justify-around min-h-[140px] py-2">
+                  <div className="flex-1 flex flex-col justify-around min-h-[220px] py-2">
                     {CAP_BUCKETS.map(bucket => (
-                      <div key={bucket} className="flex items-center gap-3">
-                        <span className="text-xs text-muted w-16 flex-shrink-0">{bucket}</span>
-                        <div className="relative flex-1">
+                      <div key={bucket} className="flex flex-col gap-1.5">
+                        <span className="text-xs text-muted">{bucket}</span>
+                        <div className="relative">
                           <div className="absolute left-1/2 top-0 bottom-0 w-px bg-zinc-500/70 z-10" />
                           <div className="flex flex-col gap-1.5 py-1">
                             {displayedPortfolios.map(({ name, idx, exiting }) => {
@@ -636,7 +627,7 @@ export default function PortfolioTrendsDashboard() {
                               const positive = delta >= 0;
                               const barWidth = Math.min(Math.abs(delta) / CAP_MAX_DELTA, 1) * 50;
                               return (
-                                <div key={name} className={`relative h-2.5 ${exiting ? 'data-fade' : ''}`}>
+                                <div key={name} className={`relative h-3.5 ${exiting ? 'data-fade' : ''}`}>
                                   <div
                                     className={`${positive ? 'bar-grow-x' : 'bar-grow-x-left'} absolute top-0 h-full rounded-sm`}
                                     style={{
@@ -739,7 +730,7 @@ export default function PortfolioTrendsDashboard() {
                               fill="#71717a"
                               fillOpacity={0.35}
                               isAnimationActive
-                              animationDuration={700}
+                              animationDuration={1320}
                             />
                             {displayedPortfolios.map(({ name, idx, exiting }) => {
                               const color = PORTFOLIO_PALETTE[idx] ?? PORTFOLIO_PALETTE[0];
@@ -753,7 +744,7 @@ export default function PortfolioTrendsDashboard() {
                                   fill={color.hex}
                                   fillOpacity={0.18}
                                   isAnimationActive
-                                  animationDuration={700}
+                                  animationDuration={1320}
                                   style={{
                                     filter: `drop-shadow(0 0 6px ${color.glow})`,
                                     opacity: exiting ? 0 : 1,

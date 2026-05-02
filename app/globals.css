@@ -113,9 +113,9 @@ body {
   from { opacity: 0; }
   to { opacity: 1; }
 }
-.data-pop      { animation: dataPop 0.9s ease-out both; }
-.data-pop-d1   { animation: dataPop 0.9s ease-out 0.3s both; }
-.data-pop-d2   { animation: dataPop 0.9s ease-out 0.55s both; }
+.data-pop      { animation: dataPop 1.32s cubic-bezier(0.4, 0, 0.2, 1) both; }
+.data-pop-d1   { animation: dataPop 1.32s cubic-bezier(0.4, 0, 0.2, 1) 0.3s both; }
+.data-pop-d2   { animation: dataPop 1.32s cubic-bezier(0.4, 0, 0.2, 1) 0.55s both; }
 
 /* Exit fade — applied to portfolio-keyed elements (XY dots, bars, table cells, legend chips, etc.)
    while their portfolio is being deselected, before deferred unmount. Mirrors data-pop. */
@@ -129,8 +129,24 @@ body {
   from { transform: scaleX(0); }
   to   { transform: scaleX(1); }
 }
-.bar-grow-x { animation: barGrowX 1.5s cubic-bezier(0.4, 0, 0.2, 1) both; transform-origin: left; }
-.bar-grow-x-left { animation: barGrowX 1.5s cubic-bezier(0.4, 0, 0.2, 1) both; transform-origin: right; }
+.bar-grow-x { animation: barGrowX 1.32s cubic-bezier(0.4, 0, 0.2, 1) both; transform-origin: left; }
+.bar-grow-x-left { animation: barGrowX 1.32s cubic-bezier(0.4, 0, 0.2, 1) both; transform-origin: right; }
+
+/* Benchmark vertical-bar rise: applied to a newly-mounted SVG <rect> in BenchmarkBarChart.
+   The 550ms delay lets the existing bars finish their slide-apart (x/width transitions)
+   before the new bar grows up from its baseline. Total runtime = 1320ms to match the rest
+   of the portfolio-trends cards. transformOrigin is set per-bar inline. */
+@keyframes benchmarkBarRise {
+  0%   { transform: scaleY(0); }
+  100% { transform: scaleY(1); }
+}
+.benchmark-bar--rising { animation: benchmarkBarRise 770ms 550ms ease-out both; }
+
+@keyframes benchmarkLabelRise {
+  0%   { opacity: 0; }
+  100% { opacity: 1; }
+}
+.benchmark-label--rising { animation: benchmarkLabelRise 330ms 990ms ease-out both; }
 
 /* Scroll-triggered fade-in */
 .scroll-fade-in {
