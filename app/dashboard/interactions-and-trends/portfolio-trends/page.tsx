@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Building2, Info, Landmark, Layers, PieChart, User } from 'lucide-react';
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import BenchmarkBarChart from '@/app/components/dashboard/interactions-and-trends/portfolio-trends/BenchmarkBarChart';
@@ -24,13 +24,24 @@ const DEPARTMENTS = ['Broker-Dealer', 'IAG', 'Institutional', 'Retirement Group'
 // default; Core+ Model is a firm-defined model portfolio.
 const PORTFOLIO_OPTIONS = ['Avg. Client', 'Core+ Model'] as const;
 type PortfolioName = typeof PORTFOLIO_OPTIONS[number];
-type DisplayedPortfolio = { name: PortfolioName; idx: number; exiting: boolean };
+type DisplayedPortfolio = {
+  name: PortfolioName;
+  idx: number;
+  exiting: boolean;
+  // `entering` marks rows added on a 1→N transition so they play row-enter (delayed grow) instead
+  // of data-pop. `settled` marks rows whose row-enter has finished — those render with no
+  // animation class so data-pop doesn't re-fire (which would briefly snap the row to opacity 0).
+  entering?: boolean;
+  settled?: boolean;
+};
 type DeltaState = 'visible' | 'exiting' | 'hidden';
 
-// Duration of the col-collapse / data-fade exit animations + the deferred React unmount that
-// follows. Kept in sync with the 1.2s timing in globals.css so cells finish animating out
-// before they're swept from the DOM.
-const PORTFOLIO_EXIT_MS = 1200;
+// Duration of the slowest exit animation + the deferred React unmount that follows.
+// The Credit Breakdown card's staged 2→1 exit (bar-shrink + label-exit + row-exit) ends
+// at 1.5s, so cleanup waits that long before sweeping the row from the DOM. Cards with
+// faster exits (data-fade at 0.4s, col-collapse at 1.2s) just sit at their final state
+// for the remaining time, which is invisible.
+const PORTFOLIO_EXIT_MS = 1500;
 
 // Row-to-row stagger for the Portfolio Trends grid: row 2's animations (col-expand,
 // data-pop, data-fade, benchmark bar rise/shrink, radar polygon) all start this many ms
@@ -146,14 +157,20 @@ export default function PortfolioTrendsDashboard() {
   const [displayedPortfolios, setDisplayedPortfolios] = useState<DisplayedPortfolio[]>(
     () => portfolioFilter.map((name, idx) => ({ name, idx, exiting: false }))
   );
+  // Tracks the previous filter length so we can flag rows added on a 1→N transition as `entering`.
+  // Only the Credit Breakdown card uses this flag (to stage thin-then-grow); other cards ignore it.
+  const prevFilterLengthRef = useRef(portfolioFilter.length);
   useEffect(() => {
+    const wasOne = prevFilterLengthRef.current === 1 && portfolioFilter.length > 1;
     setDisplayedPortfolios(prev => {
       const next: DisplayedPortfolio[] = [];
       prev.forEach(p => {
         const newIdx = portfolioFilter.indexOf(p.name);
         if (newIdx !== -1) {
-          // Still selected — refresh idx and clear any pending exit (handles re-selection mid-fade).
-          next.push({ name: p.name, idx: newIdx, exiting: false });
+          // Still selected — refresh idx and clear any pending exit. Spread `...p` so flags like
+          // `entering` / `settled` survive (otherwise a mid-flight filter change would drop them
+          // and the row's className would flip back to data-pop, replaying its fade-in).
+          next.push({ ...p, idx: newIdx, exiting: false });
         } else if (!p.exiting) {
           // Newly deselected — start fade, keep old idx so its color stays stable through the fade.
           next.push({ ...p, exiting: true });
@@ -164,17 +181,30 @@ export default function PortfolioTrendsDashboard() {
       });
       portfolioFilter.forEach((name, idx) => {
         if (!next.find(p => p.name === name)) {
-          next.push({ name, idx, exiting: false });
+          next.push({ name, idx, exiting: false, entering: wasOne });
         }
       });
       return next;
     });
+    prevFilterLengthRef.current = portfolioFilter.length;
   }, [portfolioFilter]);
   useEffect(() => {
     if (!displayedPortfolios.some(p => p.exiting)) return;
     const t = setTimeout(() => {
       setDisplayedPortfolios(prev => prev.filter(p => !p.exiting));
     }, PORTFOLIO_EXIT_MS);
+    return () => clearTimeout(t);
+  }, [displayedPortfolios]);
+  // Clears `entering` once phase 2 finishes — bar-grow + label-enter both end at
+  // 0.9s delay + 1.5s duration = 2400ms (row-enter at 0.8s ends earlier and is also done by then).
+  // Marks the row `settled` so the className flip doesn't replay data-pop's fade-in.
+  useEffect(() => {
+    if (!displayedPortfolios.some(p => p.entering)) return;
+    const t = setTimeout(() => {
+      setDisplayedPortfolios(prev =>
+        prev.map(p => (p.entering ? { ...p, entering: false, settled: true } : p))
+      );
+    }, 2400);
     return () => clearTimeout(t);
   }, [displayedPortfolios]);
 
@@ -1179,20 +1209,56 @@ export default function PortfolioTrendsDashboard() {
                     </div>
                   </div>
 
-                  <div className="flex-1 flex flex-col justify-center gap-3">
-                    {displayedPortfolios.map(({ name, idx, exiting }, rowIdx) => {
+                  {/* Wrapper holds its "compact" (justify-start) layout while a row is mid-enter
+                      AND while a row is mid-exit — so the existing bars never re-center while a
+                      bar is growing in or shrinking out. Only `entering` is excluded from the
+                      visible count: `exiting` rows still occupy a slot until the row-exit collapse
+                      finishes and PORTFOLIO_EXIT_MS sweeps them out. */}
+                  <div
+                    className={`flex-1 flex flex-col gap-3 transition-[padding-top] duration-500 ${
+                      displayedPortfolios.filter(p => !p.entering).length === 1
+                        ? 'justify-start pt-4'
+                        : 'justify-center pt-0'
+                    }`}
+                  >
+                    {displayedPortfolios.map(({ name, idx, exiting, entering, settled }, rowIdx) => {
                       const dist = FI_PORTFOLIO_DATA[name].creditBreakdown;
                       const color = PORTFOLIO_PALETTE[idx] ?? PORTFOLIO_PALETTE[0];
                       return (
                         <div
                           key={name}
-                          className={`${exiting ? 'data-fade' : 'data-pop'} flex flex-col gap-1`}
-                          style={{ animationDelay: exiting ? '0ms' : `${80 + rowIdx * 120}ms` }}
+                          className={`${
+                            exiting ? 'row-exit' : entering ? 'row-enter' : settled ? '' : 'data-pop'
+                          } flex flex-col gap-1`}
+                          style={{
+                            animationDelay:
+                              exiting || entering || settled ? '0ms' : `${80 + rowIdx * 120}ms`,
+                          }}
                         >
-                          <span className="text-xs font-medium text-zinc-400">{name}</span>
+                          <span
+                            className={`text-xs font-medium text-zinc-400 ${
+                              exiting ? 'label-exit' : entering ? 'label-enter' : ''
+                            }`}
+                          >
+                            {name}
+                          </span>
                           <div
-                            className="flex h-10 rounded-sm overflow-hidden border border-zinc-800/60 bg-zinc-500 gap-px"
-                            style={{ containerType: 'size' }}
+                            className={`${
+                              exiting ? 'bar-shrink' : settled ? '' : 'bar-grow'
+                            } flex ${
+                              displayedPortfolios.length === 1 ? 'h-14' : 'h-10'
+                            } rounded-sm overflow-hidden border border-zinc-800/60 bg-zinc-500 gap-px transition-[height] duration-[900ms]`}
+                            style={{
+                              containerType: 'size',
+                              animationDelay: exiting || settled
+                                ? '0ms'
+                                : entering
+                                ? '900ms'
+                                : `${80 + rowIdx * 120}ms`,
+                              // Entering rows use a longer bar-grow so it stays in sync with the
+                              // 1.5s label fade — initial-mount bars keep the default 1.1s duration.
+                              animationDuration: entering ? '1500ms' : undefined,
+                            }}
                           >
                             {CREDIT_BUCKETS.map(bucket => {
                               const pct = dist[bucket.id];
@@ -1200,7 +1266,7 @@ export default function PortfolioTrendsDashboard() {
                               return (
                                 <div
                                   key={bucket.id}
-                                  className="h-full flex items-center justify-center transition-[width] duration-700 ease-out cursor-pointer"
+                                  className="h-full flex items-center justify-center overflow-hidden transition-[width] duration-700 ease-out cursor-pointer"
                                   style={{ width: `${pct}%`, backgroundColor: bucket.color }}
                                   {...dotHoverHandlers(`${name} • ${bucket.label}`, [`${pct}%`])}
                                 >
@@ -1216,17 +1282,25 @@ export default function PortfolioTrendsDashboard() {
                     })}
 
                     {/* Index row — extra top padding when only one portfolio is selected,
-                        so the index is visually distinct from the lone portfolio bar above. */}
+                        so the index is visually distinct from the lone portfolio bar above.
+                        Tied to `displayedPortfolios.length` (not `portfolioFilter.length`) so
+                        the pt-3 / h-14 transitions wait for the exit cleanup to remove the
+                        deselected row, matching the staged 2→1 reverse animation. */}
                     <div
-                      className={`data-pop flex flex-col gap-1 transition-[padding-top] duration-700 ${
-                        portfolioFilter.length === 1 ? 'pt-3' : 'pt-0'
+                      className={`data-pop flex flex-col gap-1 transition-[padding-top] duration-[900ms] ${
+                        displayedPortfolios.length === 1 ? 'pt-3' : 'pt-0'
                       }`}
                       style={{ animationDelay: `${80 + displayedPortfolios.length * 120}ms` }}
                     >
                       <span className="text-xs font-medium text-zinc-400">{FI_INDEX.creditBreakdownLabel}</span>
                       <div
-                        className="flex h-10 rounded-sm overflow-hidden border border-zinc-800/60 bg-zinc-500 gap-px"
-                        style={{ containerType: 'size' }}
+                        className={`bar-grow flex ${
+                          displayedPortfolios.length === 1 ? 'h-14' : 'h-10'
+                        } rounded-sm overflow-hidden border border-zinc-800/60 bg-zinc-500 gap-px transition-[height] duration-[900ms]`}
+                        style={{
+                          containerType: 'size',
+                          animationDelay: `${80 + displayedPortfolios.length * 120}ms`,
+                        }}
                       >
                         {CREDIT_BUCKETS.map(bucket => {
                           const pct = FI_INDEX.creditBreakdown[bucket.id];
@@ -1234,7 +1308,7 @@ export default function PortfolioTrendsDashboard() {
                           return (
                             <div
                               key={bucket.id}
-                              className="h-full flex items-center justify-center transition-[width] duration-700 ease-out cursor-pointer"
+                              className="h-full flex items-center justify-center overflow-hidden transition-[width] duration-700 ease-out cursor-pointer"
                               style={{ width: `${pct}%`, backgroundColor: bucket.color }}
                               {...dotHoverHandlers(`${FI_INDEX.creditBreakdownLabel} • ${bucket.label}`, [`${pct}%`])}
                             >
