@@ -261,20 +261,25 @@ export default function PortfolioTrendsDashboard() {
     { id: 'NotRated', label: 'Not Rated', color: '#ADCCDA', textColor: '#18181b' },
     { id: 'Other',    label: 'Other',     color: '#F5DB95', textColor: '#18181b' },
   ];
+  // creditWeight = % of fixed-income holdings in credit/corporate (i.e. non-Treasury,
+  // non-agency). The bar's portfolio dots are placed by this value's delta vs the index.
   const FI_PORTFOLIO_DATA: Record<PortfolioName, {
     creditBreakdown: Record<CreditBucket, number>;
     creditSpreadBps: number;
     creditSpreadHistory: number[]; // 8 quarters, oldest → newest
+    creditWeight: number;
   }> = {
     'Avg. Client': {
       creditBreakdown: { AAA: 22, AA: 24, A: 26, BBB: 17, BelowBBB: 5, NotRated: 4, Other: 2 },
       creditSpreadBps: 145,
       creditSpreadHistory: [98, 110, 125, 132, 138, 142, 144, 145],
+      creditWeight: 50,
     },
     'Core+ Model': {
       creditBreakdown: { AAA: 14, AA: 22, A: 28, BBB: 22, BelowBBB: 8, NotRated: 4, Other: 2 },
       creditSpreadBps: 168,
       creditSpreadHistory: [120, 132, 148, 155, 160, 164, 166, 168],
+      creditWeight: 65,
     },
   };
   // Index credit spread = (Bloomberg US Credit yield) − (Bloomberg US Treasury yield).
@@ -286,6 +291,15 @@ export default function PortfolioTrendsDashboard() {
     creditBreakdown: { AAA: 68, AA: 4, A: 12, BBB: 13, BelowBBB: 0, NotRated: 2, Other: 1 } as Record<CreditBucket, number>,
     spreadBps: 110,
     spreadHistory: [85, 92, 106, 115, 117, 112, 111, 110], // 8 quarters, oldest → newest
+    creditWeight: 30, // Bloomberg Aggregate is treasury/agency-heavy; ~30% sits in credit.
+  };
+
+  // 10-year context for the Credit Spread bar — left edge = tenYearMin (Narrow),
+  // right edge = tenYearMax (Wide), interior tick at tenYearAvg divides the gradient.
+  const FI_SPREAD_CONTEXT = {
+    tenYearMin: 75,
+    tenYearAvg: 135,
+    tenYearMax: 280,
   };
 
   // Toggle for the Credit Spread card: snapshot vs history.
@@ -309,9 +323,24 @@ export default function PortfolioTrendsDashboard() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [creditSpreadQuarters]);
 
-  // Slider axis: 0 → 300 bps. Anything above pins at 100% (won't happen with current mocks).
-  const SLIDER_MAX_BPS = 300;
-  const sliderPos = (bps: number) => `${Math.min(100, Math.max(0, (bps / SLIDER_MAX_BPS) * 100))}%`;
+  // Spread bar axis: tenYearMin → tenYearMax. The bar visualizes where current spread
+  // sits across the 10-year range, so positions are computed against that window rather
+  // than a fixed scale. Out-of-range values (shouldn't happen with current mocks) clamp.
+  const SPREAD_AXIS_MIN = FI_SPREAD_CONTEXT.tenYearMin;
+  const SPREAD_AXIS_MAX = FI_SPREAD_CONTEXT.tenYearMax;
+  const spreadBarPos = (bps: number) => {
+    const pct = ((bps - SPREAD_AXIS_MIN) / (SPREAD_AXIS_MAX - SPREAD_AXIS_MIN)) * 100;
+    return `${Math.min(100, Math.max(0, pct))}%`;
+  };
+  // Portfolio dots are positioned by credit overweight relative to the index, anchored
+  // at the index dial position. 1pp overweight = 1pp of bar width offset.
+  const indexBarPct =
+    ((FI_INDEX.spreadBps - SPREAD_AXIS_MIN) / (SPREAD_AXIS_MAX - SPREAD_AXIS_MIN)) * 100;
+  const tiltBarPos = (portfolioCreditWeight: number) => {
+    const overweight = portfolioCreditWeight - FI_INDEX.creditWeight;
+    const pct = indexBarPct + overweight;
+    return `${Math.min(100, Math.max(0, pct))}%`;
+  };
 
   // Row schema for the metrics-vs-index table. Each row pulls portfolio + index values
   // from the same data sources that drive the visual cards above, plus a formatter for
@@ -1238,11 +1267,33 @@ export default function PortfolioTrendsDashboard() {
 
                 <div className="relative z-10 flex flex-col flex-1">
                   <div className="flex items-center justify-between mb-4 -mt-2 -ml-2 -mr-2">
-                    <div>
-                      <h4 className="text-sm font-medium text-white">Credit Spread</h4>
+                    <div className="group relative">
+                      <div className="flex items-center gap-1.5">
+                        <h4 className="text-sm font-medium text-white">Credit Spread</h4>
+                        <button
+                          type="button"
+                          tabIndex={0}
+                          className="text-zinc-500 hover:text-zinc-200 focus-visible:text-zinc-200 cursor-help focus:outline-none"
+                          aria-label="About the Credit Spread bar"
+                        >
+                          <Info className="w-3 h-3" />
+                        </button>
+                      </div>
                       <p className="text-xs text-muted">
                         {creditSpreadView === 'slider' ? `Current spread (${period})` : 'Spread over time'}
                       </p>
+                      <div
+                        className="opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity absolute top-full left-0 mt-2 px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-md w-72 pointer-events-none z-50 shadow-lg text-left"
+                        role="tooltip"
+                      >
+                        <div className="text-xs font-medium text-white mb-1">Credit Spread vs. History</div>
+                        <div className="text-xs text-muted leading-snug">
+                          The bar shows where the current <span className="text-zinc-200">Bloomberg US Credit</span> − <span className="text-zinc-200">US Treasury</span> spread sits across its 10-year range.
+                          Left (<span className="text-zinc-200">Narrow</span>) = lower risk premium; right (<span className="text-zinc-200">Wide</span>) = higher.
+                          The dial tracks today's index reading. Portfolio dots are anchored at the dial and offset by each portfolio's credit overweight vs the index —
+                          right of the dial = overweight credit, left = overweight government.
+                        </div>
+                      </div>
                     </div>
                     {/* Slider / Chart toggle — far right of header */}
                     <div className="flex items-center gap-0.5 p-0.5 bg-zinc-800/60 rounded-md border border-zinc-700/40">
@@ -1265,53 +1316,107 @@ export default function PortfolioTrendsDashboard() {
                   </div>
 
                   {creditSpreadView === 'slider' ? (
-                    <div className="flex-1 flex flex-col justify-center px-3">
-                      <div className="relative h-2 mt-4 mb-12">
-                        {/* Track */}
-                        <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-px bg-zinc-700/60" />
-
-                        {/* Tick labels along the axis */}
-                        {[0, 100, 200, 300].map(bps => (
-                          <div
-                            key={bps}
-                            className="absolute top-1/2"
-                            style={{ left: sliderPos(bps), transform: 'translate(-50%, 0)' }}
-                          >
-                            <div className="w-px h-1.5 bg-zinc-600 -mt-[3px] mx-auto" />
-                            <div className="text-[10px] text-muted mt-2 whitespace-nowrap">{bps}</div>
-                          </div>
-                        ))}
-
-                        {/* Index marker — Credit − Treasury (current spread reference) */}
-                        <div
-                          className="data-pop absolute w-4 h-4 rounded-full bg-zinc-500 border-2 border-zinc-400 z-10 cursor-pointer"
-                          style={{ left: sliderPos(FI_INDEX.spreadBps), top: '50%', transform: 'translate(-50%, -50%)' }}
-                          {...dotHoverHandlers(FI_INDEX.spreadLabel, [`${FI_INDEX.spreadBps} bps`])}
-                        />
-
-                        {/* Portfolio markers */}
-                        {displayedPortfolios.map(({ name, idx, exiting }) => {
-                          const bps = FI_PORTFOLIO_DATA[name].creditSpreadBps;
-                          const color = PORTFOLIO_PALETTE[idx] ?? PORTFOLIO_PALETTE[0];
-                          return (
+                    <div className="flex flex-col justify-start px-1 pt-14">
+                      {(() => {
+                        const avgPct =
+                          ((FI_SPREAD_CONTEXT.tenYearAvg - SPREAD_AXIS_MIN) / (SPREAD_AXIS_MAX - SPREAD_AXIS_MIN)) * 100;
+                        return (
+                          <div className="relative">
+                            {/* Index dial — pill above the bar, caret, vertical line through bar */}
                             <div
-                              key={name}
-                              className={`${exiting ? 'data-fade' : 'data-pop'} absolute w-4 h-4 rounded-full border-2 z-10 cursor-pointer`}
+                              className="data-pop absolute z-20"
                               style={{
-                                left: sliderPos(bps),
-                                top: '50%',
-                                transform: 'translate(-50%, -50%)',
-                                backgroundColor: color.hex,
-                                borderColor: color.hex,
-                                boxShadow: `0 0 14px ${color.glow}`,
+                                left: spreadBarPos(FI_INDEX.spreadBps),
+                                top: 0,
+                                bottom: 0,
+                                transition: 'left 500ms ease-out',
                               }}
-                              {...dotHoverHandlers(name, [`${bps} bps`])}
-                            />
-                          );
-                        })}
-                      </div>
+                            >
+                              <div
+                                className="absolute -top-10 left-1/2 -translate-x-1/2 px-3 py-1 rounded-md bg-zinc-500 text-white text-sm font-medium shadow-md whitespace-nowrap cursor-pointer"
+                                {...dotHoverHandlers(FI_INDEX.spreadLabel, [`${FI_INDEX.spreadBps} bps`])}
+                              >
+                                {FI_INDEX.spreadBps} bps
+                              </div>
+                              <div
+                                className="absolute -top-2 left-1/2 -translate-x-1/2 w-0 h-0"
+                                style={{
+                                  borderLeft: '7px solid transparent',
+                                  borderRight: '7px solid transparent',
+                                  borderTop: '7px solid #e4e4e7',
+                                }}
+                              />
+                              <div className="absolute top-0 h-14 left-1/2 -translate-x-1/2 w-px bg-zinc-200/80" />
+                            </div>
 
-                      <div className="text-center text-xs text-muted">Credit Spread (bps)</div>
+                            {/* The bar — gradient: white (Narrow) ramps quickly to teal (Wide), squared corners */}
+                            <div
+                              className="relative h-12 shadow-inner overflow-hidden"
+                              style={{
+                                background: 'linear-gradient(to right, #ffffff 0%, #0E727B 20%, #0E727B 100%)',
+                              }}
+                            >
+                              {/* In-bar edge labels */}
+                              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm uppercase tracking-wide text-zinc-900 font-semibold pointer-events-none">
+                                Narrow
+                              </span>
+                              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm uppercase tracking-wide text-white font-semibold pointer-events-none">
+                                Wide
+                              </span>
+                              {/* 10-yr avg interior tick — anchors the gradient transition visually */}
+                              <div
+                                className="absolute top-0 bottom-0 w-px bg-zinc-300/50 cursor-pointer"
+                                style={{ left: `${avgPct}%` }}
+                                {...dotHoverHandlers('10-Yr Avg', [`${FI_SPREAD_CONTEXT.tenYearAvg} bps`])}
+                              />
+                            </div>
+
+                            {/* Portfolio dots row — under the bar, positioned by credit overweight vs index */}
+                            <div className="relative h-6 mt-1">
+                              {displayedPortfolios.map(({ name, idx, exiting }) => {
+                                const creditWeight = FI_PORTFOLIO_DATA[name].creditWeight;
+                                const overweight = creditWeight - FI_INDEX.creditWeight;
+                                const color = PORTFOLIO_PALETTE[idx] ?? PORTFOLIO_PALETTE[0];
+                                return (
+                                  <div
+                                    key={name}
+                                    className={`${exiting ? 'data-fade' : 'data-pop'} absolute`}
+                                    style={{
+                                      left: tiltBarPos(creditWeight),
+                                      top: 0,
+                                      transform: 'translateX(-50%)',
+                                      transition: 'left 500ms ease-out',
+                                    }}
+                                  >
+                                    <div
+                                      className="absolute w-px left-1/2 -translate-x-1/2"
+                                      style={{ backgroundColor: color.hex, bottom: '100%', height: '60px' }}
+                                    />
+                                    <div
+                                      className="w-5 h-5 rounded-full border-2 cursor-pointer mx-auto"
+                                      style={{
+                                        backgroundColor: color.hex,
+                                        borderColor: color.hex,
+                                        boxShadow: `0 0 14px ${color.glow}`,
+                                      }}
+                                      {...dotHoverHandlers(name, [
+                                        `${creditWeight}% credit`,
+                                        `${overweight >= 0 ? '+' : '−'}${Math.abs(overweight)}% vs ${FI_INDEX.creditBreakdownLabel}`,
+                                      ])}
+                                    />
+                                  </div>
+                                );
+                              })}
+                            </div>
+
+                            {displayedPortfolios.length === 0 && (
+                              <div className="text-center text-xs text-muted mt-3">
+                                Add portfolios to compare credit-vs-government tilt.
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })()}
                     </div>
                   ) : (
                     <div className="flex-1 min-h-[200px] -ml-2">
@@ -1378,40 +1483,33 @@ export default function PortfolioTrendsDashboard() {
                     </div>
                   )}
 
-                  {/* Spread legend (shared between slider + chart views) */}
-                  <div className="flex items-center justify-center flex-wrap gap-x-4 gap-y-2 mt-4">
-                    {displayedPortfolios.map(({ name, idx, exiting }) => {
-                      const color = PORTFOLIO_PALETTE[idx] ?? PORTFOLIO_PALETTE[0];
-                      return (
-                        <div key={name} className={`flex items-center gap-1.5 ${exiting ? 'data-fade' : ''}`}>
-                          <div className="w-3 h-3 rounded-full border" style={{ backgroundColor: color.hex, borderColor: color.hex }} />
-                          <span className="text-xs text-muted">{name}</span>
-                        </div>
-                      );
-                    })}
-                    <div className="flex items-center gap-1.5 group relative">
-                      <div className="w-3 h-3 rounded-full bg-zinc-500 border border-zinc-400" />
-                      <span className="text-xs text-muted">{FI_INDEX.spreadLabel}</span>
-                      <button
-                        type="button"
-                        tabIndex={0}
-                        className="text-zinc-500 hover:text-zinc-200 focus-visible:text-zinc-200 cursor-help focus:outline-none"
-                        aria-label="How is Credit Spread calculated?"
-                      >
-                        <Info className="w-3 h-3" />
-                      </button>
-                      <div
-                        className="opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-md w-64 pointer-events-none z-50 shadow-lg text-left"
-                        role="tooltip"
-                      >
-                        <div className="text-xs font-medium text-white mb-1">How We Calculate Credit Spread</div>
-                        <div className="text-xs text-muted leading-snug">
-                          Spread = yield of <span className="text-zinc-200">Bloomberg US Credit</span> − yield of <span className="text-zinc-200">Bloomberg US Treasury</span>.
-                          Wider spreads mean the market is demanding more risk premium for credit vs Treasuries.
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+                  {/* Spread summary — replaces the legend. Calls out narrow/wide and per-portfolio tilt. */}
+                  {(() => {
+                    const isNarrow = FI_INDEX.spreadBps < FI_SPREAD_CONTEXT.tenYearAvg;
+                    const visible = displayedPortfolios.filter(p => !p.exiting);
+                    return (
+                      <p className="text-base text-muted leading-relaxed text-left mt-4 px-1">
+                        Credit spreads are currently{' '}
+                        <span className="text-white font-medium">{isNarrow ? 'narrow' : 'wide'}</span>{' '}
+                        relative to the 10-yr average ({FI_INDEX.spreadBps} bps vs {FI_SPREAD_CONTEXT.tenYearAvg} bps).
+                        {visible.length > 0 && ' '}
+                        {visible.map(({ name, idx }, i) => {
+                          const color = PORTFOLIO_PALETTE[idx] ?? PORTFOLIO_PALETTE[0];
+                          const overweight = FI_PORTFOLIO_DATA[name].creditWeight - FI_INDEX.creditWeight;
+                          const isLast = i === visible.length - 1;
+                          return (
+                            <span key={name}>
+                              <span style={{ color: color.hex }} className="font-medium">{name}</span>{' '}
+                              {overweight === 0
+                                ? 'matches the index credit weight'
+                                : `is ${overweight > 0 ? 'overweight' : 'underweight'} credit by ${Math.abs(overweight)}pp`}
+                              {isLast ? '.' : '; '}
+                            </span>
+                          );
+                        })}
+                      </p>
+                    );
+                  })()}
                 </div>
               </div>
             </div>
