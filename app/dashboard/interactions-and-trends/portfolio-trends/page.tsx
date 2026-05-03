@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { Building2, Layers, PieChart, User } from 'lucide-react';
+import { Building2, Info, Landmark, Layers, PieChart, User } from 'lucide-react';
+import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import BenchmarkBarChart from '@/app/components/dashboard/interactions-and-trends/portfolio-trends/BenchmarkBarChart';
 import {
   loggedPortfolios,
@@ -245,6 +246,72 @@ export default function PortfolioTrendsDashboard() {
     index: 8800,
     portfolios: { 'Avg. Client': 245, 'Core+ Model': 78 },
   };
+
+  // ============= FIXED INCOME MOCK DATA =============
+  // Distributions sum to 100. Index = Bloomberg US Aggregate (Treasury + agency-heavy → AAA-skewed).
+  // textColor is paired per-bucket so the in-bar % label always has enough contrast against
+  // the segment fill (dark fills get white text, light fills get near-black).
+  type CreditBucket = 'AAA' | 'AA' | 'A' | 'BBB' | 'BelowBBB' | 'NotRated' | 'Other';
+  const CREDIT_BUCKETS: ReadonlyArray<{ id: CreditBucket; label: string; color: string; textColor: string }> = [
+    { id: 'AAA',      label: 'AAA',       color: '#3d7d27', textColor: '#ffffff' },
+    { id: 'AA',       label: 'AA',        color: '#1398A4', textColor: '#ffffff' },
+    { id: 'A',        label: 'A',         color: '#005E74', textColor: '#ffffff' },
+    { id: 'BBB',      label: 'BBB',       color: '#91D479', textColor: '#18181b' },
+    { id: 'BelowBBB', label: 'Below BBB', color: '#C4F4F8', textColor: '#18181b' },
+    { id: 'NotRated', label: 'Not Rated', color: '#ADCCDA', textColor: '#18181b' },
+    { id: 'Other',    label: 'Other',     color: '#F5DB95', textColor: '#18181b' },
+  ];
+  const FI_PORTFOLIO_DATA: Record<PortfolioName, {
+    creditBreakdown: Record<CreditBucket, number>;
+    creditSpreadBps: number;
+    creditSpreadHistory: number[]; // 8 quarters, oldest → newest
+  }> = {
+    'Avg. Client': {
+      creditBreakdown: { AAA: 22, AA: 24, A: 26, BBB: 17, BelowBBB: 5, NotRated: 4, Other: 2 },
+      creditSpreadBps: 145,
+      creditSpreadHistory: [98, 110, 125, 132, 138, 142, 144, 145],
+    },
+    'Core+ Model': {
+      creditBreakdown: { AAA: 14, AA: 22, A: 28, BBB: 22, BelowBBB: 8, NotRated: 4, Other: 2 },
+      creditSpreadBps: 168,
+      creditSpreadHistory: [120, 132, 148, 155, 160, 164, 166, 168],
+    },
+  };
+  // Index credit spread = (Bloomberg US Credit yield) − (Bloomberg US Treasury yield).
+  // Stored as a derived series (already-subtracted bps) so the slider/chart consume one
+  // number per period rather than two raw OAS readings.
+  const FI_INDEX = {
+    creditBreakdownLabel: 'Bloomberg US Aggregate',
+    spreadLabel: 'Credit Spread',
+    creditBreakdown: { AAA: 68, AA: 4, A: 12, BBB: 13, BelowBBB: 0, NotRated: 2, Other: 1 } as Record<CreditBucket, number>,
+    spreadBps: 110,
+    spreadHistory: [85, 92, 106, 115, 117, 112, 111, 110], // 8 quarters, oldest → newest
+  };
+
+  // Toggle for the Credit Spread card: snapshot vs history.
+  const [creditSpreadView, setCreditSpreadView] = useState<'slider' | 'chart'>('slider');
+
+  // Quarter labels (oldest → newest) for the Credit Spread line chart x-axis.
+  const creditSpreadQuarters = useMemo(() => [...quarterEndOptions].slice(0, 8).reverse(), [quarterEndOptions]);
+
+  // recharts LineChart series data — one row per quarter, columns per portfolio + one
+  // composite index column (Credit − Treasury, already-subtracted in FI_INDEX.spreadHistory).
+  const creditSpreadSeries = useMemo(() => {
+    return creditSpreadQuarters.map((q, i) => {
+      const row: Record<string, string | number> = { period: q };
+      PORTFOLIO_OPTIONS.forEach(name => {
+        row[name] = FI_PORTFOLIO_DATA[name].creditSpreadHistory[i];
+      });
+      row[FI_INDEX.spreadLabel] = FI_INDEX.spreadHistory[i];
+      return row;
+    });
+    // FI mock objects are inline literals — stable per render, safe to omit from deps.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [creditSpreadQuarters]);
+
+  // Slider axis: 0 → 300 bps. Anything above pins at 100% (won't happen with current mocks).
+  const SLIDER_MAX_BPS = 300;
+  const sliderPos = (bps: number) => `${Math.min(100, Math.max(0, (bps / SLIDER_MAX_BPS) * 100))}%`;
 
   // Row schema for the metrics-vs-index table. Each row pulls portfolio + index values
   // from the same data sources that drive the visual cards above, plus a formatter for
@@ -562,10 +629,6 @@ export default function PortfolioTrendsDashboard() {
                   </div>
 
                   <div className="flex items-center justify-center flex-wrap gap-x-6 gap-y-2 mt-3">
-                    <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 rounded-full bg-zinc-500 border border-zinc-400" />
-                      <span className="text-xs text-muted">MSCI ACWI IMI</span>
-                    </div>
                     {displayedPortfolios.map(({ name, idx, exiting }) => {
                       const color = PORTFOLIO_PALETTE[idx] ?? PORTFOLIO_PALETTE[0];
                       return (
@@ -578,6 +641,10 @@ export default function PortfolioTrendsDashboard() {
                         </div>
                       );
                     })}
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full bg-zinc-500 border border-zinc-400" />
+                      <span className="text-xs text-muted">MSCI ACWI IMI</span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -661,10 +728,6 @@ export default function PortfolioTrendsDashboard() {
                   </div>
 
                   <div className="flex items-center justify-center flex-wrap gap-x-6 gap-y-2 mt-3">
-                    <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 rounded-full bg-zinc-500 border border-zinc-400" />
-                      <span className="text-xs text-muted">MSCI ACWI IMI</span>
-                    </div>
                     {displayedPortfolios.map(({ name, idx, exiting }) => {
                       const color = PORTFOLIO_PALETTE[idx] ?? PORTFOLIO_PALETTE[0];
                       return (
@@ -677,6 +740,10 @@ export default function PortfolioTrendsDashboard() {
                         </div>
                       );
                     })}
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full bg-zinc-500 border border-zinc-400" />
+                      <span className="text-xs text-muted">MSCI ACWI IMI</span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -807,10 +874,6 @@ export default function PortfolioTrendsDashboard() {
                     </div>
 
                     <div className="flex items-center justify-center flex-wrap gap-x-6 gap-y-2 mt-3">
-                      <div className="flex items-center gap-2">
-                        <div className="w-3 h-3 rounded-sm bg-zinc-500/70" />
-                        <span className="text-xs text-muted">MSCI ACWI IMI</span>
-                      </div>
                       {displayedPortfolios.map(({ name, idx, exiting }) => {
                         const color = PORTFOLIO_PALETTE[idx] ?? PORTFOLIO_PALETTE[0];
                         return (
@@ -820,6 +883,10 @@ export default function PortfolioTrendsDashboard() {
                           </div>
                         );
                       })}
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 rounded-sm bg-zinc-500/70" />
+                        <span className="text-xs text-muted">MSCI ACWI IMI</span>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -1058,6 +1125,296 @@ export default function PortfolioTrendsDashboard() {
               </div>
             </div>
 
+          </div>
+
+          {/* ==================== SECTION 2: FIXED INCOME ==================== */}
+          <div>
+            <div className="flex items-center gap-2 mb-4">
+              <Landmark className="w-5 h-5 text-cyan-400" />
+              <h3 className="text-lg font-semibold text-white">Fixed Income</h3>
+              <span className="text-xs text-muted ml-2">Duration, credit, and sector positioning vs benchmark</span>
+            </div>
+
+            {/* FI Row 1: Credit Breakdown (col-span-2) + Credit Spread (col-span-1) */}
+            <div className="grid grid-cols-3 gap-4 mb-4">
+              {/* Credit Breakdown — horizontal stacked bars per portfolio + index */}
+              <div className="col-span-2 relative overflow-hidden bg-zinc-900/60 backdrop-blur-md border border-zinc-800/50 p-5 rounded-xl flex flex-col min-h-[340px]">
+                <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] via-transparent to-transparent pointer-events-none" />
+                <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+
+                <div className="relative z-10 flex flex-col flex-1">
+                  <div className="flex items-center justify-between mb-4 -mt-2 -ml-2">
+                    <div>
+                      <h4 className="text-sm font-medium text-white">Credit Breakdown</h4>
+                      <p className="text-xs text-muted">Allocation by credit rating ({period})</p>
+                    </div>
+                  </div>
+
+                  <div className="flex-1 flex flex-col justify-center gap-3">
+                    {displayedPortfolios.map(({ name, idx, exiting }, rowIdx) => {
+                      const dist = FI_PORTFOLIO_DATA[name].creditBreakdown;
+                      const color = PORTFOLIO_PALETTE[idx] ?? PORTFOLIO_PALETTE[0];
+                      return (
+                        <div
+                          key={name}
+                          className={`${exiting ? 'data-fade' : 'data-pop'} flex flex-col gap-1`}
+                          style={{ animationDelay: exiting ? '0ms' : `${80 + rowIdx * 120}ms` }}
+                        >
+                          <span className="text-xs font-medium text-zinc-400">{name}</span>
+                          <div
+                            className="flex h-10 rounded-sm overflow-hidden border border-zinc-800/60 bg-zinc-500 gap-px"
+                            style={{ containerType: 'size' }}
+                          >
+                            {CREDIT_BUCKETS.map(bucket => {
+                              const pct = dist[bucket.id];
+                              if (pct === 0) return null;
+                              return (
+                                <div
+                                  key={bucket.id}
+                                  className="h-full flex items-center justify-center transition-[width] duration-700 ease-out cursor-pointer"
+                                  style={{ width: `${pct}%`, backgroundColor: bucket.color }}
+                                  {...dotHoverHandlers(`${name} • ${bucket.label}`, [`${pct}%`])}
+                                >
+                                  {pct > 3 && (
+                                    <span className="font-semibold tabular-nums" style={{ fontSize: '32cqh', color: bucket.textColor }}>{pct}%</span>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      );
+                    })}
+
+                    {/* Index row — extra top padding when only one portfolio is selected,
+                        so the index is visually distinct from the lone portfolio bar above. */}
+                    <div
+                      className={`data-pop flex flex-col gap-1 transition-[padding-top] duration-700 ${
+                        portfolioFilter.length === 1 ? 'pt-3' : 'pt-0'
+                      }`}
+                      style={{ animationDelay: `${80 + displayedPortfolios.length * 120}ms` }}
+                    >
+                      <span className="text-xs font-medium text-zinc-400">{FI_INDEX.creditBreakdownLabel}</span>
+                      <div
+                        className="flex h-10 rounded-sm overflow-hidden border border-zinc-800/60 bg-zinc-500 gap-px"
+                        style={{ containerType: 'size' }}
+                      >
+                        {CREDIT_BUCKETS.map(bucket => {
+                          const pct = FI_INDEX.creditBreakdown[bucket.id];
+                          if (pct === 0) return null;
+                          return (
+                            <div
+                              key={bucket.id}
+                              className="h-full flex items-center justify-center transition-[width] duration-700 ease-out cursor-pointer"
+                              style={{ width: `${pct}%`, backgroundColor: bucket.color }}
+                              {...dotHoverHandlers(`${FI_INDEX.creditBreakdownLabel} • ${bucket.label}`, [`${pct}%`])}
+                            >
+                              {pct > 3 && (
+                                <span className="font-semibold tabular-nums" style={{ fontSize: '32cqh', color: bucket.textColor }}>{pct}%</span>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Bucket legend */}
+                  <div className="flex items-center justify-center flex-wrap gap-x-4 gap-y-2 mt-4">
+                    {CREDIT_BUCKETS.map(bucket => (
+                      <div key={bucket.id} className="flex items-center gap-1.5">
+                        <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: bucket.color }} />
+                        <span className="text-xs text-muted">{bucket.label}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Credit Spread — slider snapshot or historical line chart, toggled */}
+              <div className="relative overflow-hidden bg-zinc-900/60 backdrop-blur-md border border-zinc-800/50 p-5 rounded-xl flex flex-col min-h-[340px]">
+                <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] via-transparent to-transparent pointer-events-none" />
+                <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+
+                <div className="relative z-10 flex flex-col flex-1">
+                  <div className="flex items-center justify-between mb-4 -mt-2 -ml-2 -mr-2">
+                    <div>
+                      <h4 className="text-sm font-medium text-white">Credit Spread</h4>
+                      <p className="text-xs text-muted">
+                        {creditSpreadView === 'slider' ? `Current spread (${period})` : 'Spread over time'}
+                      </p>
+                    </div>
+                    {/* Slider / Chart toggle — far right of header */}
+                    <div className="flex items-center gap-0.5 p-0.5 bg-zinc-800/60 rounded-md border border-zinc-700/40">
+                      {(['slider', 'chart'] as const).map(view => {
+                        const active = creditSpreadView === view;
+                        return (
+                          <button
+                            key={view}
+                            type="button"
+                            onClick={() => setCreditSpreadView(view)}
+                            className={`px-2.5 py-0.5 text-xs rounded transition-colors ${
+                              active ? 'bg-zinc-700 text-white' : 'text-muted hover:text-white'
+                            }`}
+                          >
+                            {view === 'slider' ? 'Slider' : 'Chart'}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {creditSpreadView === 'slider' ? (
+                    <div className="flex-1 flex flex-col justify-center px-3">
+                      <div className="relative h-2 mt-4 mb-12">
+                        {/* Track */}
+                        <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-px bg-zinc-700/60" />
+
+                        {/* Tick labels along the axis */}
+                        {[0, 100, 200, 300].map(bps => (
+                          <div
+                            key={bps}
+                            className="absolute top-1/2"
+                            style={{ left: sliderPos(bps), transform: 'translate(-50%, 0)' }}
+                          >
+                            <div className="w-px h-1.5 bg-zinc-600 -mt-[3px] mx-auto" />
+                            <div className="text-[10px] text-muted mt-2 whitespace-nowrap">{bps}</div>
+                          </div>
+                        ))}
+
+                        {/* Index marker — Credit − Treasury (current spread reference) */}
+                        <div
+                          className="data-pop absolute w-4 h-4 rounded-full bg-zinc-500 border-2 border-zinc-400 z-10 cursor-pointer"
+                          style={{ left: sliderPos(FI_INDEX.spreadBps), top: '50%', transform: 'translate(-50%, -50%)' }}
+                          {...dotHoverHandlers(FI_INDEX.spreadLabel, [`${FI_INDEX.spreadBps} bps`])}
+                        />
+
+                        {/* Portfolio markers */}
+                        {displayedPortfolios.map(({ name, idx, exiting }) => {
+                          const bps = FI_PORTFOLIO_DATA[name].creditSpreadBps;
+                          const color = PORTFOLIO_PALETTE[idx] ?? PORTFOLIO_PALETTE[0];
+                          return (
+                            <div
+                              key={name}
+                              className={`${exiting ? 'data-fade' : 'data-pop'} absolute w-4 h-4 rounded-full border-2 z-10 cursor-pointer`}
+                              style={{
+                                left: sliderPos(bps),
+                                top: '50%',
+                                transform: 'translate(-50%, -50%)',
+                                backgroundColor: color.hex,
+                                borderColor: color.hex,
+                                boxShadow: `0 0 14px ${color.glow}`,
+                              }}
+                              {...dotHoverHandlers(name, [`${bps} bps`])}
+                            />
+                          );
+                        })}
+                      </div>
+
+                      <div className="text-center text-xs text-muted">Credit Spread (bps)</div>
+                    </div>
+                  ) : (
+                    <div className="flex-1 min-h-[200px] -ml-2">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <LineChart data={creditSpreadSeries} margin={{ top: 10, right: 10, bottom: 5, left: 0 }}>
+                          <CartesianGrid strokeDasharray="2 4" stroke="#3f3f46" vertical={false} />
+                          <XAxis
+                            dataKey="period"
+                            stroke="#71717a"
+                            tick={{ fontSize: 10, fill: '#a1a1aa' }}
+                            tickLine={false}
+                            axisLine={{ stroke: '#3f3f46' }}
+                            angle={-80}
+                            textAnchor="end"
+                            height={50}
+                            interval={0}
+                          />
+                          <YAxis
+                            stroke="#71717a"
+                            tick={{ fontSize: 10, fill: '#a1a1aa' }}
+                            tickLine={false}
+                            axisLine={{ stroke: '#3f3f46' }}
+                            tickFormatter={(v: number) => `${v}`}
+                            width={32}
+                          />
+                          <Tooltip
+                            contentStyle={{
+                              backgroundColor: '#27272a',
+                              border: '1px solid #3f3f46',
+                              borderRadius: '6px',
+                              fontSize: '12px',
+                            }}
+                            labelStyle={{ color: '#fff', marginBottom: '4px', fontWeight: 500 }}
+                            itemStyle={{ color: '#a1a1aa', padding: 0 }}
+                            formatter={(value) => [`${value} bps`, '']}
+                          />
+                          {/* Index line — Credit − Treasury, drawn first so portfolio lines layer on top */}
+                          <Line
+                            type="monotone"
+                            dataKey={FI_INDEX.spreadLabel}
+                            stroke="#a1a1aa"
+                            strokeWidth={1.5}
+                            strokeDasharray="4 4"
+                            dot={false}
+                            isAnimationActive
+                          />
+                          {displayedPortfolios.filter(p => !p.exiting).map(({ name, idx }) => {
+                            const color = PORTFOLIO_PALETTE[idx] ?? PORTFOLIO_PALETTE[0];
+                            return (
+                              <Line
+                                key={name}
+                                type="monotone"
+                                dataKey={name}
+                                stroke={color.hex}
+                                strokeWidth={2}
+                                dot={{ fill: color.hex, r: 3, strokeWidth: 0 }}
+                                activeDot={{ r: 5, fill: color.hex, strokeWidth: 0 }}
+                                isAnimationActive
+                              />
+                            );
+                          })}
+                        </LineChart>
+                      </ResponsiveContainer>
+                    </div>
+                  )}
+
+                  {/* Spread legend (shared between slider + chart views) */}
+                  <div className="flex items-center justify-center flex-wrap gap-x-4 gap-y-2 mt-4">
+                    {displayedPortfolios.map(({ name, idx, exiting }) => {
+                      const color = PORTFOLIO_PALETTE[idx] ?? PORTFOLIO_PALETTE[0];
+                      return (
+                        <div key={name} className={`flex items-center gap-1.5 ${exiting ? 'data-fade' : ''}`}>
+                          <div className="w-3 h-3 rounded-full border" style={{ backgroundColor: color.hex, borderColor: color.hex }} />
+                          <span className="text-xs text-muted">{name}</span>
+                        </div>
+                      );
+                    })}
+                    <div className="flex items-center gap-1.5 group relative">
+                      <div className="w-3 h-3 rounded-full bg-zinc-500 border border-zinc-400" />
+                      <span className="text-xs text-muted">{FI_INDEX.spreadLabel}</span>
+                      <button
+                        type="button"
+                        tabIndex={0}
+                        className="text-zinc-500 hover:text-zinc-200 focus-visible:text-zinc-200 cursor-help focus:outline-none"
+                        aria-label="How is Credit Spread calculated?"
+                      >
+                        <Info className="w-3 h-3" />
+                      </button>
+                      <div
+                        className="opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-md w-64 pointer-events-none z-50 shadow-lg text-left"
+                        role="tooltip"
+                      >
+                        <div className="text-xs font-medium text-white mb-1">How We Calculate Credit Spread</div>
+                        <div className="text-xs text-muted leading-snug">
+                          Spread = yield of <span className="text-zinc-200">Bloomberg US Credit</span> − yield of <span className="text-zinc-200">Bloomberg US Treasury</span>.
+                          Wider spreads mean the market is demanding more risk premium for credit vs Treasuries.
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
