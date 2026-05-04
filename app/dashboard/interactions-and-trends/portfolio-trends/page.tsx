@@ -408,13 +408,16 @@ export default function PortfolioTrendsDashboard() {
     ytm: 4.55,
   };
 
-  // US Treasury par yield curve — current quarter-end (Q1 2026 = 03/31/2026) and the
-  // same quarter one year prior (Q1 2025 = 03/31/2025). Source: Federal Reserve H.15
-  // selected interest rates. Tenors in years (3M → 30Y); yields in %.
+  // US Treasury par yield curve plus Fed reverse-repo rate (RRP) at the front end —
+  // current quarter-end (Q1 2026 = 03/31/2026) and the same quarter one year prior
+  // (Q1 2025 = 03/31/2025). Treasury tenors source: Federal Reserve H.15 selected
+  // interest rates. tenorYears feeds yield/duration interpolation; tenorLabels feeds
+  // the x-axis tick labels. Yields in %.
   const FI_YIELD_CURVE = {
-    tenors:  [0.25, 1.0,  2.0,  3.0,  5.0,  7.0,  10.0, 20.0, 30.0],
-    current: [3.70, 3.68, 3.79, 3.81, 3.92, 4.11, 4.30, 4.88, 4.88],
-    yearAgo: [4.32, 4.03, 3.89, 3.89, 3.96, 4.09, 4.23, 4.62, 4.59],
+    tenorYears:  [0,    0.0833, 0.1667, 0.25, 0.3333, 0.5,  1.0,  2.0,  3.0,  5.0,  7.0,  10.0, 20.0, 30.0],
+    tenorLabels: ['RRP','1M',   '2M',   '3M', '4M',   '6M', '1Y', '2Y', '3Y', '5Y', '7Y', '10Y','20Y','30Y'],
+    current:     [3.65, 3.69,   3.70,   3.70, 3.70,   3.69, 3.68, 3.79, 3.81, 3.92, 4.11, 4.30, 4.88, 4.88],
+    yearAgo:     [4.30, 4.34,   4.34,   4.32, 4.27,   4.20, 4.03, 3.89, 3.89, 3.96, 4.09, 4.23, 4.62, 4.59],
   };
 
   // Linear interpolation of a yield curve at a given duration (years). Clamps to the
@@ -443,11 +446,6 @@ export default function PortfolioTrendsDashboard() {
 
   // Toggle for the Credit Spread card: snapshot vs history.
   const [creditSpreadView, setCreditSpreadView] = useState<'slider' | 'chart'>('slider');
-
-  // Toggle for the Yield Curve card x-axis range. Default '10Y' zooms into the front-end of
-  // the curve where every portfolio's duration sits; '30Y' extends out to the long end so
-  // the full Treasury curve is visible.
-  const [yieldCurveRange, setYieldCurveRange] = useState<'10Y' | '30Y'>('10Y');
 
   // Slider-element animations (bar / dial / dots) sit inside row-stagger-4, so on initial
   // mount they correctly inherit the 3s row delay. After that initial cascade completes,
@@ -1573,52 +1571,61 @@ export default function PortfolioTrendsDashboard() {
                       <h4 className="text-sm font-medium text-white">Yield Curve</h4>
                       <p className="text-xs text-muted">US Treasury — current vs 1 year ago ({period})</p>
                     </div>
-                    {/* X-axis range toggle — far right of header */}
-                    <div className="flex items-center gap-0.5 p-0.5 bg-zinc-800/60 rounded-md border border-zinc-700/40">
-                      {(['10Y', '30Y'] as const).map(range => {
-                        const active = yieldCurveRange === range;
-                        return (
-                          <button
-                            key={range}
-                            type="button"
-                            onClick={() => setYieldCurveRange(range)}
-                            className={`px-2.5 py-0.5 text-xs rounded transition-colors ${
-                              active ? 'bg-zinc-700 text-white' : 'text-muted hover:text-white'
-                            }`}
-                          >
-                            {range}
-                          </button>
-                        );
-                      })}
-                    </div>
                   </div>
 
                   {(() => {
                     const Y_MIN = 3.5;
                     const Y_MAX = 5.0;
-                    const X_MIN = 0;
-                    const X_MAX = yieldCurveRange === '10Y' ? 10 : 30;
-                    // Truncate the curve to the visible x-range. Tenors include 10Y exactly,
-                    // so a slice up to and including X_MAX cleanly cuts the polyline at the
-                    // chart edge without needing interpolation.
-                    const lastIdx = FI_YIELD_CURVE.tenors.findIndex(t => t >= X_MAX);
-                    const endExclusive = (lastIdx === -1 ? FI_YIELD_CURVE.tenors.length : lastIdx + 1);
-                    const tenorsVisible = FI_YIELD_CURVE.tenors.slice(0, endExclusive);
-                    const currentVisible = FI_YIELD_CURVE.current.slice(0, endExclusive);
-                    const yearAgoVisible = FI_YIELD_CURVE.yearAgo.slice(0, endExclusive);
-                    const toPolyline = (curve: readonly number[]) =>
-                      tenorsVisible
-                        .map((t, i) => {
-                          const x = ((t - X_MIN) / (X_MAX - X_MIN)) * 100;
-                          const y = (1 - (curve[i] - Y_MIN) / (Y_MAX - Y_MIN)) * 100;
-                          return `${x.toFixed(2)},${y.toFixed(2)}`;
-                        })
-                        .join(' ');
-                    const currentPoints = toPolyline(currentVisible);
-                    const yearAgoPoints = toPolyline(yearAgoVisible);
-                    const xTickLabels = yieldCurveRange === '10Y'
-                      ? ['0Y', '5Y', '10Y']
-                      : ['0Y', '10Y', '20Y', '30Y'];
+                    const tenorYearsVisible = FI_YIELD_CURVE.tenorYears;
+                    const tenorLabelsVisible = FI_YIELD_CURVE.tenorLabels;
+                    const currentVisible = FI_YIELD_CURVE.current;
+                    const yearAgoVisible = FI_YIELD_CURVE.yearAgo;
+                    const n = tenorYearsVisible.length;
+                    // Ordinal x-axis: each tenor sits at the center of its slot. Pairs with
+                    // `justify-around` on the label row so labels align with their slot centers.
+                    const slotX = (i: number) => ((i + 0.5) / n) * 100;
+                    // Maps a duration in years to its x-position by finding the segment it
+                    // falls within and interpolating between adjacent tenor slot centers.
+                    const indexX = (duration: number): string => {
+                      if (duration <= tenorYearsVisible[0]) return `${slotX(0).toFixed(2)}%`;
+                      if (duration >= tenorYearsVisible[n - 1]) return `${slotX(n - 1).toFixed(2)}%`;
+                      for (let i = 0; i < n - 1; i++) {
+                        const a = tenorYearsVisible[i];
+                        const b = tenorYearsVisible[i + 1];
+                        if (duration >= a && duration <= b) {
+                          const t = (duration - a) / (b - a);
+                          return `${(slotX(i) + t * (slotX(i + 1) - slotX(i))).toFixed(2)}%`;
+                        }
+                      }
+                      return `${slotX(n - 1).toFixed(2)}%`;
+                    };
+                    // Smooths the curve through every tenor point using a Catmull-Rom spline
+                    // converted to cubic Béziers (tension factor 1/6). Each segment's tangent is
+                    // derived from the slopes between its neighbors, so the path passes through
+                    // every data point with rounded transitions instead of sharp corners.
+                    const toSmoothPath = (curve: readonly number[]) => {
+                      const pts = curve.map((v, i) => ({
+                        x: slotX(i),
+                        y: (1 - (v - Y_MIN) / (Y_MAX - Y_MIN)) * 100,
+                      }));
+                      if (pts.length === 0) return '';
+                      if (pts.length === 1) return `M${pts[0].x.toFixed(2)},${pts[0].y.toFixed(2)}`;
+                      let d = `M${pts[0].x.toFixed(2)},${pts[0].y.toFixed(2)}`;
+                      for (let i = 0; i < pts.length - 1; i++) {
+                        const p0 = pts[i - 1] ?? pts[i];
+                        const p1 = pts[i];
+                        const p2 = pts[i + 1];
+                        const p3 = pts[i + 2] ?? pts[i + 1];
+                        const cp1x = p1.x + (p2.x - p0.x) / 6;
+                        const cp1y = p1.y + (p2.y - p0.y) / 6;
+                        const cp2x = p2.x - (p3.x - p1.x) / 6;
+                        const cp2y = p2.y - (p3.y - p1.y) / 6;
+                        d += ` C${cp1x.toFixed(2)},${cp1y.toFixed(2)} ${cp2x.toFixed(2)},${cp2y.toFixed(2)} ${p2.x.toFixed(2)},${p2.y.toFixed(2)}`;
+                      }
+                      return d;
+                    };
+                    const currentPath = toSmoothPath(currentVisible);
+                    const yearAgoPath = toSmoothPath(yearAgoVisible);
                     return (
                       <div className="flex flex-1 min-h-[140px]">
                         <div className="flex items-center justify-center mr-1" style={{ width: '20px' }}>
@@ -1636,7 +1643,7 @@ export default function PortfolioTrendsDashboard() {
 
                             <div className="flex-1 relative border-l border-b border-zinc-700/50 overflow-hidden">
                               {/* Curves: yearAgo (dashed zinc) drawn first so current sits on top.
-                                  Each polyline lives in its own reveal-wrapper so the year-ago line
+                                  Each path lives in its own reveal-wrapper so the year-ago line
                                   draws left-to-right first, then the current line draws after it. */}
                               <div className="yc-line-reveal absolute inset-0">
                                 <svg
@@ -1644,14 +1651,15 @@ export default function PortfolioTrendsDashboard() {
                                   preserveAspectRatio="none"
                                   viewBox="0 0 100 100"
                                 >
-                                  <polyline
-                                    points={yearAgoPoints}
+                                  <path
+                                    d={yearAgoPath}
                                     fill="none"
                                     stroke="#a1a1aa"
                                     strokeWidth="1.5"
                                     strokeDasharray="3 2"
                                     vectorEffect="non-scaling-stroke"
                                     strokeLinejoin="round"
+                                    strokeLinecap="round"
                                   />
                                 </svg>
                               </div>
@@ -1661,13 +1669,14 @@ export default function PortfolioTrendsDashboard() {
                                   preserveAspectRatio="none"
                                   viewBox="0 0 100 100"
                                 >
-                                  <polyline
-                                    points={currentPoints}
+                                  <path
+                                    d={currentPath}
                                     fill="none"
                                     stroke="#1398A4"
                                     strokeWidth="2"
                                     vectorEffect="non-scaling-stroke"
                                     strokeLinejoin="round"
+                                    strokeLinecap="round"
                                   />
                                 </svg>
                               </div>
@@ -1677,8 +1686,8 @@ export default function PortfolioTrendsDashboard() {
                                   line. After the initial cascade, mid-session re-renders use 0ms. */}
                               {(() => {
                                 const dur = FI_INDEX.avgEffDuration;
-                                const currentY = interpolateYield(FI_YIELD_CURVE.current, FI_YIELD_CURVE.tenors, dur);
-                                const yearAgoY = interpolateYield(FI_YIELD_CURVE.yearAgo, FI_YIELD_CURVE.tenors, dur);
+                                const currentY = interpolateYield(FI_YIELD_CURVE.current, FI_YIELD_CURVE.tenorYears, dur);
+                                const yearAgoY = interpolateYield(FI_YIELD_CURVE.yearAgo, FI_YIELD_CURVE.tenorYears, dur);
                                 const yearAgoDelay = initialStaggerDone ? '0ms' : `${ROW_3_STAGGER_MS + 1000}ms`;
                                 const currentDelay = initialStaggerDone ? '0ms' : `${ROW_3_STAGGER_MS + 2500}ms`;
                                 return (
@@ -1686,7 +1695,7 @@ export default function PortfolioTrendsDashboard() {
                                     <div
                                       className="data-pop absolute w-4 h-4 rounded-full bg-zinc-500 border-2 border-zinc-400 z-10 cursor-pointer"
                                       style={{
-                                        left: pct(dur, X_MIN, X_MAX),
+                                        left: indexX(dur),
                                         top: pct(currentY, Y_MIN, Y_MAX, true),
                                         transform: 'translate(-50%, -50%)',
                                         animationDelay: currentDelay,
@@ -1699,7 +1708,7 @@ export default function PortfolioTrendsDashboard() {
                                     <div
                                       className="data-pop absolute w-4 h-4 rounded-full bg-zinc-500/60 border-2 border-zinc-400 z-10 cursor-pointer"
                                       style={{
-                                        left: pct(dur, X_MIN, X_MAX),
+                                        left: indexX(dur),
                                         top: pct(yearAgoY, Y_MIN, Y_MAX, true),
                                         transform: 'translate(-50%, -50%)',
                                         animationDelay: yearAgoDelay,
@@ -1717,8 +1726,8 @@ export default function PortfolioTrendsDashboard() {
                                   as the index dots; data-fade exits keep the row-stagger default. */}
                               {displayedPortfolios.map(({ name, idx, exiting }) => {
                                 const dur = FI_PORTFOLIO_DATA[name].avgEffDuration;
-                                const currentY = interpolateYield(FI_YIELD_CURVE.current, FI_YIELD_CURVE.tenors, dur);
-                                const yearAgoY = interpolateYield(FI_YIELD_CURVE.yearAgo, FI_YIELD_CURVE.tenors, dur);
+                                const currentY = interpolateYield(FI_YIELD_CURVE.current, FI_YIELD_CURVE.tenorYears, dur);
+                                const yearAgoY = interpolateYield(FI_YIELD_CURVE.yearAgo, FI_YIELD_CURVE.tenorYears, dur);
                                 const color = PORTFOLIO_PALETTE[idx] ?? PORTFOLIO_PALETTE[0];
                                 const cls = exiting ? 'data-fade' : 'data-pop';
                                 const yearAgoDelay = exiting
@@ -1732,7 +1741,7 @@ export default function PortfolioTrendsDashboard() {
                                     <div
                                       className={`${cls} absolute w-4 h-4 rounded-full border-2 z-10 cursor-pointer`}
                                       style={{
-                                        left: pct(dur, X_MIN, X_MAX),
+                                        left: indexX(dur),
                                         top: pct(currentY, Y_MIN, Y_MAX, true),
                                         transform: 'translate(-50%, -50%)',
                                         backgroundColor: color.hex,
@@ -1748,7 +1757,7 @@ export default function PortfolioTrendsDashboard() {
                                     <div
                                       className={`${cls} absolute w-4 h-4 rounded-full border-2 z-10 cursor-pointer`}
                                       style={{
-                                        left: pct(dur, X_MIN, X_MAX),
+                                        left: indexX(dur),
                                         top: pct(yearAgoY, Y_MIN, Y_MAX, true),
                                         transform: 'translate(-50%, -50%)',
                                         backgroundColor: 'transparent',
@@ -1767,8 +1776,8 @@ export default function PortfolioTrendsDashboard() {
                             </div>
                           </div>
 
-                          <div className="flex justify-between pl-7 pr-0 mt-1">
-                            {xTickLabels.map(label => (
+                          <div className="flex justify-around pl-7 pr-0 mt-1">
+                            {tenorLabelsVisible.map(label => (
                               <span key={label} className="text-xs text-muted">{label}</span>
                             ))}
                           </div>
