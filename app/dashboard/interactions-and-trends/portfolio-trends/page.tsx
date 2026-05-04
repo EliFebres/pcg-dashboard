@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Building2, Info, Landmark, Layers, PieChart, User } from 'lucide-react';
-import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import BenchmarkBarChart from '@/app/components/dashboard/interactions-and-trends/portfolio-trends/BenchmarkBarChart';
 import {
   loggedPortfolios,
@@ -47,6 +47,11 @@ const PORTFOLIO_EXIT_MS = 1500;
 // data-pop, data-fade, benchmark bar rise/shrink, radar polygon) all start this many ms
 // after row 1's. Must match the 0.667s in the .row-stagger-2 rules in globals.css.
 const ROW_2_STAGGER_MS = 667;
+
+// Row 3 (Fixed Income) keeps the same 667ms cadence — its data-pop / bar-grow animations
+// start just before row 2 finishes. Must match the 1.334s in the .row-stagger-3 rules in
+// globals.css.
+const ROW_3_STAGGER_MS = 1334;
 
 // Color is tied to selection order, not portfolio name. Whichever portfolio is selected
 // first gets palette[0], the next selection gets palette[1]. Avg. Client is the default
@@ -298,18 +303,21 @@ export default function PortfolioTrendsDashboard() {
     creditSpreadBps: number;
     creditSpreadHistory: number[]; // 8 quarters, oldest → newest
     creditWeight: number;
+    creditWeightHistory: number[]; // 8 quarters of credit allocation %, latest matches creditWeight
   }> = {
     'Avg. Client': {
       creditBreakdown: { AAA: 22, AA: 24, A: 26, BBB: 17, BelowBBB: 5, NotRated: 4, Other: 2 },
-      creditSpreadBps: 145,
-      creditSpreadHistory: [98, 110, 125, 132, 138, 142, 144, 145],
+      creditSpreadBps: 92,
+      creditSpreadHistory: [105, 100, 92, 98, 105, 84, 86, 99],
       creditWeight: 50,
+      creditWeightHistory: [52, 51, 50, 50, 53, 51, 49, 50],
     },
     'Core+ Model': {
       creditBreakdown: { AAA: 14, AA: 22, A: 28, BBB: 22, BelowBBB: 8, NotRated: 4, Other: 2 },
-      creditSpreadBps: 168,
-      creditSpreadHistory: [120, 132, 148, 155, 160, 164, 166, 168],
+      creditSpreadBps: 115,
+      creditSpreadHistory: [125, 120, 112, 118, 130, 105, 108, 122],
       creditWeight: 65,
+      creditWeightHistory: [66, 65, 64, 64, 68, 65, 63, 65],
     },
   };
   // Index credit spread = (Bloomberg US Credit yield) − (Bloomberg US Treasury yield).
@@ -317,17 +325,20 @@ export default function PortfolioTrendsDashboard() {
   // number per period rather than two raw OAS readings.
   const FI_INDEX = {
     creditBreakdownLabel: 'Bloomberg US Aggregate',
-    spreadLabel: 'Credit Spread',
+    spreadLabel: 'Credit − Gov Index',
     creditBreakdown: { AAA: 68, AA: 4, A: 12, BBB: 13, BelowBBB: 0, NotRated: 2, Other: 1 } as Record<CreditBucket, number>,
-    spreadBps: 110,
-    spreadHistory: [85, 92, 106, 115, 117, 112, 111, 110], // 8 quarters, oldest → newest
+    spreadBps: 80,
+    // Bloomberg US Credit OAS, quarter-ends Q2 2024 → Q1 2026. Q2 2025 reflects post-tariff
+    // (April 2025) retracement from the ~121 intra-quarter peak; Q3 2025 = 74 was the
+    // tightest reading since 1998; Q1 2026 = 89 was 11bps wider than the January low of ~71.
+    spreadHistory: [95, 90, 82, 88, 95, 74, 76, 89],
     creditWeight: 30, // Bloomberg Aggregate is treasury/agency-heavy; ~30% sits in credit.
   };
 
   // 10-year context for the Credit Spread bar — left edge = tenYearMin (Narrow),
   // right edge = tenYearMax (Wide), interior tick at tenYearAvg divides the gradient.
   const FI_SPREAD_CONTEXT = {
-    tenYearMin: 75,
+    tenYearMin: 70,
     tenYearAvg: 135,
     tenYearMax: 280,
   };
@@ -335,16 +346,29 @@ export default function PortfolioTrendsDashboard() {
   // Toggle for the Credit Spread card: snapshot vs history.
   const [creditSpreadView, setCreditSpreadView] = useState<'slider' | 'chart'>('slider');
 
+  // Slider-element animations (bar / dial / dots) sit inside row-stagger-3, so on initial
+  // mount they correctly inherit the 1.334s row delay. After that initial cascade completes,
+  // we want chart→slider toggles to animate immediately rather than re-triggering the long
+  // delay. This flag flips once Row 3's stagger + a single data-pop run has elapsed; from
+  // then on, elements pass an inline animationDelay of 0 to override the CSS rule.
+  const [initialStaggerDone, setInitialStaggerDone] = useState(false);
+  useEffect(() => {
+    const t = setTimeout(() => setInitialStaggerDone(true), ROW_3_STAGGER_MS + 1500);
+    return () => clearTimeout(t);
+  }, []);
+
   // Quarter labels (oldest → newest) for the Credit Spread line chart x-axis.
   const creditSpreadQuarters = useMemo(() => [...quarterEndOptions].slice(0, 8).reverse(), [quarterEndOptions]);
 
-  // recharts LineChart series data — one row per quarter, columns per portfolio + one
-  // composite index column (Credit − Treasury, already-subtracted in FI_INDEX.spreadHistory).
+  // recharts LineChart series data — one row per quarter. Portfolio columns hold credit
+  // allocation % (so a rising line = portfolio tilting toward credit) and plot on the right
+  // axis; the index column is the Credit − Treasury yield spread (bps) and plots on the
+  // left axis. Different units → dual-axis chart.
   const creditSpreadSeries = useMemo(() => {
     return creditSpreadQuarters.map((q, i) => {
       const row: Record<string, string | number> = { period: q };
       PORTFOLIO_OPTIONS.forEach(name => {
-        row[name] = FI_PORTFOLIO_DATA[name].creditSpreadHistory[i];
+        row[name] = FI_PORTFOLIO_DATA[name].creditWeightHistory[i];
       });
       row[FI_INDEX.spreadLabel] = FI_INDEX.spreadHistory[i];
       return row;
@@ -352,6 +376,35 @@ export default function PortfolioTrendsDashboard() {
     // FI mock objects are inline literals — stable per render, safe to omit from deps.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [creditSpreadQuarters]);
+
+  // Snap a series of values to a domain rounded outward to the nearest 5, with evenly-
+  // spaced ticks every 5 units. Empty input falls back to 0–100 / 25-step ticks.
+  const snapAxisTo5 = (values: number[]): { domain: [number, number]; ticks: number[] } => {
+    if (values.length === 0) return { domain: [0, 100], ticks: [0, 25, 50, 75, 100] };
+    const min = Math.floor(Math.min(...values) / 5) * 5;
+    const max = Math.ceil(Math.max(...values) / 5) * 5;
+    const ticks: number[] = [];
+    for (let v = min; v <= max; v += 5) ticks.push(v);
+    return { domain: [min, max], ticks };
+  };
+
+  const bpsAxis = useMemo(
+    () => snapAxisTo5(creditSpreadSeries.map(r => r[FI_INDEX.spreadLabel] as number)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [creditSpreadSeries],
+  );
+
+  const weightAxis = useMemo(
+    () =>
+      snapAxisTo5(
+        displayedPortfolios
+          .filter(p => !p.exiting)
+          .flatMap(p => FI_PORTFOLIO_DATA[p.name].creditWeightHistory),
+      ),
+    // FI_PORTFOLIO_DATA is captured from the latest render; deps tracked via displayedPortfolios.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [displayedPortfolios],
+  );
 
   // Spread bar axis: tenYearMin → tenYearMax. The bar visualizes where current spread
   // sits across the 10-year range, so positions are computed against that window rather
@@ -1195,7 +1248,7 @@ export default function PortfolioTrendsDashboard() {
             </div>
 
             {/* FI Row 1: Credit Breakdown (col-span-2) + Credit Spread (col-span-1) */}
-            <div className="grid grid-cols-3 gap-4 mb-4">
+            <div className="grid grid-cols-3 gap-4 mb-4 row-stagger-3">
               {/* Credit Breakdown — horizontal stacked bars per portfolio + index */}
               <div className="col-span-2 relative overflow-hidden bg-zinc-900/60 backdrop-blur-md border border-zinc-800/50 p-5 rounded-xl flex flex-col min-h-[340px]">
                 <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] via-transparent to-transparent pointer-events-none" />
@@ -1232,7 +1285,7 @@ export default function PortfolioTrendsDashboard() {
                           } flex flex-col gap-1`}
                           style={{
                             animationDelay:
-                              exiting || entering || settled ? '0ms' : `${80 + rowIdx * 120}ms`,
+                              exiting || entering || settled ? '0ms' : `${ROW_3_STAGGER_MS + 80 + rowIdx * 120}ms`,
                           }}
                         >
                           <span
@@ -1254,7 +1307,7 @@ export default function PortfolioTrendsDashboard() {
                                 ? '0ms'
                                 : entering
                                 ? '900ms'
-                                : `${80 + rowIdx * 120}ms`,
+                                : `${ROW_3_STAGGER_MS + 80 + rowIdx * 120}ms`,
                               // Entering rows use a longer bar-grow so it stays in sync with the
                               // 1.5s label fade — initial-mount bars keep the default 1.1s duration.
                               animationDuration: entering ? '1500ms' : undefined,
@@ -1290,7 +1343,7 @@ export default function PortfolioTrendsDashboard() {
                       className={`data-pop flex flex-col gap-1 transition-[padding-top] duration-[900ms] ${
                         displayedPortfolios.length === 1 ? 'pt-3' : 'pt-0'
                       }`}
-                      style={{ animationDelay: `${80 + displayedPortfolios.length * 120}ms` }}
+                      style={{ animationDelay: `${ROW_3_STAGGER_MS + 80 + displayedPortfolios.length * 120}ms` }}
                     >
                       <span className="text-xs font-medium text-zinc-400">{FI_INDEX.creditBreakdownLabel}</span>
                       <div
@@ -1299,7 +1352,7 @@ export default function PortfolioTrendsDashboard() {
                         } rounded-sm overflow-hidden border border-zinc-800/60 bg-zinc-500 gap-px transition-[height] duration-[900ms]`}
                         style={{
                           containerType: 'size',
-                          animationDelay: `${80 + displayedPortfolios.length * 120}ms`,
+                          animationDelay: `${ROW_3_STAGGER_MS + 80 + displayedPortfolios.length * 120}ms`,
                         }}
                       >
                         {CREDIT_BUCKETS.map(bucket => {
@@ -1404,6 +1457,7 @@ export default function PortfolioTrendsDashboard() {
                                 top: 0,
                                 bottom: 0,
                                 transition: 'left 500ms ease-out',
+                                animationDelay: initialStaggerDone ? '0ms' : undefined,
                               }}
                             >
                               <div
@@ -1425,9 +1479,10 @@ export default function PortfolioTrendsDashboard() {
 
                             {/* The bar — gradient: white (Narrow) ramps quickly to teal (Wide), squared corners */}
                             <div
-                              className="relative h-12 shadow-inner overflow-hidden"
+                              className="data-pop relative h-12 shadow-inner overflow-hidden"
                               style={{
                                 background: 'linear-gradient(to right, #ffffff 0%, #0E727B 20%, #0E727B 100%)',
+                                animationDelay: initialStaggerDone ? '0ms' : undefined,
                               }}
                             >
                               {/* In-bar edge labels */}
@@ -1460,6 +1515,7 @@ export default function PortfolioTrendsDashboard() {
                                       top: 0,
                                       transform: 'translateX(-50%)',
                                       transition: 'left 500ms ease-out',
+                                      animationDelay: initialStaggerDone ? '0ms' : undefined,
                                     }}
                                   >
                                     <div
@@ -1493,28 +1549,44 @@ export default function PortfolioTrendsDashboard() {
                       })()}
                     </div>
                   ) : (
-                    <div className="flex-1 min-h-[200px] -ml-2">
+                    <div className="h-[140px] -ml-2">
                       <ResponsiveContainer width="100%" height="100%">
                         <LineChart data={creditSpreadSeries} margin={{ top: 10, right: 10, bottom: 5, left: 0 }}>
-                          <CartesianGrid strokeDasharray="2 4" stroke="#3f3f46" vertical={false} />
                           <XAxis
                             dataKey="period"
                             stroke="#71717a"
                             tick={{ fontSize: 10, fill: '#a1a1aa' }}
                             tickLine={false}
                             axisLine={{ stroke: '#3f3f46' }}
-                            angle={-80}
+                            angle={-30}
                             textAnchor="end"
+                            tickMargin={20}
                             height={50}
                             interval={0}
                           />
                           <YAxis
+                            yAxisId="bps"
+                            domain={bpsAxis.domain}
+                            ticks={bpsAxis.ticks}
                             stroke="#71717a"
                             tick={{ fontSize: 10, fill: '#a1a1aa' }}
                             tickLine={false}
-                            axisLine={{ stroke: '#3f3f46' }}
+                            axisLine={false}
                             tickFormatter={(v: number) => `${v}`}
                             width={32}
+                          />
+                          {/* Right axis — portfolio credit allocation % (rising line = tilt toward credit) */}
+                          <YAxis
+                            yAxisId="weight"
+                            domain={weightAxis.domain}
+                            ticks={weightAxis.ticks}
+                            orientation="right"
+                            stroke="#71717a"
+                            tick={{ fontSize: 10, fill: '#a1a1aa' }}
+                            tickLine={false}
+                            axisLine={false}
+                            tickFormatter={(v: number) => `${v}%`}
+                            width={36}
                           />
                           <Tooltip
                             contentStyle={{
@@ -1525,10 +1597,15 @@ export default function PortfolioTrendsDashboard() {
                             }}
                             labelStyle={{ color: '#fff', marginBottom: '4px', fontWeight: 500 }}
                             itemStyle={{ color: '#a1a1aa', padding: 0 }}
-                            formatter={(value) => [`${value} bps`, '']}
+                            formatter={(value, name) =>
+                              name === FI_INDEX.spreadLabel
+                                ? [`${value} bps`, name]
+                                : [`${value}% credit`, name]
+                            }
                           />
-                          {/* Index line — Credit − Treasury, drawn first so portfolio lines layer on top */}
+                          {/* Index line — Credit − Treasury yield spread (bps), left axis */}
                           <Line
+                            yAxisId="bps"
                             type="monotone"
                             dataKey={FI_INDEX.spreadLabel}
                             stroke="#a1a1aa"
@@ -1542,6 +1619,7 @@ export default function PortfolioTrendsDashboard() {
                             return (
                               <Line
                                 key={name}
+                                yAxisId="weight"
                                 type="monotone"
                                 dataKey={name}
                                 stroke={color.hex}
@@ -1557,10 +1635,52 @@ export default function PortfolioTrendsDashboard() {
                     </div>
                   )}
 
-                  {/* Spread summary — replaces the legend. Calls out narrow/wide and per-portfolio tilt. */}
+                  {/* Summary — slider view shows current snapshot (narrow/wide vs 10-yr avg + per-portfolio
+                      tilt vs index); chart view shows 8-quarter trajectory (spread direction + per-portfolio
+                      credit allocation change). */}
                   {(() => {
-                    const isNarrow = FI_INDEX.spreadBps < FI_SPREAD_CONTEXT.tenYearAvg;
                     const visible = displayedPortfolios.filter(p => !p.exiting);
+                    if (creditSpreadView === 'chart') {
+                      const hist = FI_INDEX.spreadHistory;
+                      const spreadFirst = hist[0];
+                      const spreadLast = hist[hist.length - 1];
+                      const spreadDelta = spreadLast - spreadFirst;
+                      const spreadDirection =
+                        spreadDelta > 0 ? 'widened' : spreadDelta < 0 ? 'narrowed' : 'held flat';
+                      // Highlight the peak when spreads widened net, the trough when they
+                      // narrowed — that's the more informative outlier in each case.
+                      const isWiden = spreadDelta > 0;
+                      const extreme = isWiden ? Math.max(...hist) : Math.min(...hist);
+                      const extremeLabel = isWiden ? 'high' : 'low';
+                      const showExtreme = extreme !== spreadFirst && extreme !== spreadLast;
+                      return (
+                        <p className="text-base text-muted leading-relaxed text-left mt-4 px-1">
+                          Spreads{' '}
+                          <span className="text-white font-medium">{spreadDirection}</span>{' '}
+                          from {spreadFirst} to {spreadLast} bps
+                          {showExtreme && ` (${extremeLabel} ${extreme})`}.
+                          {visible.length > 0 && ' '}
+                          {visible.map(({ name, idx }, i) => {
+                            const color = PORTFOLIO_PALETTE[idx] ?? PORTFOLIO_PALETTE[0];
+                            const h = FI_PORTFOLIO_DATA[name].creditWeightHistory;
+                            const startW = h[0];
+                            const endW = h[h.length - 1];
+                            const wDelta = endW - startW;
+                            const isLast = i === visible.length - 1;
+                            return (
+                              <span key={name}>
+                                <span style={{ color: color.hex }} className="font-medium">{name}</span>{' '}
+                                {wDelta === 0
+                                  ? `flat at ${endW}%`
+                                  : `${wDelta > 0 ? 'added' : 'trimmed'} ${Math.abs(wDelta)}pp (${startW}% → ${endW}%)`}
+                                {isLast ? '.' : '; '}
+                              </span>
+                            );
+                          })}
+                        </p>
+                      );
+                    }
+                    const isNarrow = FI_INDEX.spreadBps < FI_SPREAD_CONTEXT.tenYearAvg;
                     return (
                       <p className="text-base text-muted leading-relaxed text-left mt-4 px-1">
                         Credit spreads are currently{' '}
