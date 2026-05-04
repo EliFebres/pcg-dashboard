@@ -4,6 +4,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Building2, Info, Landmark, Layers, PieChart, User } from 'lucide-react';
 import { Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import BenchmarkBarChart from '@/app/components/dashboard/interactions-and-trends/portfolio-trends/BenchmarkBarChart';
+import AssetClassFilterButton, { type EquityScope } from '@/app/components/dashboard/interactions-and-trends/portfolio-trends/AssetClassFilterButton';
 import {
   loggedPortfolios,
   filterPortfolios,
@@ -52,6 +53,33 @@ const ROW_2_STAGGER_MS = 667;
 // start just before row 2 finishes. Must match the 1.334s in the .row-stagger-3 rules in
 // globals.css.
 const ROW_3_STAGGER_MS = 1334;
+
+// Duration of the .section-exit animation defined in globals.css. Asset Class filter
+// keeps a deselected section mounted this long so its fade-out + collapse can play
+// before React sweeps it from the DOM.
+const SECTION_EXIT_MS = 1000;
+
+type SectionVisibility = 'visible' | 'exiting' | 'hidden';
+
+// Drives a top-level section's mount/unmount around the .section-exit animation.
+// `active=true` → 'visible' immediately. `active=false` while currently visible →
+// 'exiting' for SECTION_EXIT_MS, then 'hidden' (caller unmounts).
+function useSectionVisibility(active: boolean): SectionVisibility {
+  const [state, setState] = useState<SectionVisibility>(active ? 'visible' : 'hidden');
+  useEffect(() => {
+    if (active) {
+      setState('visible');
+    } else {
+      setState(prev => (prev === 'visible' ? 'exiting' : prev));
+    }
+  }, [active]);
+  useEffect(() => {
+    if (state !== 'exiting') return;
+    const t = setTimeout(() => setState('hidden'), SECTION_EXIT_MS);
+    return () => clearTimeout(t);
+  }, [state]);
+  return state;
+}
 
 // Color is tied to selection order, not portfolio name. Whichever portfolio is selected
 // first gets palette[0], the next selection gets palette[1]. Avg. Client is the default
@@ -150,6 +178,32 @@ export default function PortfolioTrendsDashboard() {
   const [portfolioFilter, setPortfolioFilterRaw] = useState<PortfolioName[]>(['Avg. Client']);
   const quarterEndOptions = useMemo(() => getRecentQuarterEnds(8), []);
   const [period, setPeriod] = useState(quarterEndOptions[0]);
+
+  // Asset class filter — independent radio (equity scope) + checkbox (fixed income),
+  // with a hard floor that at least one bucket is always active. Floor enforcement
+  // also lives inside AssetClassFilterButton's click handlers; the setter wrappers
+  // here are a defense-in-depth in case any caller bypasses the component handlers.
+  const [equityScope, setEquityScopeRaw] = useState<EquityScope | null>('Total');
+  const [fixedIncomeOn, setFixedIncomeOnRaw] = useState(true);
+  const setEquityScope = (next: EquityScope | null) => {
+    if (next === null && !fixedIncomeOn) setFixedIncomeOnRaw(true);
+    setEquityScopeRaw(next);
+  };
+  const setFixedIncomeOn = (next: boolean) => {
+    if (!next && equityScope === null) setEquityScopeRaw('Total');
+    setFixedIncomeOnRaw(next);
+  };
+  // Hold onto the last non-null equity scope so the title stays stable while the
+  // equity section is mid-exit-animation (where equityScope itself is already null).
+  const lastEquityScopeRef = useRef<EquityScope>(equityScope ?? 'Total');
+  useEffect(() => {
+    if (equityScope !== null) lastEquityScopeRef.current = equityScope;
+  }, [equityScope]);
+  const equityVisibility = useSectionVisibility(equityScope !== null);
+  const fixedIncomeVisibility = useSectionVisibility(fixedIncomeOn);
+  // Title scope: stays on the last non-null value while the equity section is mid-exit,
+  // so the heading doesn't drop its prefix during the 1s collapse animation.
+  const titleEquityScope: EquityScope = equityScope ?? lastEquityScopeRef.current;
 
   // Always keep at least one portfolio selected — snap back to Avg. Client on empty.
   const setPortfolioFilter = (next: string[]) => {
@@ -616,6 +670,19 @@ export default function PortfolioTrendsDashboard() {
               multiSelect: true,
             },
             {
+              id: 'assetClass',
+              isActive: equityScope !== 'Total' || !fixedIncomeOn,
+              signature: `${equityScope ?? 'none'}|${fixedIncomeOn ? '1' : '0'}`,
+              render: () => (
+                <AssetClassFilterButton
+                  equity={equityScope}
+                  fixedIncome={fixedIncomeOn}
+                  onEquityChange={setEquityScope}
+                  onFixedIncomeChange={setFixedIncomeOn}
+                />
+              ),
+            },
+            {
               id: 'portfolios',
               icon: Layers,
               label: 'Portfolios',
@@ -653,10 +720,11 @@ export default function PortfolioTrendsDashboard() {
           </div>
 
           {/* ==================== SECTION 1: PORTFOLIO CONSTRUCTION ==================== */}
-          <div>
+          {equityVisibility !== 'hidden' && (
+          <div className={equityVisibility === 'exiting' ? 'section-exit' : undefined}>
             <div className="flex items-center gap-2 mb-4">
               <PieChart className="w-5 h-5 text-cyan-400" />
-              <h3 className="text-lg font-semibold text-white">Equity Portfolio Trends</h3>
+              <h3 className="text-lg font-semibold text-white">{titleEquityScope} Equity Portfolio Trends</h3>
               <span className="text-xs text-muted ml-2">Style, quality, and regional positioning vs benchmark</span>
             </div>
 
@@ -1238,9 +1306,11 @@ export default function PortfolioTrendsDashboard() {
             </div>
 
           </div>
+          )}
 
           {/* ==================== SECTION 2: FIXED INCOME ==================== */}
-          <div>
+          {fixedIncomeVisibility !== 'hidden' && (
+          <div className={fixedIncomeVisibility === 'exiting' ? 'section-exit' : undefined}>
             <div className="flex items-center gap-2 mb-4">
               <Landmark className="w-5 h-5 text-cyan-400" />
               <h3 className="text-lg font-semibold text-white">Fixed Income</h3>
@@ -1708,6 +1778,7 @@ export default function PortfolioTrendsDashboard() {
               </div>
             </div>
           </div>
+          )}
         </div>
 
         {/* Hover tooltip for Style Map / Profitability Map dots */}

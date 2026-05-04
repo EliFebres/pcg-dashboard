@@ -108,6 +108,18 @@ body {
 .fade-in-d3   { animation: landingFadeIn 1s ease-out 0.35s both; }
 .fade-in-d4   { animation: landingFadeIn 1s ease-out 0.5s both; }
 
+/* Reverse of landingFadeIn — used by Portfolio Trends to collapse a full top-level
+   section (Equity rows or Fixed Income row) before deferred unmount. max-height is
+   generous so it doesn't clip real content while the section is still mounted. */
+@keyframes sectionExit {
+  0%   { opacity: 1; max-height: 4000px; transform: translateY(0); }
+  100% { opacity: 0; max-height: 0;      transform: translateY(-24px); }
+}
+.section-exit {
+  animation: sectionExit 1s ease-in both;
+  overflow: hidden;
+}
+
 /* Chart data entrance — used by Portfolio Trends XY dots/crosshairs and benchmark bars */
 @keyframes dataPop {
   from { opacity: 0; }

@@ -26,6 +26,23 @@ export interface FilterDropdown {
   noAllOption?: boolean;
 }
 
+// Escape hatch for one-off filter buttons that don't fit the standard FilterDropdown
+// shape (e.g. hybrid radio + checkbox controls). The caller renders its own trigger via
+// `render()`; pass `isActive` to feed the collapsed-pill cyan ring + signature so the
+// collapse timer resets when the custom value changes.
+export interface CustomFilterEntry {
+  id: string;
+  render: () => React.ReactNode;
+  isActive?: boolean;
+  signature?: string;
+}
+
+export type FilterEntry = FilterDropdown | CustomFilterEntry;
+
+function isCustomFilterEntry(entry: FilterEntry): entry is CustomFilterEntry {
+  return 'render' in entry;
+}
+
 export interface PeriodOption {
   value: string;
   label: string;
@@ -53,7 +70,7 @@ interface DashboardHeaderProps {
   searchPlaceholder: string;
   searchValue: string;
   onSearchChange: (value: string) => void;
-  filters: FilterDropdown[];
+  filters: FilterEntry[];
   tabs?: HeaderTab[];
   period?: string;
   onPeriodChange?: (value: string) => void;
@@ -253,11 +270,14 @@ export default function DashboardHeader({
 }: DashboardHeaderProps) {
   const [filtersExpanded, setFiltersExpanded] = useState(alwaysShowFilters);
   const collapseTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const prevFiltersRef = useRef<string>(JSON.stringify(filters.map(f => f.value)));
+  const prevFiltersRef = useRef<string>(
+    JSON.stringify(filters.map(f => isCustomFilterEntry(f) ? f.signature ?? '' : f.value))
+  );
   const isHoveringRef = useRef(false);
 
   // Check if any filter is active (not on default "All" option)
   const hasActiveFilters = filters.some(filter => {
+    if (isCustomFilterEntry(filter)) return filter.isActive ?? false;
     if (filter.multiSelect) {
       return Array.isArray(filter.value) && filter.value.length > 0;
     }
@@ -297,7 +317,9 @@ export default function DashboardHeader({
   // Reset timeout whenever a filter value changes — changing a filter
   // counts as activity, so we restart the countdown rather than cancel it.
   useEffect(() => {
-    const currentFilters = JSON.stringify(filters.map(f => f.value));
+    const currentFilters = JSON.stringify(
+      filters.map(f => isCustomFilterEntry(f) ? f.signature ?? '' : f.value)
+    );
     if (prevFiltersRef.current !== currentFilters && filtersExpanded) {
       prevFiltersRef.current = currentFilters;
       startCollapseTimeout();
@@ -378,9 +400,13 @@ export default function DashboardHeader({
             onMouseEnter={handleMouseEnter}
             onMouseLeave={handleMouseLeave}
           >
-            {filters.map((filter) => (
-              <FilterDropdownButton key={filter.id} filter={filter} />
-            ))}
+            {filters.map((filter) =>
+              isCustomFilterEntry(filter) ? (
+                <React.Fragment key={filter.id}>{filter.render()}</React.Fragment>
+              ) : (
+                <FilterDropdownButton key={filter.id} filter={filter} />
+              )
+            )}
             {onPeriodChange ? (
               <PeriodDropdown value={period} onChange={onPeriodChange} customOptions={periodOptions} />
             ) : (
