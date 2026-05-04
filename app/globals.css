@@ -277,13 +277,24 @@ body {
 .row-stagger-2 .benchmark-bar--shrinking  { animation-delay: 0.667s; }
 .row-stagger-2 .benchmark-label--shrinking { animation-delay: 0.667s; }
 
-/* Row 3 stagger — same cadence as row-stagger-2, applied to the Fixed Income row of cards
-   so its data-pop / bar-grow animations start ~650ms before row 2 finishes. Mirrors the
-   inline-delay convention: elements with their own animationDelay get ROW_3_STAGGER_MS
-   added in TSX. */
-.row-stagger-3 .data-pop  { animation-delay: 1.334s; }
-.row-stagger-3 .data-fade { animation-delay: 1.334s; }
-.row-stagger-3 .bar-grow  { animation-delay: 1.334s; }
+/* Row 3 stagger — same cadence as row-stagger-2, applied to the first Fixed Income row of
+   cards so its data-pop / bar-grow / col-expand animations start ~650ms before row 2
+   finishes. Mirrors the inline-delay convention: elements with their own animationDelay
+   get ROW_3_STAGGER_MS added in TSX. */
+.row-stagger-3 .data-pop      { animation-delay: 1.334s; }
+.row-stagger-3 .data-fade     { animation-delay: 1.334s; }
+.row-stagger-3 .bar-grow      { animation-delay: 1.334s; }
+.row-stagger-3 .col-expand    { animation-delay: 1.334s; }
+.row-stagger-3 .col-collapse  { animation-delay: 1.334s; }
+
+/* Row 4 stagger — applied to the second Fixed Income row (Credit Breakdown + Credit
+   Spread) so it cascades after the first FI row (FI Metrics + Yield Curve) finishes.
+   Same 667ms cadence as the other rows. */
+.row-stagger-4 .data-pop      { animation-delay: 2.001s; }
+.row-stagger-4 .data-fade     { animation-delay: 2.001s; }
+.row-stagger-4 .bar-grow      { animation-delay: 2.001s; }
+.row-stagger-4 .col-expand    { animation-delay: 2.001s; }
+.row-stagger-4 .col-collapse  { animation-delay: 2.001s; }
 
 /* Scroll-triggered fade-in */
 .scroll-fade-in {

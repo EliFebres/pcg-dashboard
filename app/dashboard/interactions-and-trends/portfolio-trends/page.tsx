@@ -49,10 +49,14 @@ const PORTFOLIO_EXIT_MS = 1500;
 // after row 1's. Must match the 0.667s in the .row-stagger-2 rules in globals.css.
 const ROW_2_STAGGER_MS = 667;
 
-// Row 3 (Fixed Income) keeps the same 667ms cadence — its data-pop / bar-grow animations
-// start just before row 2 finishes. Must match the 1.334s in the .row-stagger-3 rules in
-// globals.css.
+// Row 3 (Fixed Income — FI Metrics + Yield Curve) keeps the same 667ms cadence — its
+// data-pop / col-expand animations start just before row 2 finishes. Must match the
+// 1.334s in the .row-stagger-3 rules in globals.css.
 const ROW_3_STAGGER_MS = 1334;
+
+// Row 4 (Fixed Income — Credit Breakdown + Credit Spread) sits one cadence below row 3.
+// Must match the 2.001s in the .row-stagger-4 rules in globals.css.
+const ROW_4_STAGGER_MS = 2001;
 
 // Duration of the .section-exit animation defined in globals.css. Asset Class filter
 // keeps a deselected section mounted this long so its fade-out + collapse can play
@@ -358,6 +362,10 @@ export default function PortfolioTrendsDashboard() {
     creditSpreadHistory: number[]; // 8 quarters, oldest → newest
     creditWeight: number;
     creditWeightHistory: number[]; // 8 quarters of credit allocation %, latest matches creditWeight
+    avgEffDuration: number;  // years
+    avgEffMaturity: number;  // years
+    ytm: number;             // %, yield to maturity
+    secYield: number;        // %, 30-day SEC yield
   }> = {
     'Avg. Client': {
       creditBreakdown: { AAA: 22, AA: 24, A: 26, BBB: 17, BelowBBB: 5, NotRated: 4, Other: 2 },
@@ -365,6 +373,10 @@ export default function PortfolioTrendsDashboard() {
       creditSpreadHistory: [105, 100, 92, 98, 105, 84, 86, 99],
       creditWeight: 50,
       creditWeightHistory: [52, 51, 50, 50, 53, 51, 49, 50],
+      avgEffDuration: 5.8,
+      avgEffMaturity: 7.6,
+      ytm: 4.65,
+      secYield: 4.42,
     },
     'Core+ Model': {
       creditBreakdown: { AAA: 14, AA: 22, A: 28, BBB: 22, BelowBBB: 8, NotRated: 4, Other: 2 },
@@ -372,6 +384,10 @@ export default function PortfolioTrendsDashboard() {
       creditSpreadHistory: [125, 120, 112, 118, 130, 105, 108, 122],
       creditWeight: 65,
       creditWeightHistory: [66, 65, 64, 64, 68, 65, 63, 65],
+      avgEffDuration: 6.5,
+      avgEffMaturity: 8.4,
+      ytm: 4.95,
+      secYield: 4.78,
     },
   };
   // Index credit spread = (Bloomberg US Credit yield) − (Bloomberg US Treasury yield).
@@ -387,6 +403,34 @@ export default function PortfolioTrendsDashboard() {
     // tightest reading since 1998; Q1 2026 = 89 was 11bps wider than the January low of ~71.
     spreadHistory: [95, 90, 82, 88, 95, 74, 76, 89],
     creditWeight: 30, // Bloomberg Aggregate is treasury/agency-heavy; ~30% sits in credit.
+    avgEffDuration: 6.1,
+    avgEffMaturity: 8.0,
+    ytm: 4.55,
+  };
+
+  // US Treasury par yield curve — current quarter-end (Q1 2026 = 03/31/2026) and the
+  // same quarter one year prior (Q1 2025 = 03/31/2025). Source: Federal Reserve H.15
+  // selected interest rates. Tenors in years (3M → 30Y); yields in %.
+  const FI_YIELD_CURVE = {
+    tenors:  [0.25, 1.0,  2.0,  3.0,  5.0,  7.0,  10.0, 20.0, 30.0],
+    current: [3.70, 3.68, 3.79, 3.81, 3.92, 4.11, 4.30, 4.88, 4.88],
+    yearAgo: [4.32, 4.03, 3.89, 3.89, 3.96, 4.09, 4.23, 4.62, 4.59],
+  };
+
+  // Linear interpolation of a yield curve at a given duration (years). Clamps to the
+  // ends of the tenor range when duration sits outside the sampled tenors.
+  const interpolateYield = (curve: readonly number[], tenors: readonly number[], duration: number): number => {
+    if (duration <= tenors[0]) return curve[0];
+    if (duration >= tenors[tenors.length - 1]) return curve[curve.length - 1];
+    for (let i = 0; i < tenors.length - 1; i++) {
+      const a = tenors[i];
+      const b = tenors[i + 1];
+      if (duration >= a && duration <= b) {
+        const t = (duration - a) / (b - a);
+        return curve[i] + t * (curve[i + 1] - curve[i]);
+      }
+    }
+    return curve[curve.length - 1];
   };
 
   // 10-year context for the Credit Spread bar — left edge = tenYearMin (Narrow),
@@ -400,14 +444,19 @@ export default function PortfolioTrendsDashboard() {
   // Toggle for the Credit Spread card: snapshot vs history.
   const [creditSpreadView, setCreditSpreadView] = useState<'slider' | 'chart'>('slider');
 
-  // Slider-element animations (bar / dial / dots) sit inside row-stagger-3, so on initial
-  // mount they correctly inherit the 1.334s row delay. After that initial cascade completes,
+  // Toggle for the Yield Curve card x-axis range. Default '10Y' zooms into the front-end of
+  // the curve where every portfolio's duration sits; '30Y' extends out to the long end so
+  // the full Treasury curve is visible.
+  const [yieldCurveRange, setYieldCurveRange] = useState<'10Y' | '30Y'>('10Y');
+
+  // Slider-element animations (bar / dial / dots) sit inside row-stagger-4, so on initial
+  // mount they correctly inherit the 2.001s row delay. After that initial cascade completes,
   // we want chart→slider toggles to animate immediately rather than re-triggering the long
-  // delay. This flag flips once Row 3's stagger + a single data-pop run has elapsed; from
+  // delay. This flag flips once Row 4's stagger + a single data-pop run has elapsed; from
   // then on, elements pass an inline animationDelay of 0 to override the CSS rule.
   const [initialStaggerDone, setInitialStaggerDone] = useState(false);
   useEffect(() => {
-    const t = setTimeout(() => setInitialStaggerDone(true), ROW_3_STAGGER_MS + 1500);
+    const t = setTimeout(() => setInitialStaggerDone(true), ROW_4_STAGGER_MS + 1500);
     return () => clearTimeout(t);
   }, []);
 
@@ -481,7 +530,9 @@ export default function PortfolioTrendsDashboard() {
 
   // Row schema for the metrics-vs-index table. Each row pulls portfolio + index values
   // from the same data sources that drive the visual cards above, plus a formatter for
-  // the cell value and the delta. `indent` marks Style × Profitability sub-rows.
+  // the cell value and the delta. `index: null` marks rows that have no benchmark
+  // counterpart (e.g. SEC Yield) — the index cell renders an em-dash and delta cells
+  // skip the comparison.
   type MetricRow = {
     id: string;
     label: string;
@@ -489,19 +540,23 @@ export default function PortfolioTrendsDashboard() {
     // less mega-cap concentration). Flip the green/red mapping on those rows so the color
     // reflects "good vs bad" rather than literal "above vs below".
     invertColor?: boolean;
-    index: number;
+    index: number | null;
     getPortfolio: (name: PortfolioName) => number;
     format: (v: number) => string;
     formatDelta: (v: number) => string;
   };
   const fmtPct        = (v: number) => `${v.toFixed(0)}%`;
+  const fmtPct2       = (v: number) => `${v.toFixed(2)}%`;
   const fmtPctDelta   = (v: number) => `${v >= 0 ? '+' : '−'}${Math.abs(v).toFixed(1)}%`;
+  const fmtPct2Delta  = (v: number) => `${v >= 0 ? '+' : '−'}${Math.abs(v).toFixed(2)}%`;
   const fmtRatio      = (v: number) => v.toFixed(2);
   const fmtRatioDelta = (v: number) => `${v >= 0 ? '+' : '−'}${Math.abs(v).toFixed(2)}`;
   const fmtMktCap     = (v: number) => `$${v}B`;
   const fmtMktCapDel  = (v: number) => `${v >= 0 ? '+' : '−'}$${Math.abs(Math.round(v))}B`;
   const fmtCount      = (v: number) => v.toLocaleString();
   const fmtCountDelta = (v: number) => `${v >= 0 ? '+' : '−'}${Math.abs(v).toLocaleString()}`;
+  const fmtYears      = (v: number) => `${v.toFixed(1)} yrs`;
+  const fmtYearsDelta = (v: number) => `${v >= 0 ? '+' : '−'}${Math.abs(v).toFixed(1)} yrs`;
   const metricsTableRows: MetricRow[] = [
     {
       id: 'companies', label: '# of Companies',
@@ -534,6 +589,36 @@ export default function PortfolioTrendsDashboard() {
       getPortfolio: (name) => capAllocation.portfolios[name][bucket],
       format: fmtPct, formatDelta: fmtPctDelta,
     })),
+  ];
+
+  // FI Metrics table rows — same shape as `metricsTableRows`, sourced from FI_PORTFOLIO_DATA
+  // and FI_INDEX. SEC Yield has no index counterpart (`index: null`), so its index cell and
+  // every delta cell on that row render an em-dash.
+  const fiMetricsTableRows: MetricRow[] = [
+    {
+      id: 'duration', label: 'Avg Eff Duration',
+      index: FI_INDEX.avgEffDuration,
+      getPortfolio: (name) => FI_PORTFOLIO_DATA[name].avgEffDuration,
+      format: fmtYears, formatDelta: fmtYearsDelta,
+    },
+    {
+      id: 'maturity', label: 'Avg Eff Maturity',
+      index: FI_INDEX.avgEffMaturity,
+      getPortfolio: (name) => FI_PORTFOLIO_DATA[name].avgEffMaturity,
+      format: fmtYears, formatDelta: fmtYearsDelta,
+    },
+    {
+      id: 'ytm', label: 'YTM',
+      index: FI_INDEX.ytm,
+      getPortfolio: (name) => FI_PORTFOLIO_DATA[name].ytm,
+      format: fmtPct2, formatDelta: fmtPct2Delta,
+    },
+    {
+      id: 'secYield', label: 'SEC Yield',
+      index: null,
+      getPortfolio: (name) => FI_PORTFOLIO_DATA[name].secYield,
+      format: fmtPct2, formatDelta: fmtPct2Delta,
+    },
   ];
 
   // Tooltip state for chart dots (Style Map, Profitability Map)
@@ -991,10 +1076,20 @@ export default function PortfolioTrendsDashboard() {
                             </td>
                           ))}
                           <td className="text-right font-mono tabular-nums py-1.5 pl-2 text-white font-medium">
-                            {row.format(row.index)}
+                            {row.index === null ? '—' : row.format(row.index)}
                           </td>
                           {deltaState !== 'hidden' && visiblePortfolios.filter(p => !p.exiting).map(({ name, idx }) => {
                             const color = PORTFOLIO_PALETTE[idx] ?? PORTFOLIO_PALETTE[0];
+                            if (row.index === null) {
+                              return (
+                                <td
+                                  key={`${name}-delta`}
+                                  className="text-right font-mono tabular-nums py-1.5 px-0 text-muted"
+                                >
+                                  <span className={deltaState === 'exiting' ? 'col-collapse' : 'col-expand'}>—</span>
+                                </td>
+                              );
+                            }
                             const delta = row.getPortfolio(name) - row.index;
                             const positive = delta > 0;
                             const zero = delta === 0;
@@ -1317,8 +1412,340 @@ export default function PortfolioTrendsDashboard() {
               <span className="text-xs text-muted ml-2">Duration, credit, and sector positioning vs benchmark</span>
             </div>
 
-            {/* FI Row 1: Credit Breakdown (col-span-2) + Credit Spread (col-span-1) */}
+            {/* FI Row 1: FI Metrics (col-span-1) + Yield Curve (col-span-2) */}
             <div className="grid grid-cols-3 gap-4 mb-4 row-stagger-3">
+              {/* FI Metrics — duration/maturity/yield table vs Bloomberg US Aggregate */}
+              <div className="relative overflow-hidden bg-zinc-900/60 backdrop-blur-md border border-zinc-800/50 p-5 rounded-xl min-h-[340px] flex flex-col">
+                <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] via-transparent to-transparent pointer-events-none" />
+                <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+
+                <div className="relative z-10 flex flex-col flex-1">
+                  <div className="flex items-center justify-between mb-4 -mt-2 -ml-2">
+                    <div>
+                      <h4 className="text-sm font-medium text-white">FI Metrics</h4>
+                      <p className="text-xs text-muted">vs {FI_INDEX.creditBreakdownLabel} ({period})</p>
+                    </div>
+                  </div>
+
+                  <table className="w-full text-xs">
+                    <thead>
+                      <tr className="data-pop border-b border-zinc-700/60">
+                        <th className="text-left font-normal py-1.5 pr-2 text-muted">Metric</th>
+                        {visiblePortfolios.map(({ name, idx, exiting }) => {
+                          const color = PORTFOLIO_PALETTE[idx] ?? PORTFOLIO_PALETTE[0];
+                          return (
+                            <th key={name} className="text-right font-medium py-1.5 px-0">
+                              <span className={exiting ? 'col-collapse' : 'col-expand'} style={{ color: color.hex }}>
+                                {name}
+                              </span>
+                            </th>
+                          );
+                        })}
+                        <th className="text-right font-medium py-1.5 pl-2" style={{ color: '#a1a1aa' }}>
+                          Index
+                        </th>
+                        {deltaState !== 'hidden' && visiblePortfolios.filter(p => !p.exiting).map(({ name, idx }) => {
+                          const color = PORTFOLIO_PALETTE[idx] ?? PORTFOLIO_PALETTE[0];
+                          return (
+                            <th key={`${name}-delta`} className="text-right font-medium py-1.5 px-0">
+                              <span className={deltaState === 'exiting' ? 'col-collapse' : 'col-expand'} style={{ color: color.hex }}>
+                                Δ
+                              </span>
+                            </th>
+                          );
+                        })}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {fiMetricsTableRows.map((row, rowIdx) => (
+                        <tr
+                          key={row.id}
+                          className="data-pop border-b border-zinc-800/40 last:border-b-0"
+                          style={{ animationDelay: `${ROW_3_STAGGER_MS + 80 + rowIdx * 120}ms` }}
+                        >
+                          <td className="py-1.5 pr-2 text-white font-medium">
+                            {row.label}
+                          </td>
+                          {visiblePortfolios.map(({ name, exiting }) => (
+                            <td
+                              key={name}
+                              className="text-right font-mono tabular-nums py-1.5 px-0 text-white font-medium"
+                            >
+                              <span className={exiting ? 'col-collapse' : 'col-expand'}>
+                                {row.format(row.getPortfolio(name))}
+                              </span>
+                            </td>
+                          ))}
+                          <td className="text-right font-mono tabular-nums py-1.5 pl-2 text-white font-medium">
+                            {row.index === null ? '—' : row.format(row.index)}
+                          </td>
+                          {deltaState !== 'hidden' && visiblePortfolios.filter(p => !p.exiting).map(({ name, idx }) => {
+                            const color = PORTFOLIO_PALETTE[idx] ?? PORTFOLIO_PALETTE[0];
+                            if (row.index === null) {
+                              return (
+                                <td
+                                  key={`${name}-delta`}
+                                  className="text-right font-mono tabular-nums py-1.5 px-0 text-muted"
+                                >
+                                  <span className={deltaState === 'exiting' ? 'col-collapse' : 'col-expand'}>—</span>
+                                </td>
+                              );
+                            }
+                            const delta = row.getPortfolio(name) - row.index;
+                            const positive = delta > 0;
+                            const zero = delta === 0;
+                            const favorable = row.invertColor ? !positive : positive;
+                            const valueColor = zero ? '#a1a1aa' : favorable ? '#4ade80' : '#f87171';
+                            return (
+                              <td
+                                key={`${name}-delta`}
+                                className="text-right font-mono tabular-nums py-1.5 px-0"
+                              >
+                                <span className={deltaState === 'exiting' ? 'col-collapse' : 'col-expand'}>
+                                  <span className="inline-flex items-center justify-end gap-1">
+                                    <span style={{ fontSize: '8px', lineHeight: 1, color: zero ? '#a1a1aa' : color.hex }}>
+                                      {zero ? '—' : positive ? '▲' : '▼'}
+                                    </span>
+                                    <span style={{ color: valueColor }}>
+                                      {zero ? '0' : row.formatDelta(delta)}
+                                    </span>
+                                  </span>
+                                </span>
+                              </td>
+                            );
+                          })}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Yield Curve — US Treasury, current quarter vs one year ago,
+                  with each portfolio + index dotted at their avg eff duration. */}
+              <div className="col-span-2 relative overflow-hidden bg-zinc-900/60 backdrop-blur-md border border-zinc-800/50 p-5 rounded-xl flex flex-col min-h-[340px]">
+                <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] via-transparent to-transparent pointer-events-none" />
+                <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+
+                <div className="relative z-10 flex flex-col flex-1">
+                  <div className="flex items-center justify-between mb-4 -mt-2 -ml-2">
+                    <div>
+                      <h4 className="text-sm font-medium text-white">Yield Curve</h4>
+                      <p className="text-xs text-muted">US Treasury — current vs 1 year ago ({period})</p>
+                    </div>
+                    {/* X-axis range toggle — far right of header */}
+                    <div className="flex items-center gap-0.5 p-0.5 bg-zinc-800/60 rounded-md border border-zinc-700/40">
+                      {(['10Y', '30Y'] as const).map(range => {
+                        const active = yieldCurveRange === range;
+                        return (
+                          <button
+                            key={range}
+                            type="button"
+                            onClick={() => setYieldCurveRange(range)}
+                            className={`px-2.5 py-0.5 text-xs rounded transition-colors ${
+                              active ? 'bg-zinc-700 text-white' : 'text-muted hover:text-white'
+                            }`}
+                          >
+                            {range}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {(() => {
+                    const Y_MIN = 3.5;
+                    const Y_MAX = 5.0;
+                    const X_MIN = 0;
+                    const X_MAX = yieldCurveRange === '10Y' ? 10 : 30;
+                    // Truncate the curve to the visible x-range. Tenors include 10Y exactly,
+                    // so a slice up to and including X_MAX cleanly cuts the polyline at the
+                    // chart edge without needing interpolation.
+                    const lastIdx = FI_YIELD_CURVE.tenors.findIndex(t => t >= X_MAX);
+                    const endExclusive = (lastIdx === -1 ? FI_YIELD_CURVE.tenors.length : lastIdx + 1);
+                    const tenorsVisible = FI_YIELD_CURVE.tenors.slice(0, endExclusive);
+                    const currentVisible = FI_YIELD_CURVE.current.slice(0, endExclusive);
+                    const yearAgoVisible = FI_YIELD_CURVE.yearAgo.slice(0, endExclusive);
+                    const toPolyline = (curve: readonly number[]) =>
+                      tenorsVisible
+                        .map((t, i) => {
+                          const x = ((t - X_MIN) / (X_MAX - X_MIN)) * 100;
+                          const y = (1 - (curve[i] - Y_MIN) / (Y_MAX - Y_MIN)) * 100;
+                          return `${x.toFixed(2)},${y.toFixed(2)}`;
+                        })
+                        .join(' ');
+                    const currentPoints = toPolyline(currentVisible);
+                    const yearAgoPoints = toPolyline(yearAgoVisible);
+                    const xTickLabels = yieldCurveRange === '10Y'
+                      ? ['0Y', '5Y', '10Y']
+                      : ['0Y', '10Y', '20Y', '30Y'];
+                    return (
+                      <div className="flex flex-1 min-h-[140px]">
+                        <div className="flex items-center justify-center mr-1" style={{ width: '20px' }}>
+                          <span className="-rotate-90 text-xs text-muted whitespace-nowrap">Yield</span>
+                        </div>
+
+                        <div className="flex-1 flex flex-col">
+                          <div className="flex flex-1">
+                            <div className="flex flex-col justify-between text-right pr-2" style={{ width: '28px' }}>
+                              <span className="text-xs text-muted">5.0%</span>
+                              <span className="text-xs text-muted">4.5%</span>
+                              <span className="text-xs text-muted">4.0%</span>
+                              <span className="text-xs text-muted">3.5%</span>
+                            </div>
+
+                            <div className="flex-1 relative border-l border-b border-zinc-700/50 overflow-hidden">
+                              {/* Curves: yearAgo (dashed zinc) drawn first so current sits on top */}
+                              <svg
+                                className="data-pop absolute inset-0 w-full h-full"
+                                preserveAspectRatio="none"
+                                viewBox="0 0 100 100"
+                              >
+                                <polyline
+                                  points={yearAgoPoints}
+                                  fill="none"
+                                  stroke="#a1a1aa"
+                                  strokeWidth="1.5"
+                                  strokeDasharray="3 2"
+                                  vectorEffect="non-scaling-stroke"
+                                  strokeLinejoin="round"
+                                />
+                                <polyline
+                                  points={currentPoints}
+                                  fill="none"
+                                  stroke="#1398A4"
+                                  strokeWidth="2"
+                                  vectorEffect="non-scaling-stroke"
+                                  strokeLinejoin="round"
+                                />
+                              </svg>
+
+                              {/* Index dots — one per curve */}
+                              {(() => {
+                                const dur = FI_INDEX.avgEffDuration;
+                                const currentY = interpolateYield(FI_YIELD_CURVE.current, FI_YIELD_CURVE.tenors, dur);
+                                const yearAgoY = interpolateYield(FI_YIELD_CURVE.yearAgo, FI_YIELD_CURVE.tenors, dur);
+                                return (
+                                  <>
+                                    <div
+                                      className="data-pop absolute w-4 h-4 rounded-full bg-zinc-500 border-2 border-zinc-400 z-10 cursor-pointer"
+                                      style={{
+                                        left: pct(dur, X_MIN, X_MAX),
+                                        top: pct(currentY, Y_MIN, Y_MAX, true),
+                                        transform: 'translate(-50%, -50%)',
+                                      }}
+                                      {...dotHoverHandlers(`${FI_INDEX.creditBreakdownLabel} • Current`, [
+                                        `Duration: ${fmtYears(dur)}`,
+                                        `Yield: ${fmtPct2(currentY)}`,
+                                      ])}
+                                    />
+                                    <div
+                                      className="data-pop absolute w-4 h-4 rounded-full bg-zinc-500/60 border-2 border-zinc-400 z-10 cursor-pointer"
+                                      style={{
+                                        left: pct(dur, X_MIN, X_MAX),
+                                        top: pct(yearAgoY, Y_MIN, Y_MAX, true),
+                                        transform: 'translate(-50%, -50%)',
+                                      }}
+                                      {...dotHoverHandlers(`${FI_INDEX.creditBreakdownLabel} • 1Y Ago`, [
+                                        `Duration: ${fmtYears(dur)}`,
+                                        `Yield: ${fmtPct2(yearAgoY)}`,
+                                      ])}
+                                    />
+                                  </>
+                                );
+                              })()}
+
+                              {/* Portfolio dots — one per curve per portfolio */}
+                              {displayedPortfolios.map(({ name, idx, exiting }) => {
+                                const dur = FI_PORTFOLIO_DATA[name].avgEffDuration;
+                                const currentY = interpolateYield(FI_YIELD_CURVE.current, FI_YIELD_CURVE.tenors, dur);
+                                const yearAgoY = interpolateYield(FI_YIELD_CURVE.yearAgo, FI_YIELD_CURVE.tenors, dur);
+                                const color = PORTFOLIO_PALETTE[idx] ?? PORTFOLIO_PALETTE[0];
+                                const cls = exiting ? 'data-fade' : 'data-pop';
+                                return (
+                                  <React.Fragment key={name}>
+                                    <div
+                                      className={`${cls} absolute w-4 h-4 rounded-full border-2 z-10 cursor-pointer`}
+                                      style={{
+                                        left: pct(dur, X_MIN, X_MAX),
+                                        top: pct(currentY, Y_MIN, Y_MAX, true),
+                                        transform: 'translate(-50%, -50%)',
+                                        backgroundColor: color.hex,
+                                        borderColor: color.hex,
+                                        boxShadow: `0 0 14px ${color.glow}`,
+                                      }}
+                                      {...dotHoverHandlers(`${name} • Current`, [
+                                        `Duration: ${fmtYears(dur)}`,
+                                        `Yield: ${fmtPct2(currentY)}`,
+                                      ])}
+                                    />
+                                    <div
+                                      className={`${cls} absolute w-4 h-4 rounded-full border-2 z-10 cursor-pointer`}
+                                      style={{
+                                        left: pct(dur, X_MIN, X_MAX),
+                                        top: pct(yearAgoY, Y_MIN, Y_MAX, true),
+                                        transform: 'translate(-50%, -50%)',
+                                        backgroundColor: 'transparent',
+                                        borderColor: color.hex,
+                                        boxShadow: `0 0 8px ${color.glow}`,
+                                      }}
+                                      {...dotHoverHandlers(`${name} • 1Y Ago`, [
+                                        `Duration: ${fmtYears(dur)}`,
+                                        `Yield: ${fmtPct2(yearAgoY)}`,
+                                      ])}
+                                    />
+                                  </React.Fragment>
+                                );
+                              })}
+                            </div>
+                          </div>
+
+                          <div className="flex justify-between pl-7 pr-0 mt-1">
+                            {xTickLabels.map(label => (
+                              <span key={label} className="text-xs text-muted">{label}</span>
+                            ))}
+                          </div>
+
+                          <div className="text-center mt-1">
+                            <span className="text-xs text-muted">Tenor</span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })()}
+
+                  <div className="flex items-center justify-center flex-wrap gap-x-6 gap-y-2 mt-3">
+                    {displayedPortfolios.map(({ name, idx, exiting }) => {
+                      const color = PORTFOLIO_PALETTE[idx] ?? PORTFOLIO_PALETTE[0];
+                      return (
+                        <div key={name} className={`flex items-center gap-2 ${exiting ? 'data-fade' : ''}`}>
+                          <div
+                            className="w-3 h-3 rounded-full border"
+                            style={{ backgroundColor: color.hex, borderColor: color.hex }}
+                          />
+                          <span className="text-xs text-muted">{name}</span>
+                        </div>
+                      );
+                    })}
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full bg-zinc-500 border border-zinc-400" />
+                      <span className="text-xs text-muted">{FI_INDEX.creditBreakdownLabel}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-4 border-t-2 border-cyan-500" style={{ borderColor: '#1398A4' }} />
+                      <span className="text-xs text-muted">Current</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-4 border-t-2 border-dashed border-zinc-500" />
+                      <span className="text-xs text-muted">1 Year Ago</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* FI Row 2: Credit Breakdown (col-span-2) + Credit Spread (col-span-1) */}
+            <div className="grid grid-cols-3 gap-4 mb-4 row-stagger-4">
               {/* Credit Breakdown — horizontal stacked bars per portfolio + index */}
               <div className="col-span-2 relative overflow-hidden bg-zinc-900/60 backdrop-blur-md border border-zinc-800/50 p-5 rounded-xl flex flex-col min-h-[340px]">
                 <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] via-transparent to-transparent pointer-events-none" />
@@ -1355,7 +1782,7 @@ export default function PortfolioTrendsDashboard() {
                           } flex flex-col gap-1`}
                           style={{
                             animationDelay:
-                              exiting || entering || settled ? '0ms' : `${ROW_3_STAGGER_MS + 80 + rowIdx * 120}ms`,
+                              exiting || entering || settled ? '0ms' : `${ROW_4_STAGGER_MS + 80 + rowIdx * 120}ms`,
                           }}
                         >
                           <span
@@ -1377,7 +1804,7 @@ export default function PortfolioTrendsDashboard() {
                                 ? '0ms'
                                 : entering
                                 ? '900ms'
-                                : `${ROW_3_STAGGER_MS + 80 + rowIdx * 120}ms`,
+                                : `${ROW_4_STAGGER_MS + 80 + rowIdx * 120}ms`,
                               // Entering rows use a longer bar-grow so it stays in sync with the
                               // 1.5s label fade — initial-mount bars keep the default 1.1s duration.
                               animationDuration: entering ? '1500ms' : undefined,
@@ -1413,7 +1840,7 @@ export default function PortfolioTrendsDashboard() {
                       className={`data-pop flex flex-col gap-1 transition-[padding-top] duration-[900ms] ${
                         displayedPortfolios.length === 1 ? 'pt-3' : 'pt-0'
                       }`}
-                      style={{ animationDelay: `${ROW_3_STAGGER_MS + 80 + displayedPortfolios.length * 120}ms` }}
+                      style={{ animationDelay: `${ROW_4_STAGGER_MS + 80 + displayedPortfolios.length * 120}ms` }}
                     >
                       <span className="text-xs font-medium text-zinc-400">{FI_INDEX.creditBreakdownLabel}</span>
                       <div
@@ -1422,7 +1849,7 @@ export default function PortfolioTrendsDashboard() {
                         } rounded-sm overflow-hidden border border-zinc-800/60 bg-zinc-500 gap-px transition-[height] duration-[900ms]`}
                         style={{
                           containerType: 'size',
-                          animationDelay: `${ROW_3_STAGGER_MS + 80 + displayedPortfolios.length * 120}ms`,
+                          animationDelay: `${ROW_4_STAGGER_MS + 80 + displayedPortfolios.length * 120}ms`,
                         }}
                       >
                         {CREDIT_BUCKETS.map(bucket => {
