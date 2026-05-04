@@ -46,17 +46,17 @@ const PORTFOLIO_EXIT_MS = 1500;
 
 // Row-to-row stagger for the Portfolio Trends grid: row 2's animations (col-expand,
 // data-pop, data-fade, benchmark bar rise/shrink, radar polygon) all start this many ms
-// after row 1's. Must match the 0.667s in the .row-stagger-2 rules in globals.css.
-const ROW_2_STAGGER_MS = 667;
+// after row 1's. Must match the 1s in the .row-stagger-2 rules in globals.css.
+const ROW_2_STAGGER_MS = 1000;
 
-// Row 3 (Fixed Income — FI Metrics + Yield Curve) keeps the same 667ms cadence — its
-// data-pop / col-expand animations start just before row 2 finishes. Must match the
-// 1.334s in the .row-stagger-3 rules in globals.css.
-const ROW_3_STAGGER_MS = 1334;
+// Row 3 (Fixed Income — FI Metrics + Yield Curve) keeps the same 1s cadence — its
+// data-pop / col-expand animations start once row 2's data-pop is mostly done. Must
+// match the 2s in the .row-stagger-3 rules in globals.css.
+const ROW_3_STAGGER_MS = 2000;
 
 // Row 4 (Fixed Income — Credit Breakdown + Credit Spread) sits one cadence below row 3.
-// Must match the 2.001s in the .row-stagger-4 rules in globals.css.
-const ROW_4_STAGGER_MS = 2001;
+// Must match the 3s in the .row-stagger-4 rules in globals.css.
+const ROW_4_STAGGER_MS = 3000;
 
 // Duration of the .section-exit animation defined in globals.css. Asset Class filter
 // keeps a deselected section mounted this long so its fade-out + collapse can play
@@ -450,7 +450,7 @@ export default function PortfolioTrendsDashboard() {
   const [yieldCurveRange, setYieldCurveRange] = useState<'10Y' | '30Y'>('10Y');
 
   // Slider-element animations (bar / dial / dots) sit inside row-stagger-4, so on initial
-  // mount they correctly inherit the 2.001s row delay. After that initial cascade completes,
+  // mount they correctly inherit the 3s row delay. After that initial cascade completes,
   // we want chart→slider toggles to animate immediately rather than re-triggering the long
   // delay. This flag flips once Row 4's stagger + a single data-pop run has elapsed; from
   // then on, elements pass an inline animationDelay of 0 to override the CSS rule.
@@ -1635,36 +1635,52 @@ export default function PortfolioTrendsDashboard() {
                             </div>
 
                             <div className="flex-1 relative border-l border-b border-zinc-700/50 overflow-hidden">
-                              {/* Curves: yearAgo (dashed zinc) drawn first so current sits on top */}
-                              <svg
-                                className="data-pop absolute inset-0 w-full h-full"
-                                preserveAspectRatio="none"
-                                viewBox="0 0 100 100"
-                              >
-                                <polyline
-                                  points={yearAgoPoints}
-                                  fill="none"
-                                  stroke="#a1a1aa"
-                                  strokeWidth="1.5"
-                                  strokeDasharray="3 2"
-                                  vectorEffect="non-scaling-stroke"
-                                  strokeLinejoin="round"
-                                />
-                                <polyline
-                                  points={currentPoints}
-                                  fill="none"
-                                  stroke="#1398A4"
-                                  strokeWidth="2"
-                                  vectorEffect="non-scaling-stroke"
-                                  strokeLinejoin="round"
-                                />
-                              </svg>
+                              {/* Curves: yearAgo (dashed zinc) drawn first so current sits on top.
+                                  Each polyline lives in its own reveal-wrapper so the year-ago line
+                                  draws left-to-right first, then the current line draws after it. */}
+                              <div className="yc-line-reveal absolute inset-0">
+                                <svg
+                                  className="absolute inset-0 w-full h-full"
+                                  preserveAspectRatio="none"
+                                  viewBox="0 0 100 100"
+                                >
+                                  <polyline
+                                    points={yearAgoPoints}
+                                    fill="none"
+                                    stroke="#a1a1aa"
+                                    strokeWidth="1.5"
+                                    strokeDasharray="3 2"
+                                    vectorEffect="non-scaling-stroke"
+                                    strokeLinejoin="round"
+                                  />
+                                </svg>
+                              </div>
+                              <div className="yc-line-reveal yc-line-reveal-current absolute inset-0">
+                                <svg
+                                  className="absolute inset-0 w-full h-full"
+                                  preserveAspectRatio="none"
+                                  viewBox="0 0 100 100"
+                                >
+                                  <polyline
+                                    points={currentPoints}
+                                    fill="none"
+                                    stroke="#1398A4"
+                                    strokeWidth="2"
+                                    vectorEffect="non-scaling-stroke"
+                                    strokeLinejoin="round"
+                                  />
+                                </svg>
+                              </div>
 
-                              {/* Index dots — one per curve */}
+                              {/* Index dots — one per curve. Year-ago dot pops in right after the
+                                  year-ago line finishes drawing; current dot waits for the current
+                                  line. After the initial cascade, mid-session re-renders use 0ms. */}
                               {(() => {
                                 const dur = FI_INDEX.avgEffDuration;
                                 const currentY = interpolateYield(FI_YIELD_CURVE.current, FI_YIELD_CURVE.tenors, dur);
                                 const yearAgoY = interpolateYield(FI_YIELD_CURVE.yearAgo, FI_YIELD_CURVE.tenors, dur);
+                                const yearAgoDelay = initialStaggerDone ? '0ms' : `${ROW_3_STAGGER_MS + 1000}ms`;
+                                const currentDelay = initialStaggerDone ? '0ms' : `${ROW_3_STAGGER_MS + 2500}ms`;
                                 return (
                                   <>
                                     <div
@@ -1673,6 +1689,7 @@ export default function PortfolioTrendsDashboard() {
                                         left: pct(dur, X_MIN, X_MAX),
                                         top: pct(currentY, Y_MIN, Y_MAX, true),
                                         transform: 'translate(-50%, -50%)',
+                                        animationDelay: currentDelay,
                                       }}
                                       {...dotHoverHandlers(`${FI_INDEX.creditBreakdownLabel} • Current`, [
                                         `Duration: ${fmtYears(dur)}`,
@@ -1685,6 +1702,7 @@ export default function PortfolioTrendsDashboard() {
                                         left: pct(dur, X_MIN, X_MAX),
                                         top: pct(yearAgoY, Y_MIN, Y_MAX, true),
                                         transform: 'translate(-50%, -50%)',
+                                        animationDelay: yearAgoDelay,
                                       }}
                                       {...dotHoverHandlers(`${FI_INDEX.creditBreakdownLabel} • 1Y Ago`, [
                                         `Duration: ${fmtYears(dur)}`,
@@ -1695,13 +1713,20 @@ export default function PortfolioTrendsDashboard() {
                                 );
                               })()}
 
-                              {/* Portfolio dots — one per curve per portfolio */}
+                              {/* Portfolio dots — one per curve per portfolio. Same staged delays
+                                  as the index dots; data-fade exits keep the row-stagger default. */}
                               {displayedPortfolios.map(({ name, idx, exiting }) => {
                                 const dur = FI_PORTFOLIO_DATA[name].avgEffDuration;
                                 const currentY = interpolateYield(FI_YIELD_CURVE.current, FI_YIELD_CURVE.tenors, dur);
                                 const yearAgoY = interpolateYield(FI_YIELD_CURVE.yearAgo, FI_YIELD_CURVE.tenors, dur);
                                 const color = PORTFOLIO_PALETTE[idx] ?? PORTFOLIO_PALETTE[0];
                                 const cls = exiting ? 'data-fade' : 'data-pop';
+                                const yearAgoDelay = exiting
+                                  ? undefined
+                                  : initialStaggerDone ? '0ms' : `${ROW_3_STAGGER_MS + 1000}ms`;
+                                const currentDelay = exiting
+                                  ? undefined
+                                  : initialStaggerDone ? '0ms' : `${ROW_3_STAGGER_MS + 2500}ms`;
                                 return (
                                   <React.Fragment key={name}>
                                     <div
@@ -1713,6 +1738,7 @@ export default function PortfolioTrendsDashboard() {
                                         backgroundColor: color.hex,
                                         borderColor: color.hex,
                                         boxShadow: `0 0 14px ${color.glow}`,
+                                        animationDelay: currentDelay,
                                       }}
                                       {...dotHoverHandlers(`${name} • Current`, [
                                         `Duration: ${fmtYears(dur)}`,
@@ -1728,6 +1754,7 @@ export default function PortfolioTrendsDashboard() {
                                         backgroundColor: 'transparent',
                                         borderColor: color.hex,
                                         boxShadow: `0 0 8px ${color.glow}`,
+                                        animationDelay: yearAgoDelay,
                                       }}
                                       {...dotHoverHandlers(`${name} • 1Y Ago`, [
                                         `Duration: ${fmtYears(dur)}`,

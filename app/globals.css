@@ -263,38 +263,59 @@ body {
 .benchmark-label--shrinking { animation: benchmarkLabelShrink 350ms ease-out forwards; }
 
 /* Row stagger — when applied to a container, every animation primitive used by Portfolio
-   Trends cards inside it starts ~667ms (2/3s) later than its default. Used to cascade
-   row 2 of the Portfolio Trends grid behind row 1 (initial mount, portfolio add, portfolio
-   remove). For elements with inline animationDelay (e.g. table rows that already cascade
+   Trends cards inside it starts 1s later than its default. Used to cascade row 2 of the
+   Portfolio Trends grid behind row 1 (initial mount, portfolio add, portfolio remove).
+   For elements with inline animationDelay (e.g. table rows that already cascade
    internally), bump the inline value by ROW_2_STAGGER_MS in TSX — inline styles win
    over class rules. */
-.row-stagger-2 .data-pop                  { animation-delay: 0.667s; }
-.row-stagger-2 .data-fade                 { animation-delay: 0.667s; }
-.row-stagger-2 .col-expand                { animation-delay: 0.667s; }
-.row-stagger-2 .col-collapse              { animation-delay: 0.667s; }
-.row-stagger-2 .benchmark-bar--rising     { animation-delay: 1.217s; } /* 0.55s built-in + 0.667s */
-.row-stagger-2 .benchmark-label--rising   { animation-delay: 1.657s; } /* 0.99s built-in + 0.667s */
-.row-stagger-2 .benchmark-bar--shrinking  { animation-delay: 0.667s; }
-.row-stagger-2 .benchmark-label--shrinking { animation-delay: 0.667s; }
+.row-stagger-2 .data-pop                  { animation-delay: 1s; }
+.row-stagger-2 .data-fade                 { animation-delay: 1s; }
+.row-stagger-2 .col-expand                { animation-delay: 1s; }
+.row-stagger-2 .col-collapse              { animation-delay: 1s; }
+.row-stagger-2 .benchmark-bar--rising     { animation-delay: 1.55s; } /* 0.55s built-in + 1s */
+.row-stagger-2 .benchmark-label--rising   { animation-delay: 1.99s; } /* 0.99s built-in + 1s */
+.row-stagger-2 .benchmark-bar--shrinking  { animation-delay: 1s; }
+.row-stagger-2 .benchmark-label--shrinking { animation-delay: 1s; }
 
-/* Row 3 stagger — same cadence as row-stagger-2, applied to the first Fixed Income row of
-   cards so its data-pop / bar-grow / col-expand animations start ~650ms before row 2
-   finishes. Mirrors the inline-delay convention: elements with their own animationDelay
-   get ROW_3_STAGGER_MS added in TSX. */
-.row-stagger-3 .data-pop      { animation-delay: 1.334s; }
-.row-stagger-3 .data-fade     { animation-delay: 1.334s; }
-.row-stagger-3 .bar-grow      { animation-delay: 1.334s; }
-.row-stagger-3 .col-expand    { animation-delay: 1.334s; }
-.row-stagger-3 .col-collapse  { animation-delay: 1.334s; }
+/* Row 3 stagger — same 1s cadence as row-stagger-2, applied to the first Fixed Income row
+   of cards so its data-pop / bar-grow / col-expand animations start once row 2's data-pop
+   is mostly done. Mirrors the inline-delay convention: elements with their own
+   animationDelay get ROW_3_STAGGER_MS added in TSX. */
+.row-stagger-3 .data-pop      { animation-delay: 2s; }
+.row-stagger-3 .data-fade     { animation-delay: 2s; }
+.row-stagger-3 .bar-grow      { animation-delay: 2s; }
+.row-stagger-3 .col-expand    { animation-delay: 2s; }
+.row-stagger-3 .col-collapse  { animation-delay: 2s; }
+
+/* Yield Curve line reveal — clips each polyline's wrapper from `inset(0 100% 0 0)`
+   (fully clipped from the right) to `inset(0 0 0 0)` (no clip), drawing the line
+   left-to-right. The card stages the year-ago line first, then its dots, then the
+   current line, then its dots, instead of fading everything in at once.
+   Animation has `both` fill mode so the line stays fully revealed afterward —
+   range toggles (10Y/30Y) update the polyline points without replaying the draw. */
+@keyframes ycLineReveal {
+  from { clip-path: inset(0 100% 0 0); }
+  to   { clip-path: inset(0 0 0 0); }
+}
+.yc-line-reveal {
+  clip-path: inset(0 100% 0 0);
+  animation: ycLineReveal 1000ms cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+.yc-line-reveal-current { animation-delay: 1500ms; }
+
+/* Yield Curve sits in row 3, so its line reveals start after ROW_3_STAGGER_MS like
+   the surrounding .data-pop / .bar-grow elements. Current trails year-ago by 1.5s. */
+.row-stagger-3 .yc-line-reveal         { animation-delay: 2s; }
+.row-stagger-3 .yc-line-reveal-current { animation-delay: 3.5s; }
 
 /* Row 4 stagger — applied to the second Fixed Income row (Credit Breakdown + Credit
    Spread) so it cascades after the first FI row (FI Metrics + Yield Curve) finishes.
-   Same 667ms cadence as the other rows. */
-.row-stagger-4 .data-pop      { animation-delay: 2.001s; }
-.row-stagger-4 .data-fade     { animation-delay: 2.001s; }
-.row-stagger-4 .bar-grow      { animation-delay: 2.001s; }
-.row-stagger-4 .col-expand    { animation-delay: 2.001s; }
-.row-stagger-4 .col-collapse  { animation-delay: 2.001s; }
+   Same 1s cadence as the other rows. */
+.row-stagger-4 .data-pop      { animation-delay: 3s; }
+.row-stagger-4 .data-fade     { animation-delay: 3s; }
+.row-stagger-4 .bar-grow      { animation-delay: 3s; }
+.row-stagger-4 .col-expand    { animation-delay: 3s; }
+.row-stagger-4 .col-collapse  { animation-delay: 3s; }
 
 /* Scroll-triggered fade-in */
 .scroll-fade-in {
