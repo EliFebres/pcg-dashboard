@@ -582,13 +582,6 @@ export default function PortfolioTrendsDashboard() {
       getPortfolio: (name) => profitabilityXY.portfolios[name].y,
       format: fmtRatio, formatDelta: fmtRatioDelta,
     },
-    ...CAP_BUCKETS.map<MetricRow>(bucket => ({
-      id: `cap-${bucket}`, label: bucket,
-      invertColor: bucket === 'Large Cap',
-      index: capAllocation.index[bucket],
-      getPortfolio: (name) => capAllocation.portfolios[name][bucket],
-      format: fmtPct, formatDelta: fmtPctDelta,
-    })),
   ];
 
   // FI Metrics table rows — same shape as `metricsTableRows`, sourced from FI_PORTFOLIO_DATA
@@ -1290,15 +1283,62 @@ export default function PortfolioTrendsDashboard() {
                           </tr>
                         </thead>
                         <tbody>
+                          {CAP_BUCKETS.map((bucket, capRowIdx) => {
+                            const indexVal = capAllocation.index[bucket];
+                            // Large Cap is inverted (less mega-cap concentration is favorable);
+                            // Mid/Small Cap follow the literal above-index = green direction.
+                            const invert = bucket === 'Large Cap';
+                            return (
+                              <tr
+                                key={`cap-${bucket}`}
+                                className="data-pop border-b border-zinc-800/40"
+                                style={{ animationDelay: `${ROW_2_STAGGER_MS + 80 + capRowIdx * 120}ms` }}
+                              >
+                                <td className="py-1.5 pr-2 text-white font-medium">{bucket}</td>
+                                {visiblePortfolios.map(({ name, exiting }) => (
+                                  <td key={name} className="text-right font-mono tabular-nums py-1.5 px-0 text-white font-medium">
+                                    <span className={exiting ? 'col-collapse' : 'col-expand'}>
+                                      {capAllocation.portfolios[name][bucket]}%
+                                    </span>
+                                  </td>
+                                ))}
+                                <td className="text-right font-mono tabular-nums py-1.5 pl-2 text-white font-medium">
+                                  {indexVal}%
+                                </td>
+                                {deltaState !== 'hidden' && visiblePortfolios.filter(p => !p.exiting).map(({ name, idx }) => {
+                                  const color = PORTFOLIO_PALETTE[idx] ?? PORTFOLIO_PALETTE[0];
+                                  const delta = capAllocation.portfolios[name][bucket] - indexVal;
+                                  const positive = delta > 0;
+                                  const zero = delta === 0;
+                                  const favorable = invert ? !positive : positive;
+                                  const valueColor = zero ? '#a1a1aa' : favorable ? '#4ade80' : '#f87171';
+                                  return (
+                                    <td key={`${name}-delta`} className="text-right font-mono tabular-nums py-1.5 px-0">
+                                      <span className={deltaState === 'exiting' ? 'col-collapse' : 'col-expand'}>
+                                        <span className="inline-flex items-center justify-end gap-1">
+                                          <span style={{ fontSize: '8px', lineHeight: 1, color: zero ? '#a1a1aa' : color.hex }}>
+                                            {zero ? '—' : positive ? '▲' : '▼'}
+                                          </span>
+                                          <span style={{ color: valueColor }}>
+                                            {zero ? '0' : fmtPctDelta(delta)}
+                                          </span>
+                                        </span>
+                                      </span>
+                                    </td>
+                                  );
+                                })}
+                              </tr>
+                            );
+                          })}
                           {([
                             { total: 'Growth' as const, subs: ['Growth High-Prof', 'Growth Low-Prof'] as const, invert: true },
                             { total: 'Value' as const,  subs: ['Value High-Prof',  'Value Low-Prof']  as const, invert: false },
                           ]).map((group, groupIdxN) => {
                             const groupIdx = styleProfitability.index[group.subs[0]] + styleProfitability.index[group.subs[1]];
-                            // Flat row index across both groups for the staggered entrance:
-                            // group 0 → rows 0,1,2; group 1 → rows 3,4,5. Same 80ms + 120ms·n
-                            // formula as the Metrics vs Index card so the cascade feels uniform.
-                            const totalRowIdx = groupIdxN * 3;
+                            // Flat row index across both groups + the 3 leading cap rows, for the
+                            // staggered entrance: caps 0-2, group 0 → 3,4,5; group 1 → 6,7,8.
+                            // Same 80ms + 120ms·n formula as the Metrics vs Index card.
+                            const totalRowIdx = 3 + groupIdxN * 3;
                             return (
                             <React.Fragment key={group.total}>
                               <tr
