@@ -163,6 +163,14 @@ export async function getConnection(): Promise<DuckDBConnection> {
       }
       await conn.run(`CREATE INDEX IF NOT EXISTS idx_linked_from_id ON engagements (linked_from_id)`);
 
+      // One-time migration: add filepath for jumping to the project's source folder
+      const filepathCheck = await conn.runAndReadAll(
+        `SELECT column_name FROM information_schema.columns WHERE table_name = 'engagements' AND column_name = 'filepath'`
+      );
+      if (filepathCheck.getRowObjects().length === 0) {
+        await conn.run(`ALTER TABLE engagements ADD COLUMN filepath VARCHAR`);
+      }
+
       // Fold any WAL content produced by bootstrap/migrations into the main
       // file now, so an unclean shutdown later doesn't leave a migration to
       // replay.

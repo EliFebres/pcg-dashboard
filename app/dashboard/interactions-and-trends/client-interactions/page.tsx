@@ -371,6 +371,10 @@ export default function EngagementsDashboard() {
     patchEngagements(e => ({ ...e, noteCount: Math.max(0, (e.noteCount ?? 0) - 1) }), engagementId);
   };
 
+  const handleFilepathSaved = (engagementId: number, filepath: string | null) => {
+    patchEngagements(e => ({ ...e, filepath }), engagementId);
+  };
+
   const handleNNAChange = (engagementId: number, nna: number | undefined) => {
     const target = engagements.find(e => e.id === engagementId);
     if (!target || !canUserEditEngagement(user, target.teamMembers)) return;
@@ -634,6 +638,7 @@ export default function EngagementsDashboard() {
               onStatusChange={handleStatusChange}
               onNoteAdded={handleNoteAdded}
               onNoteDeleted={handleNoteDeleted}
+              onFilepathSaved={handleFilepathSaved}
               onNNAChange={handleNNAChange}
               onRowClick={handleRowClick}
               onExport={handleExport}

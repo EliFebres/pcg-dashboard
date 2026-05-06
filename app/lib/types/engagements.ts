@@ -102,6 +102,7 @@ export interface Engagement {
   createdById?: string; // User ID of the person who created this engagement
   createdByName?: string; // Display name of the creator
   linkedFromId?: number | null; // Parent engagement this one was the result of (for funnel KPIs)
+  filepath?: string | null; // Path to the project's source folder on disk (for opening in File Explorer)
 }
 
 // Slim shape for the link picker — avoids fetching full engagement payloads

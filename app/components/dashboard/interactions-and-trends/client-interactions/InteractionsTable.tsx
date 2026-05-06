@@ -74,6 +74,7 @@ interface InteractionsTableProps {
   onStatusChange: (engagementId: number, newStatus: string) => void;
   onNoteAdded: (engagementId: number) => void;
   onNoteDeleted: (engagementId: number) => void;
+  onFilepathSaved: (engagementId: number, filepath: string | null) => void;
   onNNAChange: (engagementId: number, nna: number | undefined) => void;
   onRowClick: (engagement: Engagement) => void;
   onExport: () => void;
@@ -90,7 +91,7 @@ interface GhostRow {
   expiresAt: number;
 }
 
-const InteractionsTable: React.FC<InteractionsTableProps> = ({ engagements, sortColumn, sortDirection, onSort, onStatusChange, onNoteAdded, onNoteDeleted, onNNAChange, onRowClick, onExport, isExporting, newRowIds, removedRowIds, rowFieldChanges, readOnly = false, currentUser }) => {
+const InteractionsTable: React.FC<InteractionsTableProps> = ({ engagements, sortColumn, sortDirection, onSort, onStatusChange, onNoteAdded, onNoteDeleted, onFilepathSaved, onNNAChange, onRowClick, onExport, isExporting, newRowIds, removedRowIds, rowFieldChanges, readOnly = false, currentUser }) => {
   const sortConfig: SortConfig = useMemo(
     () => ({ column: sortColumn as SortColumn, direction: sortDirection as SortDirection }),
     [sortColumn, sortDirection]
@@ -487,6 +488,14 @@ const InteractionsTable: React.FC<InteractionsTableProps> = ({ engagements, sort
         subtitle={notesModalEngagement?.externalClient || notesModalEngagement?.internalClient.name || ''}
         engagementId={notesModalEngagement?.id ?? 0}
         readOnly={readOnly || !canUserEditEngagement(currentUser, notesModalEngagement?.teamMembers ?? [])}
+        filepath={notesModalEngagement?.filepath ?? null}
+        canEditFilepath={!readOnly}
+        onFilepathSaved={(next) => {
+          if (notesModalEngagement) {
+            onFilepathSaved(notesModalEngagement.id, next);
+            setNotesModalEngagement({ ...notesModalEngagement, filepath: next });
+          }
+        }}
         onNoteAdded={() => {
           if (notesModalEngagement) {
             onNoteAdded(notesModalEngagement.id);

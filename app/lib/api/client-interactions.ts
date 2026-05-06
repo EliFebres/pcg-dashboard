@@ -388,6 +388,37 @@ export async function deleteEngagementNote(engagementId: number, noteId: number)
 }
 
 /**
+ * Updates the project filepath for an engagement. Pass null to clear it.
+ * Endpoint: PATCH /api/client-interactions/engagements/:id/filepath
+ */
+export async function updateEngagementFilepath(id: number, filepath: string | null): Promise<Engagement> {
+  const response = await fetch(`${API_BASE_URL}/client-interactions/engagements/${id}/filepath`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ filepath }),
+  });
+  if (!response.ok) {
+    const data = await response.json().catch(() => ({}));
+    throw new Error(data.error || 'Failed to update filepath');
+  }
+  return response.json();
+}
+
+/**
+ * Asks the server to launch Windows Explorer at the engagement's stored filepath.
+ * Endpoint: POST /api/client-interactions/engagements/:id/open-folder
+ */
+export async function openEngagementFolder(id: number): Promise<void> {
+  const response = await fetch(`${API_BASE_URL}/client-interactions/engagements/${id}/open-folder`, {
+    method: 'POST',
+  });
+  if (!response.ok) {
+    const data = await response.json().catch(() => ({}));
+    throw new Error(data.error || 'Failed to open folder');
+  }
+}
+
+/**
  * Deletes an engagement record permanently.
  * Endpoint: DELETE /api/client-interactions/engagements/:id
  */

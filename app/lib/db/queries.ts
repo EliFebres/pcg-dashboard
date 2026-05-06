@@ -183,5 +183,6 @@ export function rowToEngagement(row: Record<string, unknown>): Engagement {
     createdById: (row.created_by_id as string | undefined) || undefined,
     createdByName: (row.created_by_name as string | undefined) || undefined,
     linkedFromId: row.linked_from_id != null ? Number(row.linked_from_id) : null,
+    filepath: (row.filepath as string | null) ?? null,
   };
 }
