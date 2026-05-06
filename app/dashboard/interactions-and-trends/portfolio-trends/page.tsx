@@ -58,9 +58,13 @@ const ROW_3_STAGGER_MS = 2000;
 // Must match the 3s in the .row-stagger-4 rules in globals.css.
 const ROW_4_STAGGER_MS = 3000;
 
-// Row 5 (Fixed Income — Security Type + Maturity Breakdown) sits one cadence below row 4.
+// Row 5 (Fixed Income — Security Type) sits one cadence below row 4.
 // Must match the 4s in the .row-stagger-5 rules in globals.css.
 const ROW_5_STAGGER_MS = 4000;
+
+// Row 6 (Fixed Income — Maturity Breakdown) sits one cadence below row 5.
+// Must match the 5s in the .row-stagger-6 rules in globals.css.
+const ROW_6_STAGGER_MS = 5000;
 
 // Duration of the .section-exit animation defined in globals.css. Asset Class filter
 // keeps a deselected section mounted this long so its fade-out + collapse can play
@@ -2314,8 +2318,8 @@ export default function PortfolioTrendsDashboard() {
               </div>
             </div>
 
-            {/* FI Row 3: Security Type + Maturity Breakdown — equal width */}
-            <div className="grid grid-cols-2 gap-4 mb-4 row-stagger-5">
+            {/* FI Row 3: Security Type — full width */}
+            <div className="mb-4 row-stagger-5">
               {/* Security Type — horizontal stacked bars per portfolio + index */}
               <div className="relative overflow-hidden bg-zinc-900/60 backdrop-blur-md border border-zinc-800/50 p-5 rounded-xl flex flex-col min-h-[340px]">
                 <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] via-transparent to-transparent pointer-events-none" />
@@ -2442,7 +2446,10 @@ export default function PortfolioTrendsDashboard() {
                   </div>
                 </div>
               </div>
+            </div>
 
+            {/* FI Row 4: Maturity Breakdown — full width */}
+            <div className="mb-4 row-stagger-6">
               {/* Maturity Breakdown — horizontal stacked bars per portfolio + index */}
               <div className="relative overflow-hidden bg-zinc-900/60 backdrop-blur-md border border-zinc-800/50 p-5 rounded-xl flex flex-col min-h-[340px]">
                 <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] via-transparent to-transparent pointer-events-none" />
@@ -2474,7 +2481,7 @@ export default function PortfolioTrendsDashboard() {
                           } flex flex-col gap-1`}
                           style={{
                             animationDelay:
-                              exiting || entering || settled ? '0ms' : `${ROW_5_STAGGER_MS + 80 + rowIdx * 120}ms`,
+                              exiting || entering || settled ? '0ms' : `${ROW_6_STAGGER_MS + 80 + rowIdx * 120}ms`,
                           }}
                         >
                           <span
@@ -2496,7 +2503,7 @@ export default function PortfolioTrendsDashboard() {
                                 ? '0ms'
                                 : entering
                                 ? '900ms'
-                                : `${ROW_5_STAGGER_MS + 80 + rowIdx * 120}ms`,
+                                : `${ROW_6_STAGGER_MS + 80 + rowIdx * 120}ms`,
                               animationDuration: entering ? '1500ms' : undefined,
                             }}
                           >
@@ -2526,7 +2533,7 @@ export default function PortfolioTrendsDashboard() {
                       className={`data-pop flex flex-col gap-1 transition-[padding-top] duration-[900ms] ${
                         displayedPortfolios.length === 1 ? 'pt-3' : 'pt-0'
                       }`}
-                      style={{ animationDelay: `${ROW_5_STAGGER_MS + 80 + displayedPortfolios.length * 120}ms` }}
+                      style={{ animationDelay: `${ROW_6_STAGGER_MS + 80 + displayedPortfolios.length * 120}ms` }}
                     >
                       <span className="text-xs font-medium text-zinc-400">{FI_INDEX.maturityBreakdownLabel}</span>
                       <div
@@ -2535,7 +2542,7 @@ export default function PortfolioTrendsDashboard() {
                         } rounded-sm overflow-hidden border border-zinc-800/60 bg-zinc-500 gap-px transition-[height] duration-[900ms]`}
                         style={{
                           containerType: 'size',
-                          animationDelay: `${ROW_5_STAGGER_MS + 80 + displayedPortfolios.length * 120}ms`,
+                          animationDelay: `${ROW_6_STAGGER_MS + 80 + displayedPortfolios.length * 120}ms`,
                         }}
                       >
                         {MATURITY_BUCKETS.map(bucket => {
