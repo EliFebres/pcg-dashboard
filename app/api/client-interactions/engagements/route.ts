@@ -6,13 +6,24 @@ import { rowToEngagement } from '@/app/lib/db/queries';
 import { computeEngagementsList } from '@/app/lib/db/aggregations';
 import { requireAuth, teamConstraint, canModify, readOnlyError } from '@/app/lib/auth/require-auth';
 import { toISODate } from '@/app/lib/db/dateUtils';
-import type { EngagementFilters } from '@/app/lib/api/client-interactions';
+import type { EngagementFilters, SortSpec } from '@/app/lib/api/client-interactions';
 import { emitEngagementChange } from '@/app/lib/events';
 import { logActivity } from '@/app/lib/activity/log';
 
+// Parses repeated `sort=col:dir` params into a SortSpec[] (preserves order).
+function parseSortParams(sp: URLSearchParams): SortSpec[] {
+  return sp.getAll('sort').reduce<SortSpec[]>((acc, raw) => {
+    const [column, dir] = raw.split(':');
+    if (column && (dir === 'asc' || dir === 'desc')) {
+      acc.push({ column, direction: dir });
+    }
+    return acc;
+  }, []);
+}
+
 // GET /api/client-interactions/engagements
 // Query params: page, page_size, period, search, team_member, status,
-//               sort_column, sort_direction, departments[], intake_types[], project_types[]
+//               sort=col:dir (repeatable), departments[], intake_types[], project_types[]
 export async function GET(req: NextRequest) {
   const auth = await requireAuth(req);
   if (auth.error) return auth.error;
@@ -27,8 +38,7 @@ export async function GET(req: NextRequest) {
       search: sp.get('search') || undefined,
       teamMember: sp.get('team_member') || undefined,
       status: sp.get('status') || undefined,
-      sortColumn: sp.get('sort_column') || undefined,
-      sortDirection: (sp.get('sort_direction') as 'asc' | 'desc') || 'desc',
+      sortBy: parseSortParams(sp),
       departments: sp.getAll('departments').filter(Boolean),
       intakeTypes: sp.getAll('intake_types').filter(Boolean),
       projectTypes: sp.getAll('project_types').filter(Boolean),

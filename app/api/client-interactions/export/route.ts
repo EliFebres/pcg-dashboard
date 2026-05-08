@@ -18,13 +18,13 @@ export async function GET(req: NextRequest) {
 
   try {
     const sp = req.nextUrl.searchParams;
+    // Export always returns rows ordered by date_started DESC, regardless of
+    // the table's UI sort — so no sortBy parsing here.
     const filters: EngagementFilters = {
       period: sp.get('period') || undefined,
       search: sp.get('search') || undefined,
       teamMember: sp.get('team_member') || undefined,
       status: sp.get('status') || undefined,
-      sortColumn: sp.get('sort_column') || undefined,
-      sortDirection: (sp.get('sort_direction') as 'asc' | 'desc') || 'desc',
       departments: sp.getAll('departments').filter(Boolean),
       intakeTypes: sp.getAll('intake_types').filter(Boolean),
       projectTypes: sp.getAll('project_types').filter(Boolean),

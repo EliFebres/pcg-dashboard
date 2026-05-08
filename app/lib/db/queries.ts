@@ -36,15 +36,20 @@ export async function resolveOfficeMembers(
   return { ...filters, _officeMembers: rows.map(r => r.display_name) };
 }
 
-// Allowlist for ORDER BY columns to prevent SQL injection
+// Allowlist for ORDER BY columns to prevent SQL injection.
+// `teamMembers` sorts by the first member's name since the column is a JSON array.
 export const SORT_COLUMN_MAP: Record<string, string> = {
   dateStarted: 'date_started',
   dateFinished: 'date_finished',
   externalClient: 'external_client',
+  internalClient: 'internal_client_name',
   status: 'status',
   department: 'department',
   type: 'type',
   intakeType: 'intake_type',
+  nna: 'nna',
+  portfolioLogged: 'portfolio_logged',
+  teamMembers: `json_extract_string(team_members, '$[0]')`,
 };
 
 export interface ServerConstraints {

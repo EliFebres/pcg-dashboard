@@ -345,13 +345,25 @@ export async function computeEngagementsList(filters: EngagementFilters, serverC
   const pageSize = filters.pageSize || 50;
   const offset = (page - 1) * pageSize;
 
-  const sortCol = SORT_COLUMN_MAP[filters.sortColumn || ''] || 'date_finished';
-  const sortDir = filters.sortDirection === 'asc' ? 'ASC' : 'DESC';
-  const nullsOrder = sortDir === 'DESC' ? 'NULLS FIRST' : 'NULLS LAST';
-  // When sorting by date_finished (the default), use date_started DESC as a
-  // secondary so the most recently started rows surface within each group —
-  // in particular, within the NULLS-FIRST bucket of unfinished engagements.
-  const secondary = sortCol === 'date_finished' ? ', date_started DESC NULLS LAST' : '';
+  // Translate the sortBy array into a list of ORDER BY fragments. Each entry
+  // produces "<col> <dir> NULLS FIRST|LAST". Unknown column names are ignored
+  // (rather than silently falling back to a different column).
+  const sortClauses: string[] = [];
+  const seen = new Set<string>();
+  for (const spec of filters.sortBy ?? []) {
+    const sortCol = SORT_COLUMN_MAP[spec.column];
+    if (!sortCol || seen.has(sortCol)) continue;
+    seen.add(sortCol);
+    const sortDir = spec.direction === 'asc' ? 'ASC' : 'DESC';
+    const nullsOrder = sortDir === 'DESC' ? 'NULLS FIRST' : 'NULLS LAST';
+    sortClauses.push(`${sortCol} ${sortDir} ${nullsOrder}`);
+  }
+  if (sortClauses.length === 0) {
+    sortClauses.push('date_finished DESC NULLS FIRST');
+  }
+  // `id DESC` is the final tiebreaker so pagination stays stable when the
+  // sort columns produce ties.
+  const orderBy = `${sortClauses.join(', ')}, id DESC`;
 
   const [countRows, dataRows] = await Promise.all([
     query<Record<string, unknown>>(
@@ -362,7 +374,7 @@ export async function computeEngagementsList(filters: EngagementFilters, serverC
       `SELECT *,
          (SELECT COUNT(*) FROM engagement_notes WHERE engagement_id = engagements.id) AS note_count
        FROM engagements ${whereClause}
-       ORDER BY ${sortCol} ${sortDir} ${nullsOrder}${secondary}, id DESC
+       ORDER BY ${orderBy}
        LIMIT ? OFFSET ?`,
       [...params, pageSize, offset]
     ),

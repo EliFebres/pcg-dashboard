@@ -36,6 +36,13 @@ export class ConflictError extends Error {
 // TYPESCRIPT INTERFACES
 // =============================================================================
 
+/** A single column in a multi-column sort. Order in the sortBy array is the
+ *  ORDER BY priority (first entry is the primary sort). */
+export interface SortSpec {
+  column: string;
+  direction: 'asc' | 'desc';
+}
+
 /** Filters for fetching engagements */
 export interface EngagementFilters {
   search?: string;                 // Text search across multiple fields
@@ -47,8 +54,14 @@ export interface EngagementFilters {
   status?: string;                 // 'In Progress', 'Awaiting Meeting', 'Follow Up', 'Completed'
   page?: number;                   // Pagination: page number (1-indexed)
   pageSize?: number;               // Pagination: items per page (default 50)
-  sortColumn?: string;             // Column to sort by
-  sortDirection?: 'asc' | 'desc';  // Sort direction
+  sortBy?: SortSpec[];             // Multi-column sort, applied in order
+}
+
+/** Serializes a sortBy array into repeatable URL query params: `sort=col:dir`. */
+function appendSortParams(params: URLSearchParams, sortBy: SortSpec[] | undefined): void {
+  for (const s of sortBy ?? []) {
+    params.append('sort', `${s.column}:${s.direction}`);
+  }
 }
 
 /** A single GCG internal client with their department */
@@ -147,8 +160,7 @@ export async function getDashboardData(filters: EngagementFilters = {}, signal?:
       status: filters.status,
       page: filters.page || 1,
       pageSize: filters.pageSize || 50,
-      sortColumn: filters.sortColumn,
-      sortDirection: filters.sortDirection || 'desc',
+      sortBy: filters.sortBy ?? [],
     }),
     signal,
   });
@@ -168,8 +180,7 @@ export async function getEngagements(filters: EngagementFilters = {}): Promise<E
   if (filters.search) params.set('search', filters.search);
   if (filters.teamMember) params.set('team_member', filters.teamMember);
   if (filters.status) params.set('status', filters.status);
-  if (filters.sortColumn) params.set('sort_column', filters.sortColumn);
-  if (filters.sortDirection) params.set('sort_direction', filters.sortDirection);
+  appendSortParams(params, filters.sortBy);
   filters.departments?.forEach(d => params.append('departments', d));
   filters.intakeTypes?.forEach(t => params.append('intake_types', t));
   filters.projectTypes?.forEach(t => params.append('project_types', t));
